@@ -2,3 +2,4 @@
 //! compilation for PoE Campaign Copilot.
 
 pub mod route_dsl;
+pub mod vendor;
