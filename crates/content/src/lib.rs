@@ -4,3 +4,4 @@
 pub mod game_data;
 pub mod route_dsl;
 pub mod vendor;
+pub mod walk;
