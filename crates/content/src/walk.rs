@@ -141,6 +141,10 @@ fn apply_fragment(
         Fragment::PortalUse => {
             let current_id = state.current_area_id.clone();
             let current = require_area(areas, &current_id, step_id)?;
+            // Mirrors exile-leveling's evaluator (fragment/index.ts, EvaluatePortal):
+            // using a portal from a non-town area re-anchors the portal to the current
+            // area even if one was already set elsewhere. Intentionally broader than
+            // "set only when unset" — do not "fix" without checking upstream.
             if state.portal_area_id.as_deref() != Some(current_id.as_str()) && !current.is_town_area
             {
                 state.portal_area_id = Some(current_id.clone());
