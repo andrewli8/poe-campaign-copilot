@@ -4,3 +4,4 @@ node_modules/
 dist/
 content-pack/
 .DS_Store
+src-tauri/gen/
