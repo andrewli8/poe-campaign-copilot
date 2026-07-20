@@ -121,4 +121,46 @@ mod tests {
             assert!(json.contains("\"area_context\""));
         }
     }
+
+    /// `compile_route_pack` must thread a single `WalkState` continuously
+    /// across acts 1-10. A regression that resets state per act would still
+    /// compile without error (every act still walks fine in isolation), but
+    /// act 2+ would silently get wrong area contexts. This test
+    /// independently reproduces the walk with its own single `WalkState`
+    /// (the same code path the compiler claims to use) and asserts the
+    /// compiled pack matches it, plus a belt-and-braces check that act 2+
+    /// doesn't start from the act-1 starting area.
+    #[test]
+    fn cross_act_state_continuity() {
+        let variant = Variant::LeagueStart;
+        let pack = compile_route_pack(variant).expect("pack compiles");
+
+        let (areas, quests) = load_vendored().expect("vendored data loads");
+        let defines = variant.defines();
+        let mut state = WalkState::campaign_start();
+
+        for act in 1..=10u8 {
+            let sections = parse_route_file(&read_act_route(act).unwrap(), &defines).unwrap();
+            let steps = walk_act(act, &sections, &areas, &quests, &mut state)
+                .unwrap_or_else(|e| panic!("act {act} walk failed: {e}"));
+
+            let expected_first_context = steps[0].area_context.clone();
+            let actual_first_context = &pack.acts[(act - 1) as usize].steps[0].area_context;
+
+            assert_eq!(
+                actual_first_context, &expected_first_context,
+                "act {act} first step area_context diverged from independently \
+                 walked state; compiler is not threading WalkState continuously \
+                 across acts"
+            );
+
+            if act >= 2 {
+                assert_ne!(
+                    actual_first_context, "1_1_1",
+                    "act {act} first step area_context is the act-1 starting area \
+                     ('1_1_1'), indicating WalkState was reset per act"
+                );
+            }
+        }
+    }
 }
