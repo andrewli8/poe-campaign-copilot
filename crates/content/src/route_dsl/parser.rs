@@ -228,4 +228,32 @@ Find bridge, place {portal|set}
         assert_eq!(sections[0].steps.len(), 1); // only logout
         assert!(sections[0].steps[0].sub_steps.is_empty());
     }
+
+    #[test]
+    fn nested_conditionals_all_must_be_true() {
+        let src = "#ifdef A\n#ifdef B\n{logout}\n#endif\n#endif\n";
+
+        // Both A and B defined: step should appear
+        let sections = parse_route_file(src, &defines(&["A", "B"])).unwrap();
+        assert_eq!(sections.len(), 1);
+        assert_eq!(sections[0].steps.len(), 1);
+
+        // Only A defined (B false): step should be skipped (no default section created)
+        let sections = parse_route_file(src, &defines(&["A"])).unwrap();
+        assert_eq!(sections.len(), 0);
+
+        // Only B defined (outer A false, inner B true): step should still be skipped
+        // because the outer condition (A) is false, making active = false AND true = false
+        let sections = parse_route_file(src, &defines(&["B"])).unwrap();
+        assert_eq!(sections.len(), 0);
+    }
+
+    #[test]
+    fn section_in_open_conditional_errors() {
+        let src = "#ifdef X\n#section Y\n";
+        assert!(matches!(
+            parse_route_file(src, &defines(&[])),
+            Err(ParseError::UnterminatedConditional)
+        ));
+    }
 }
