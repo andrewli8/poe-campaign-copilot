@@ -362,8 +362,14 @@ mod tests {
         // resolves via name-only fallback and the pending is retained. The
         // following "The Coast" entry then matches the retained (now
         // two-events-stale) pending and resolves authoritatively from it.
+        //
+        // The Generating line's level (99) deliberately does NOT match
+        // "1_1_2"'s vendored level (2): authoritative pairing must report
+        // the level from the Generating line, not the vendored fallback
+        // value, so this discriminates a regression that silently drops to
+        // the fallback path instead of resurrecting the stale pending.
         let (_, out) = track(&[
-            gen_event("1_1_2", 2, 900),
+            gen_event("1_1_2", 99, 900),
             entered("Lioneye's Watch"),
             entered("The Coast"),
         ]);
@@ -380,7 +386,7 @@ mod tests {
             })
             .collect();
         assert_eq!(entries.len(), 2);
-        assert_eq!(entries[1], ("1_1_2", 2, true));
+        assert_eq!(entries[1], ("1_1_2", 99, true));
     }
 
     #[test]
@@ -401,13 +407,20 @@ mod tests {
             }
         }
 
+        // Ids are deliberately chosen so the higher-act area ("a_zone4")
+        // sorts before the lower-act area ("z_zone2") in the BTreeMap's
+        // iteration order. `Iterator::min_by_key` returns the FIRST
+        // minimal element on ties, so if the act component were dropped
+        // from the tie-break key, iteration order alone would select
+        // "a_zone4" — only a real `(distance, act)` tie-break selects
+        // "z_zone2".
         let mut areas = AreaMap::new();
-        areas.insert("t_2".into(), zone("t_2", 2, 10));
-        areas.insert("t_4".into(), zone("t_4", 4, 40));
+        areas.insert("a_zone4".into(), zone("a_zone4", 4, 40));
+        areas.insert("z_zone2".into(), zone("z_zone2", 2, 10));
         areas.insert(
-            "t_3".into(),
+            "m_anchor".into(),
             Area {
-                id: "t_3".into(),
+                id: "m_anchor".into(),
                 name: "Anchor".into(),
                 act: 3,
                 level: Some(30),
@@ -421,16 +434,17 @@ mod tests {
 
         let mut t = SessionTracker::new(areas);
         let mut out = Vec::new();
-        out.extend(t.on_raw(&gen_event("t_3", 30, 1)));
+        out.extend(t.on_raw(&gen_event("m_anchor", 30, 1)));
         out.extend(t.on_raw(&entered("Anchor")));
         out.extend(t.on_raw(&entered("Test Zone")));
 
         let last = out.last().unwrap();
         match last {
             SessionEvent::AreaEntered { area_id, act, .. } => {
-                // "t_2" (act 2) and "t_4" (act 4) are equidistant from the
-                // current act (3); the tie must break to the lower act.
-                assert_eq!(area_id, "t_2");
+                // "z_zone2" (act 2) and "a_zone4" (act 4) are equidistant
+                // from the current act (3); the tie must break to the
+                // lower act, not to iteration/insertion order.
+                assert_eq!(area_id, "z_zone2");
                 assert_eq!(*act, 2);
             }
             other => panic!("expected AreaEntered, got {other:?}"),
