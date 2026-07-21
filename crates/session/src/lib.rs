@@ -355,4 +355,125 @@ mod tests {
         assert_eq!(out.len(), 1);
         assert!(matches!(out[0], SessionEvent::SessionStarted { .. }));
     }
+
+    #[test]
+    fn stale_pending_survives_mismatch_and_resurrects() {
+        // The pending "1_1_2" doesn't match "Lioneye's Watch", so that entry
+        // resolves via name-only fallback and the pending is retained. The
+        // following "The Coast" entry then matches the retained (now
+        // two-events-stale) pending and resolves authoritatively from it.
+        let (_, out) = track(&[
+            gen_event("1_1_2", 2, 900),
+            entered("Lioneye's Watch"),
+            entered("The Coast"),
+        ]);
+        let entries: Vec<_> = out
+            .iter()
+            .filter_map(|e| match e {
+                SessionEvent::AreaEntered {
+                    area_id,
+                    area_level,
+                    new_instance,
+                    ..
+                } => Some((area_id.as_str(), *area_level, *new_instance)),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(entries.len(), 2);
+        assert_eq!(entries[1], ("1_1_2", 2, true));
+    }
+
+    #[test]
+    fn act_tiebreak_prefers_lower_act() {
+        use content::game_data::Area;
+
+        fn zone(id: &str, act: u8, level: u8) -> Area {
+            Area {
+                id: id.into(),
+                name: "Test Zone".into(),
+                act,
+                level: Some(level),
+                has_waypoint: false,
+                is_town_area: false,
+                parent_town_area_id: None,
+                connection_ids: vec![],
+                crafting_recipes: vec![],
+            }
+        }
+
+        let mut areas = AreaMap::new();
+        areas.insert("t_2".into(), zone("t_2", 2, 10));
+        areas.insert("t_4".into(), zone("t_4", 4, 40));
+        areas.insert(
+            "t_3".into(),
+            Area {
+                id: "t_3".into(),
+                name: "Anchor".into(),
+                act: 3,
+                level: Some(30),
+                has_waypoint: false,
+                is_town_area: false,
+                parent_town_area_id: None,
+                connection_ids: vec![],
+                crafting_recipes: vec![],
+            },
+        );
+
+        let mut t = SessionTracker::new(areas);
+        let mut out = Vec::new();
+        out.extend(t.on_raw(&gen_event("t_3", 30, 1)));
+        out.extend(t.on_raw(&entered("Anchor")));
+        out.extend(t.on_raw(&entered("Test Zone")));
+
+        let last = out.last().unwrap();
+        match last {
+            SessionEvent::AreaEntered { area_id, act, .. } => {
+                // "t_2" (act 2) and "t_4" (act 4) are equidistant from the
+                // current act (3); the tie must break to the lower act.
+                assert_eq!(area_id, "t_2");
+                assert_eq!(*act, 2);
+            }
+            other => panic!("expected AreaEntered, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn fallback_revisit_is_not_new_instance_and_unknown_generated_id_degrades() {
+        // (a) Authoritative visit records seed 500 for "1_1_2"; a later
+        // name-only revisit of the same area must not flag a new instance
+        // since the resolved seed matches the last-seen one.
+        let (mut t, out) = track(&[
+            gen_event("1_1_2", 2, 500),
+            entered("The Coast"),
+            entered("The Coast"), // name-only revisit, no Generating line
+        ]);
+        assert_eq!(out.len(), 3); // SessionStarted, authoritative entry, fallback revisit
+        match &out[2] {
+            SessionEvent::AreaEntered {
+                area_id,
+                new_instance,
+                ..
+            } => {
+                assert_eq!(area_id, "1_1_2");
+                assert!(
+                    !new_instance,
+                    "fallback revisit with an unchanged last-seen seed must not be a new instance"
+                );
+            }
+            other => panic!("expected AreaEntered, got {other:?}"),
+        }
+
+        // (b) A Generating line naming an area id absent from the vendored
+        // map must not break resolution: the pending mismatch degrades to
+        // the name-only fallback rather than emitting UnresolvedArea.
+        let more = t.on_raw(&gen_event("bogus_area_id", 1, 1));
+        assert!(more.is_empty());
+        let more = t.on_raw(&entered("The Coast"));
+        assert_eq!(more.len(), 1);
+        assert!(
+            matches!(more[0], SessionEvent::AreaEntered { .. }),
+            "expected fallback resolution despite unknown pending area id, got {:?}",
+            more[0]
+        );
+    }
 }
