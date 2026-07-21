@@ -6,6 +6,7 @@ use serde::Serialize;
 use thiserror::Error;
 
 use crate::game_data::{GameDataError, load_vendored};
+use crate::layouts::{LayoutEntry, LayoutError, load_all_layouts};
 use crate::route_dsl::{ParseError, parse_route_file};
 use crate::vendor::read_act_route;
 use crate::walk::{CompiledStep, WalkError, WalkState, walk_act};
@@ -62,6 +63,13 @@ pub struct ContentPack {
     pub acts: Vec<ActRoute>,
 }
 
+#[derive(Debug, Serialize)]
+pub struct LayoutPack {
+    pub format_version: u32,
+    pub source: SourceInfo,
+    pub entries: Vec<LayoutEntry>,
+}
+
 #[derive(Debug, Error)]
 pub enum CompileError {
     #[error("io error: {0}")]
@@ -72,6 +80,8 @@ pub enum CompileError {
     Walk(#[from] WalkError),
     #[error("game data error: {0}")]
     GameData(#[from] GameDataError),
+    #[error("layout content error: {0}")]
+    Layout(#[from] LayoutError),
 }
 
 pub fn compile_route_pack(variant: Variant) -> Result<ContentPack, CompileError> {
@@ -95,6 +105,19 @@ pub fn compile_route_pack(variant: Variant) -> Result<ContentPack, CompileError>
         },
         variant: variant.label().to_string(),
         acts,
+    })
+}
+
+pub fn compile_layout_pack() -> Result<LayoutPack, CompileError> {
+    let entries = load_all_layouts()?;
+    Ok(LayoutPack {
+        format_version: 1,
+        source: SourceInfo {
+            project: "poelayouts community compilation".to_string(),
+            reference: "extracted 2026-07-21".to_string(),
+            license: "used with credit — see CREDITS.md".to_string(),
+        },
+        entries,
     })
 }
 
@@ -162,5 +185,15 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn compiles_layout_pack() {
+        let pack = compile_layout_pack().expect("layout pack compiles");
+        assert_eq!(pack.format_version, 1);
+        assert!((120..=132).contains(&pack.entries.len()));
+        let json = serde_json::to_string(&pack).unwrap();
+        assert!(json.contains("\"audit\""));
+        assert!(json.contains("\"unaudited\""));
     }
 }
