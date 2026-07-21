@@ -29,14 +29,38 @@ Rust workspace + Tauri 2. Built on macOS, validated on Windows.
 
     cargo test --workspace
 
-Simulate a play session on any OS (no game needed):
-
-    cargo run -p replay --bin fake-play -- crates/replay/fixtures/act1-opening.log /tmp/fake-client.txt 300
-
-Point the app's log tailer at `/tmp/fake-client.txt` to watch events flow.
-
 The pilot test (`cargo test -p composer --test pilot_act1`) drives the full
 pipeline — log fixture → session → route/task engines → composer — and is
 the quickest way to see the whole system's behavior in one place.
+
+### Try it: live overlay demo
+
+Two terminals. The app tails a log file via `POE_COPILOT_LOG`; `fake-play`
+simulates a play session by appending fixture lines to that file on a
+delay, so you can watch the overlay react without the game running.
+
+Terminal 1 — start the app pointed at a scratch log file:
+
+    rm -f /tmp/fake-client.txt && touch /tmp/fake-client.txt
+    POE_COPILOT_LOG=/tmp/fake-client.txt npm run tauri dev
+
+Wait for the Vite + Cargo build to finish; a transparent, always-on-top,
+click-through bar appears reading "Waiting for Client.txt…".
+
+Terminal 2 — replay a session (800ms between lines gives time to watch
+each transition):
+
+    cargo run -p replay --bin fake-play -- crates/replay/fixtures/act1-opening.log /tmp/fake-client.txt 800
+
+Expected: the bar transitions Waiting → Twilight Strand → Lioneye's Watch
+→ The Coast (with layout images) → an off-route banner on the early town
+revisit → Mud Flats.
+
+Toggle Setup Mode (drag/resize) and Zoom from the tray icon menu, or zoom
+with `alt+shift+z`. When done, stop the app (Ctrl-C in terminal 1 or quit
+from the tray) and remove `/tmp/fake-client.txt`.
+
+Point the app's log tailer at `/tmp/fake-client.txt` at any delay to watch
+events flow without the two-terminal choreography above.
 
 License: MIT (code). See CREDITS.md for third-party content.
