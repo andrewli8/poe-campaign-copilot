@@ -7,4 +7,4 @@ mod tailer;
 
 pub use assembler::LineAssembler;
 pub use poller::FilePoller;
-pub use tailer::{spawn_tailer, TailerHandle};
+pub use tailer::{TailerHandle, spawn_tailer};
