@@ -212,7 +212,7 @@ mod tests {
         let pack = compile_route_pack(Variant::LeagueStart).unwrap();
         let engine = RouteEngine::from_pack(&pack, areas.clone());
         let layouts = layouts_by_area(load_all_layouts().unwrap());
-        (engine, TaskEngine::new(), layouts, areas)
+        (engine, TaskEngine::new(areas.clone()), layouts, areas)
     }
 
     #[test]

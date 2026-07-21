@@ -14,7 +14,7 @@ fn fixture_drives_engines_to_expected_overlay_states() {
     let (areas, _) = load_vendored().unwrap();
     let pack = compile_route_pack(Variant::LeagueStart).unwrap();
     let mut engine = RouteEngine::from_pack(&pack, areas.clone());
-    let mut tasks = TaskEngine::new();
+    let mut tasks = TaskEngine::new(areas.clone());
     let layouts = layouts_by_area(load_all_layouts().unwrap());
     let mut tracker = SessionTracker::new(areas.clone());
 

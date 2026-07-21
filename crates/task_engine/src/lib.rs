@@ -1,3 +1,4 @@
+use content::game_data::AreaMap;
 use content::route_dsl::Fragment;
 use content::walk::CompiledStep;
 use route_engine::StepStatus;
@@ -21,14 +22,26 @@ pub struct PendingTask {
     pub step_id: String,
 }
 
-#[derive(Default)]
 pub struct TaskEngine {
+    areas: AreaMap,
     pending: Vec<PendingTask>,
 }
 
 impl TaskEngine {
-    pub fn new() -> Self {
-        Self::default()
+    pub fn new(areas: AreaMap) -> Self {
+        Self {
+            areas,
+            pending: Vec::new(),
+        }
+    }
+
+    /// Look up an area's display name, falling back to the raw id when the
+    /// area is unknown.
+    fn display_name(&self, area_id: &str) -> String {
+        self.areas
+            .get(area_id)
+            .map(|a| a.name.clone())
+            .unwrap_or_else(|| area_id.to_string())
     }
 
     pub fn pending(&self) -> &[PendingTask] {
@@ -59,7 +72,7 @@ impl TaskEngine {
             let created = match fragment {
                 Fragment::PortalSet => Some((
                     PendingKind::Portal,
-                    format!("Portal placed in {}", step.area_context),
+                    format!("Portal placed in {}", self.display_name(&step.area_context)),
                 )),
                 Fragment::PortalUse => {
                     self.pending.retain(|p| p.kind != PendingKind::Portal);
@@ -67,7 +80,10 @@ impl TaskEngine {
                 }
                 Fragment::Trial => Some((
                     PendingKind::Trial,
-                    format!("Trial of Ascendancy in {}", step.area_context),
+                    format!(
+                        "Trial of Ascendancy in {}",
+                        self.display_name(&step.area_context)
+                    ),
                 )),
                 Fragment::Crafting { .. } if status == StepStatus::Skipped => Some((
                     PendingKind::Crafting,
@@ -107,6 +123,7 @@ impl TaskEngine {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use content::game_data::load_vendored;
     use content::route_dsl::Fragment;
     use content::walk::CompiledStep;
     use route_engine::StepStatus;
@@ -122,16 +139,24 @@ mod tests {
         }
     }
 
+    fn engine() -> TaskEngine {
+        let (areas, _) = load_vendored().unwrap();
+        TaskEngine::new(areas)
+    }
+
     #[test]
     fn portal_set_pends_and_portal_use_clears() {
-        let mut t = TaskEngine::new();
+        let mut t = engine();
         t.on_step_passed(
             &step("a1-s001", "1_1_4_1", vec![Fragment::PortalSet]),
             StepStatus::Done,
         );
         assert_eq!(t.pending_count(), 1);
         assert_eq!(t.pending()[0].kind, PendingKind::Portal);
-        assert!(t.pending()[0].label.contains("1_1_4_1"));
+        assert_eq!(
+            t.pending()[0].label,
+            "Portal placed in The Submerged Passage"
+        );
 
         t.on_step_passed(
             &step("a1-s005", "1_1_town", vec![Fragment::PortalUse]),
@@ -141,8 +166,18 @@ mod tests {
     }
 
     #[test]
+    fn portal_label_falls_back_to_raw_id_for_unknown_area() {
+        let mut t = engine();
+        t.on_step_passed(
+            &step("a1-s002", "totally_bogus", vec![Fragment::PortalSet]),
+            StepStatus::Done,
+        );
+        assert_eq!(t.pending()[0].label, "Portal placed in totally_bogus");
+    }
+
+    #[test]
     fn rewards_pend_only_when_skipped() {
-        let mut t = TaskEngine::new();
+        let mut t = engine();
         let s = step(
             "a1-s010",
             "1_1_town",
@@ -166,7 +201,7 @@ mod tests {
 
     #[test]
     fn trial_pends_regardless_of_status_and_ids_are_unique() {
-        let mut t = TaskEngine::new();
+        let mut t = engine();
         let s = step(
             "a2-s020",
             "1_2_4",
@@ -176,22 +211,31 @@ mod tests {
         assert_eq!(t.pending_count(), 2);
         let ids: std::collections::BTreeSet<_> = t.pending().iter().map(|p| p.id.clone()).collect();
         assert_eq!(ids.len(), 2);
+        assert!(
+            t.pending()
+                .iter()
+                .any(|p| p.label == "Trial of Ascendancy in The Broken Bridge")
+        );
         // Trials are not town reminders; portals aren't either.
         assert!(t.town_reminders().is_empty());
     }
 
     #[test]
     fn sub_step_fragments_are_scanned_too() {
-        let mut t = TaskEngine::new();
+        let mut t = engine();
         let mut s = step("a1-s030", "1_1_7_1", vec![]);
         s.sub_steps = vec![vec![Fragment::Trial]];
         t.on_step_passed(&s, StepStatus::Done);
         assert_eq!(t.pending_count(), 1);
+        assert_eq!(
+            t.pending()[0].label,
+            "Trial of Ascendancy in The Lower Prison"
+        );
     }
 
     #[test]
     fn crafting_pends_only_when_skipped() {
-        let mut t = TaskEngine::new();
+        let mut t = engine();
         let s = step(
             "a2-s040",
             "1_2_5",
