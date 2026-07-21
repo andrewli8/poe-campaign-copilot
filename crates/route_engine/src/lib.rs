@@ -40,6 +40,16 @@ pub struct RouteEngine {
     areas: AreaMap,
     cursor: usize,
     off_route: Option<String>,
+    /// Area contexts of every step that has fallen behind the cursor, i.e.
+    /// zones the route has already visited at least once. Consulted by the
+    /// tier-3 distant-forward-jump guard below: many non-town field zones
+    /// are "revisit magnets" that recur at multiple points in a compiled
+    /// route (e.g. Aspirants' Plaza appears both before and after the
+    /// normal Labyrinth). Without this guard, walking back into such a
+    /// zone after the route has already passed it would match the LATER
+    /// occurrence far down the route and silently teleport the cursor
+    /// there, since tier 3 otherwise accepts any forward non-town match.
+    visited_contexts: std::collections::HashSet<String>,
 }
 
 impl RouteEngine {
@@ -51,6 +61,7 @@ impl RouteEngine {
             areas,
             cursor: 0,
             off_route: None,
+            visited_contexts: std::collections::HashSet::new(),
         }
     }
 
@@ -117,6 +128,15 @@ impl RouteEngine {
         self.steps.get(next).map(|s| s.area_context.as_str())
     }
 
+    /// Whether `area_id` is a known town area (unknown ids are treated as
+    /// non-town).
+    fn is_town(&self, area_id: &str) -> bool {
+        self.areas
+            .get(area_id)
+            .map(|a| a.is_town_area)
+            .unwrap_or(false)
+    }
+
     /// Start indices of every group from the active group onward (index 0
     /// is always the active group itself).
     fn forward_group_starts(&self) -> Vec<usize> {
@@ -155,20 +175,26 @@ impl RouteEngine {
             .skip(1) // index 0 is the active group, already handled above
             .find(|&(_, &s)| self.steps[s].area_context == area_id);
 
-        let is_town = self
-            .areas
-            .get(area_id)
-            .map(|a| a.is_town_area)
-            .unwrap_or(false);
+        let is_town = self.is_town(area_id);
+        // Tier 3 only ever jumps to a zone's FIRST occurrence in the route;
+        // see `visited_contexts` doc comment for the revisit-magnet
+        // rationale this guards against.
+        let already_visited = self.visited_contexts.contains(area_id);
 
         match matched {
-            // Tier 2: within lookahead, regardless of town-ness.
-            // Tier 3: any forward group, but only for non-town areas.
-            Some((group_offset, &target)) if group_offset <= LOOKAHEAD_GROUPS || !is_town => {
+            // Tier 2: within lookahead, regardless of town-ness or prior
+            // visits (a short back-and-forth is normal play).
+            // Tier 3: any forward group, but only for non-town areas that
+            // the route has never visited before.
+            Some((group_offset, &target))
+                if group_offset <= LOOKAHEAD_GROUPS || (!is_town && !already_visited) =>
+            {
                 let mut newly_done = Vec::new();
                 let mut newly_skipped = Vec::new();
                 let active_end = self.group_end(self.cursor);
                 for i in self.cursor..target {
+                    self.visited_contexts
+                        .insert(self.steps[i].area_context.clone());
                     if self.statuses[i] == StepStatus::Pending {
                         if i < active_end {
                             self.statuses[i] = StepStatus::Done;
@@ -193,6 +219,8 @@ impl RouteEngine {
                 if self.group_end(target) == self.steps.len() {
                     let last_end = self.steps.len();
                     for i in target..last_end {
+                        self.visited_contexts
+                            .insert(self.steps[i].area_context.clone());
                         if self.statuses[i] == StepStatus::Pending {
                             self.statuses[i] = StepStatus::Done;
                             newly_done.push(i);
@@ -315,6 +343,112 @@ mod tests {
                 .iter()
                 .any(|&i| e.steps()[i].area_context == "1_1_2")
         );
+    }
+
+    /// Every group's start index and its `area_context`, one entry per
+    /// group in route order (mirrors `forward_group_starts` from cursor 0).
+    fn all_group_starts_and_contexts(e: &RouteEngine) -> Vec<(usize, String)> {
+        let mut v = Vec::new();
+        let mut i = 0;
+        while i < e.steps().len() {
+            v.push((i, e.steps()[i].area_context.clone()));
+            i = e.group_end(i);
+        }
+        v
+    }
+
+    #[test]
+    fn fresh_distant_field_zone_still_jumps() {
+        // A non-town field zone that appears ONLY ahead (never visited
+        // before) must still trigger the tier-3 distant jump.
+        let mut e = engine();
+        e.on_area_entered("1_1_town");
+        e.on_area_entered("1_1_2");
+        let a = e.on_area_entered("1_1_5");
+        assert_eq!(a.kind, AdvanceKind::Advanced);
+        assert_eq!(e.active_area(), Some("1_1_5"));
+    }
+
+    #[test]
+    fn revisited_field_zone_beyond_lookahead_is_off_route_not_jump() {
+        // Data-driven: find a non-town context that occurs at two group
+        // indices (gi, gj) far enough apart that, once the route has
+        // passed group `gi` and moved on to group `gi + 1`, re-entering
+        // that context would offer a tier-3 (beyond-lookahead) match to
+        // the LATER occurrence at `gj`. The reviewer confirmed 33 such
+        // non-town revisit contexts exist in the real league-start route.
+        let e = engine();
+        let groups = all_group_starts_and_contexts(&e);
+
+        let mut found: Option<(usize, usize, String)> = None;
+        'outer: for gi in 0..groups.len() {
+            if e.is_town(&groups[gi].1) {
+                continue;
+            }
+            // gj must be far enough past (gi + 1) that the group offset
+            // from the new active group exceeds LOOKAHEAD_GROUPS.
+            let min_gj = gi + LOOKAHEAD_GROUPS + 2;
+            for gj in min_gj..groups.len() {
+                if groups[gi].1 == groups[gj].1 {
+                    found = Some((gi, gj, groups[gi].1.clone()));
+                    break 'outer;
+                }
+            }
+        }
+        let (gi, gj, ctx) = found.expect(
+            "expected at least one non-town context to repeat far enough apart in the route \
+             (reviewer found 33); route data may have changed",
+        );
+
+        // Advance sequentially through every group up to and including
+        // `gi`, so group `gi`'s context falls behind the cursor (visited)
+        // and group `gi + 1` becomes active.
+        let mut e = engine();
+        for (_, ctx) in &groups[0..=gi + 1] {
+            e.on_area_entered(ctx);
+        }
+        assert_eq!(e.cursor(), groups[gi + 1].0, "test setup: cursor mismatch");
+
+        let group_offset = gj - (gi + 1);
+        assert!(
+            group_offset > LOOKAHEAD_GROUPS,
+            "test setup: target must be beyond lookahead, got offset {group_offset}"
+        );
+
+        let cursor_before = e.cursor();
+        let a = e.on_area_entered(&ctx);
+        assert_eq!(
+            a.kind,
+            AdvanceKind::OffRoute {
+                area_id: ctx.clone()
+            },
+            "revisiting an already-passed non-town zone must not jump to a later occurrence"
+        );
+        assert_eq!(e.cursor(), cursor_before, "cursor must not move");
+        assert!(a.newly_done.is_empty() && a.newly_skipped.is_empty());
+    }
+
+    #[test]
+    fn repeated_off_route_event_is_ignored() {
+        let mut e = engine();
+        e.on_area_entered("1_1_town");
+        e.on_area_entered("1_1_2"); // active: The Coast group
+
+        let first = e.on_area_entered("1_1_town"); // off-route
+        assert_eq!(
+            first.kind,
+            AdvanceKind::OffRoute {
+                area_id: "1_1_town".into()
+            }
+        );
+        let cursor_before = e.cursor();
+
+        let second = e.on_area_entered("1_1_town"); // same off-route area again
+        assert_eq!(second.kind, AdvanceKind::Ignored);
+        assert!(second.newly_done.is_empty() && second.newly_skipped.is_empty());
+        assert_eq!(e.cursor(), cursor_before);
+        assert_eq!(e.off_route(), Some("1_1_town"));
+        assert_eq!(e.active_area(), Some("1_1_2"));
     }
 
     #[test]
