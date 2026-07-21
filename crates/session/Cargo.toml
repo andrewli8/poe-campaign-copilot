@@ -1,0 +1,10 @@
+[package]
+name = "session"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+content = { path = "../content" }
+event_parser = { path = "../event_parser" }
