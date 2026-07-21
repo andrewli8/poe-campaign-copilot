@@ -29,4 +29,10 @@ Rust workspace + Tauri 2. Built on macOS, validated on Windows.
 
     cargo test --workspace
 
+Simulate a play session on any OS (no game needed):
+
+    cargo run -p replay --bin fake-play -- crates/replay/fixtures/act1-opening.log /tmp/fake-client.txt 300
+
+Point the app's log tailer at `/tmp/fake-client.txt` to watch events flow.
+
 License: MIT (code). See CREDITS.md for third-party content.

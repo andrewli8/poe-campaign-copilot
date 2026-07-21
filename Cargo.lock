@@ -2394,6 +2394,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d6f6ff9a378485b298a5286656da665ba74413d36db0979633275d2e708145d4"
 
 [[package]]
+name = "replay"
+version = "0.1.0"
+dependencies = [
+ "content",
+ "event_parser",
+ "input_log",
+ "session",
+ "thiserror 2.0.19",
+]
+
+[[package]]
 name = "reqwest"
 version = "0.13.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"

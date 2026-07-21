@@ -1,0 +1,14 @@
+[package]
+name = "replay"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+
+[dependencies]
+content = { path = "../content" }
+event_parser = { path = "../event_parser" }
+session = { path = "../session" }
+thiserror = "2"
+
+[dev-dependencies]
+input_log = { path = "../input_log" }
