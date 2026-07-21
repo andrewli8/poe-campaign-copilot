@@ -9,7 +9,12 @@ registered trademark of Grinding Gear Games.
   commit.
 - **Zone layout images** — created by **Engineering Eternity**
   (https://www.youtube.com/@EngineeringEternity), included with credit from a
-  community-shared layout compilation. If you are the rights holder and want
-  anything removed, open an issue and it will be taken down promptly.
+  community-shared layout compilation; committed under `content/layouts/assets/`.
+  Exception: the Act 10 Ravaged Square composite image was created by the
+  compilation's author. If you are a rights holder and want anything removed,
+  open an issue and it will be taken down promptly.
 - **Zone layout notes** — adapted from a community "PoE Map Layouts" cheat
-  sheet compilation (author's notes based on Engineering Eternity's videos).
+  sheet compilation (author's notes based on Engineering Eternity's videos);
+  committed as structured JSON under `content/layouts/act-*/`. All notes
+  currently carry `audit.status: "unaudited"` — they date from an older patch
+  and are being audited zone-by-zone.
