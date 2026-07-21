@@ -1,0 +1,25 @@
+{
+  "area_id": "2_10_5",
+  "act": 10,
+  "display_name": "The Canals",
+  "docx_headings": [
+    "The Canals"
+  ],
+  "descriptions": [
+    "Fairly linear layout."
+  ],
+  "notes": [
+    "Note: Move top left, follow the road, cross bridges when you see them."
+  ],
+  "images": [],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

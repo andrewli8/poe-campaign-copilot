@@ -1,0 +1,26 @@
+{
+  "area_id": "2_8_8",
+  "act": 8,
+  "display_name": "The Quay",
+  "docx_headings": [
+    "The Quay"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Pick up the quest item at (1), to use in the arena (2), then leave the arena and find the exit at (3)."
+  ],
+  "images": [
+    "image96.png",
+    "image56.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

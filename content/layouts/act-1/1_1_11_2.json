@@ -1,0 +1,21 @@
+{
+  "area_id": "1_1_11_2",
+  "act": 1,
+  "display_name": "The Cavern of Anger",
+  "docx_headings": [
+    "The Cavern of Anger"
+  ],
+  "descriptions": [],
+  "notes": [],
+  "images": [],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

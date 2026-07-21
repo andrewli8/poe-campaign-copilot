@@ -1,0 +1,25 @@
+{
+  "area_id": "2_7_2",
+  "act": 7,
+  "display_name": "The Crossroads",
+  "docx_headings": [
+    "The Crossroads"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Don’t forget the waypoint, this zone leads to two new zones. Go to The Fellshrine Ruins (1) first."
+  ],
+  "images": [
+    "image109.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

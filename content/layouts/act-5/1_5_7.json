@@ -1,0 +1,25 @@
+{
+  "area_id": "1_5_7",
+  "act": 5,
+  "display_name": "The Reliquary",
+  "docx_headings": [
+    "The Reliquary (2)"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Find multiple quest items in corners of the zone."
+  ],
+  "images": [
+    "image122.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

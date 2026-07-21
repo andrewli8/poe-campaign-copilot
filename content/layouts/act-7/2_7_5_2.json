@@ -1,0 +1,27 @@
+{
+  "area_id": "2_7_5_2",
+  "act": 7,
+  "display_name": "The Chamber of Sins Level 2",
+  "docx_headings": [
+    "Chamber of Sins 2"
+  ],
+  "descriptions": [
+    "There is another less common layout explained in bold text in the notes."
+  ],
+  "notes": [
+    "Note: There is a trial in this zone on the left side. Go to the top right side, until you find the narrow long hallway, move to the end where you fought Fidelitas in act two, then go right up and right down afterwards.There is a layout that goes to the bottom left instead, if you encounter a dead end when going to the top right, do a right hand wall-follow to the end. Click the wall to reveal the exit."
+  ],
+  "images": [
+    "image135.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

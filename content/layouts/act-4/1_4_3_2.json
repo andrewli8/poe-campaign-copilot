@@ -1,0 +1,28 @@
+{
+  "area_id": "1_4_3_2",
+  "act": 4,
+  "display_name": "The Mines Level 2",
+  "docx_headings": [
+    "The Mines 2"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Varied layout, and many dead ends and you should look for the spirit too, if you found the exit before the spirit, leave a portal and continue."
+  ],
+  "images": [
+    "image21.png",
+    "image46.png",
+    "image9.png",
+    "image180.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

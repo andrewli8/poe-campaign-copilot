@@ -1,0 +1,25 @@
+{
+  "area_id": "2_7_12_1",
+  "act": 7,
+  "display_name": "The Temple of Decay Level 1",
+  "docx_headings": [
+    "The Temple of Decay"
+  ],
+  "descriptions": [
+    "Long zone, with multiple levels."
+  ],
+  "notes": [
+    "Note: Just like the pyramid in act two, go diagonally to exits. Boss fight at the end, capped lightning resistance is recommended."
+  ],
+  "images": [],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

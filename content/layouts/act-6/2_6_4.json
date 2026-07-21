@@ -1,0 +1,26 @@
+{
+  "area_id": "2_6_4",
+  "act": 6,
+  "display_name": "The Mud Flats",
+  "docx_headings": [
+    "The Mud Flats"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Kill the Dishonoured Queen (1) on the right side to get the key to open the gate to the next zone (2) on the left side."
+  ],
+  "images": [
+    "image44.png",
+    "image125.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

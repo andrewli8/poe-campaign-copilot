@@ -1,0 +1,25 @@
+{
+  "area_id": "2_6_7_2",
+  "act": 6,
+  "display_name": "Shavronne's Tower",
+  "docx_headings": [
+    "Shavronne’s Tower"
+  ],
+  "descriptions": [
+    "This zone has multiple variations, but they’re all fairly linear, made up out of four mini zones.Follow the hallsTravel around or over the center thin bridgeTravel around and over the thin bridgeTravel around and reach the middle bridge area to find the ladder to the rooftop."
+  ],
+  "notes": [
+    "Note: Capped lightning resistance and a good life pool is strongly suggested to fight Brutus and Shavronne, having physical mitigation helps as well."
+  ],
+  "images": [],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

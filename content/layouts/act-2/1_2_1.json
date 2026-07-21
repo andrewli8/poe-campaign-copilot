@@ -1,0 +1,25 @@
+{
+  "area_id": "1_2_1",
+  "act": 2,
+  "display_name": "The Southern Forest",
+  "docx_headings": [
+    "The Southern Forest"
+  ],
+  "descriptions": [
+    "Linear layout."
+  ],
+  "notes": [
+    "Note: Follow the right wall."
+  ],
+  "images": [],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

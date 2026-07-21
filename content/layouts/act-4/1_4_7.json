@@ -1,0 +1,25 @@
+{
+  "area_id": "1_4_7",
+  "act": 4,
+  "display_name": "The Ascent",
+  "docx_headings": [
+    "The Ascent"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Go up and right, cross the bridge and follow the road to a small passage to the exit."
+  ],
+  "images": [
+    "image132.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

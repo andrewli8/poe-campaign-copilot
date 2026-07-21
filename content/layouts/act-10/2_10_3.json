@@ -1,0 +1,25 @@
+{
+  "area_id": "2_10_3",
+  "act": 10,
+  "display_name": "The Torched Courts",
+  "docx_headings": [
+    "The Torched Courts"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Left hand wall-follow."
+  ],
+  "images": [
+    "image89.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

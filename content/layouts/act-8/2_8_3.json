@@ -1,0 +1,25 @@
+{
+  "area_id": "2_8_3",
+  "act": 8,
+  "display_name": "The Grand Promenade",
+  "docx_headings": [
+    "The Grand Promenade"
+  ],
+  "descriptions": [
+    "Fairly static and linear zone."
+  ],
+  "notes": [
+    "Note: Wall-follow the right hand side."
+  ],
+  "images": [],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "area_id": "2_9_8",
+  "act": 9,
+  "display_name": "The Quarry",
+  "docx_headings": [
+    "The Quarry",
+    "Shrine of The Winds"
+  ],
+  "descriptions": [
+    "Boss arena only."
+  ],
+  "notes": [
+    "Note: Activate the waypoint at the center, go to Shrine of the Winds first (2), then the refinery (1).",
+    "Note: Physical mitigation is recommended, alongside a good life pool and movement speed/skills."
+  ],
+  "images": [
+    "image146.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "area_id": "2_9_2",
+  "act": 9,
+  "display_name": "The Descent",
+  "docx_headings": [
+    "The Descent"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Go up right to the supply hoist, then down left to another hoist, then up right to The Vastiri Desert."
+  ],
+  "images": [
+    "image110.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

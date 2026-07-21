@@ -1,0 +1,29 @@
+{
+  "area_id": "1_3_3_1",
+  "act": 3,
+  "display_name": "The Crematorium",
+  "docx_headings": [
+    "The Crematorium"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Going left generally has a higher chance of success. There is a trial here."
+  ],
+  "images": [
+    "image45.png",
+    "image176.png",
+    "image3.png",
+    "image98.png",
+    "image137.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

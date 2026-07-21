@@ -1,0 +1,27 @@
+{
+  "area_id": "1_1_11_1",
+  "act": 1,
+  "display_name": "The Cavern of Wrath",
+  "docx_headings": [
+    "The Cavern of Wrath"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: At waypoint, port back to The Ship Graveyard to either find the cave or hand in Allflame and get rewards."
+  ],
+  "images": [
+    "image54.png",
+    "image174.png",
+    "image30.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

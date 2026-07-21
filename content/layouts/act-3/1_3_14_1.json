@@ -1,0 +1,26 @@
+{
+  "area_id": "1_3_14_1",
+  "act": 3,
+  "display_name": "The Lunaris Temple Level 1",
+  "docx_headings": [
+    "Lunaris Temple 1"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Pretty linear, follow the carpet, don’t forget waypoint."
+  ],
+  "images": [
+    "image72.png",
+    "image25.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

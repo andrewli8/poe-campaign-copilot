@@ -1,0 +1,25 @@
+{
+  "area_id": "1_3_18_2",
+  "act": 3,
+  "display_name": "The Upper Sceptre of God",
+  "docx_headings": [
+    "Upper Sceptre of God"
+  ],
+  "descriptions": [
+    "Layout is generally always the same looking, but exits spawn in a random corner."
+  ],
+  "notes": [
+    "Note: Go up diagonally until you spot barricades at exit."
+  ],
+  "images": [],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "area_id": "2_6_2",
+  "act": 6,
+  "display_name": "The Coast",
+  "docx_headings": [
+    "The Coast"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Go to the right side of the zone, and go to the top right corner of the zone. You might need to go up or down a bit."
+  ],
+  "images": [
+    "image197.png",
+    "image79.png",
+    "image150.png",
+    "image23.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

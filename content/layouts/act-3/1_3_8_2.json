@@ -1,0 +1,27 @@
+{
+  "area_id": "1_3_8_2",
+  "act": 3,
+  "display_name": "The Solaris Temple Level 2",
+  "docx_headings": [
+    "The Solaris Temple 2"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Somewhat linear, follow carpet, can have dead ends."
+  ],
+  "images": [
+    "image90.png",
+    "image52.png",
+    "image196.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

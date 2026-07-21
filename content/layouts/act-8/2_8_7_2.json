@@ -1,0 +1,26 @@
+{
+  "area_id": "2_8_7_2",
+  "act": 8,
+  "display_name": "The Lunaris Temple Level 2",
+  "docx_headings": [
+    "The Lunaris Temple 2"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Just like in act three, look for staircases and go up these, when you reach the larger area again, look for the vases on the opposite wall and pick the side where there is only one. At the end of this is the quest boss Dusk, capped cold resistance is recommended."
+  ],
+  "images": [
+    "image155.png",
+    "image92.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

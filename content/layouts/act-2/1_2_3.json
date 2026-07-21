@@ -1,0 +1,25 @@
+{
+  "area_id": "1_2_3",
+  "act": 2,
+  "display_name": "The Crossroads",
+  "docx_headings": [
+    "The Crossroads"
+  ],
+  "descriptions": [
+    "Linear layout."
+  ],
+  "notes": [
+    "Note: Follow the road."
+  ],
+  "images": [],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "area_id": "2_8_12_1",
+  "act": 8,
+  "display_name": "The Solaris Temple Level 1",
+  "docx_headings": [
+    "Solaris Temple 1"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Go down and left, then up and left, there is a waypoint on the path."
+  ],
+  "images": [
+    "image55.png",
+    "image152.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

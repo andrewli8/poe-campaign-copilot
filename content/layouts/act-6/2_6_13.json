@@ -1,0 +1,26 @@
+{
+  "area_id": "2_6_13",
+  "act": 6,
+  "display_name": "The Cavern of Anger",
+  "docx_headings": [
+    "The Cavern of Anger"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Don’t forget the black flag upon entering this zone. Head down then up first, then go right, the exit can be up or down."
+  ],
+  "images": [
+    "image16.png",
+    "image37.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

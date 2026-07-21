@@ -1,0 +1,25 @@
+{
+  "area_id": "1_4_5_1",
+  "act": 4,
+  "display_name": "Daresso's Dream",
+  "docx_headings": [
+    "Daresso’s Dream"
+  ],
+  "descriptions": [
+    "Fairly linear."
+  ],
+  "notes": [
+    "Note: Move towards the top right, some dead ends."
+  ],
+  "images": [],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

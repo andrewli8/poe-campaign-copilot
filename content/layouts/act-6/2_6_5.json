@@ -1,0 +1,25 @@
+{
+  "area_id": "2_6_5",
+  "act": 6,
+  "display_name": "The Karui Fortress",
+  "docx_headings": [
+    "The Karui Fortress"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Follow the right hand side if you feel ready for Tukohama, capped fire resistance is suggested, alongside a good life pool. If you wish to take on Tukohama for the passive point and pantheon power later, follow the left hand side."
+  ],
+  "images": [
+    "image68.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

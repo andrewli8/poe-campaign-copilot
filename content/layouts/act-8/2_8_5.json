@@ -1,0 +1,26 @@
+{
+  "area_id": "2_8_5",
+  "act": 8,
+  "display_name": "The Bath House",
+  "docx_headings": [
+    "The Bath House"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: There is a trial here, and ther Wings of Vastiri quest, there is also a way to the Yugul god fight (2), but I would suggest doing this later. The exit is always on the right side."
+  ],
+  "images": [
+    "image126.png",
+    "image47.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

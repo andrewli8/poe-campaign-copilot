@@ -1,0 +1,27 @@
+{
+  "area_id": "2_8_2_2",
+  "act": 8,
+  "display_name": "Doedre's Cesspool",
+  "docx_headings": [
+    "Doedre’s Cesspool"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Try to find the path that doesn’t have a dead end, this should lead you all the way to the exit."
+  ],
+  "images": [
+    "image173.png",
+    "image171.png",
+    "image172.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

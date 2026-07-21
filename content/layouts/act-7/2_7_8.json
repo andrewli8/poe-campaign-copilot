@@ -1,0 +1,25 @@
+{
+  "area_id": "2_7_8",
+  "act": 7,
+  "display_name": "The Northern Forest",
+  "docx_headings": [
+    "The Northern Forest"
+  ],
+  "descriptions": [
+    "Linear layout."
+  ],
+  "notes": [
+    "Note: Wall-follow the left side for The Dread Thicket, wall-follow the right side for The Causeway."
+  ],
+  "images": [],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

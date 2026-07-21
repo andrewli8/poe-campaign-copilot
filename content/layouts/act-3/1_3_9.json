@@ -1,0 +1,28 @@
+{
+  "area_id": "1_3_9",
+  "act": 3,
+  "display_name": "The Docks",
+  "docx_headings": [
+    "The Docks"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Usually left side, sulphite is down some stairs."
+  ],
+  "images": [
+    "image195.png",
+    "image51.png",
+    "image111.png",
+    "image124.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

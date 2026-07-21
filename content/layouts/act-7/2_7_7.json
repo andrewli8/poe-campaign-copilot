@@ -1,0 +1,25 @@
+{
+  "area_id": "2_7_7",
+  "act": 7,
+  "display_name": "The Ashen Fields",
+  "docx_headings": [
+    "The Ashen Fields"
+  ],
+  "descriptions": [
+    "Linear layout."
+  ],
+  "notes": [
+    "Note: Follow the road to the left. Physical mitigation and bleed removal are recommended."
+  ],
+  "images": [],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

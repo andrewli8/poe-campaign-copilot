@@ -1,0 +1,27 @@
+{
+  "area_id": "1_4_6_2",
+  "act": 4,
+  "display_name": "The Belly of the Beast Level 2",
+  "docx_headings": [
+    "Belly of the Beast 2"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Aim for top left, many dead ends."
+  ],
+  "images": [
+    "image182.png",
+    "image65.png",
+    "image86.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

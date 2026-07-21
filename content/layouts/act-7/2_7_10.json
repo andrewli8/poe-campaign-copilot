@@ -1,0 +1,25 @@
+{
+  "area_id": "2_7_10",
+  "act": 7,
+  "display_name": "The Causeway",
+  "docx_headings": [
+    "The Causeway"
+  ],
+  "descriptions": [
+    "Linear layout."
+  ],
+  "notes": [
+    "Note: Go top right to the exit, loot Kishara’s star near the exit."
+  ],
+  "images": [],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

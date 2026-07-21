@@ -1,0 +1,26 @@
+{
+  "area_id": "2_9_4",
+  "act": 9,
+  "display_name": "The Oasis",
+  "docx_headings": [
+    "The Oasis"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Left or right hand wall follow, depending on bottom or top being the dead end at the entrance. Physical mitigation recommended."
+  ],
+  "images": [
+    "image193.png",
+    "image2.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

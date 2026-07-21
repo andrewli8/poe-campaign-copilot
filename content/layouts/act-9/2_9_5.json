@@ -1,0 +1,25 @@
+{
+  "area_id": "2_9_5",
+  "act": 9,
+  "display_name": "The Foothills",
+  "docx_headings": [
+    "The Foothills"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Head up to find the waypoint, go to (1) to get the quest item in The Boiling Lake, then to (2) for The Tunnel to continue the story."
+  ],
+  "images": [
+    "image81.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

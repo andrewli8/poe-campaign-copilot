@@ -1,0 +1,25 @@
+{
+  "area_id": "2_8_1",
+  "act": 8,
+  "display_name": "The Sarn Ramparts",
+  "docx_headings": [
+    "The Sarn Ramparts"
+  ],
+  "descriptions": [
+    "Linear layout."
+  ],
+  "notes": [
+    "Note: Left hand wall-follow to the stairs, go up the stairs and follow the wall to the end."
+  ],
+  "images": [],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

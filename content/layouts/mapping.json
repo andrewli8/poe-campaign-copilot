@@ -1,0 +1,395 @@
+{
+  "10|The Canals": [
+    "2_10_5"
+  ],
+  "10|The Cathedral Rooftop": [
+    "2_10_1"
+  ],
+  "10|The Control Blocks": [
+    "2_10_7"
+  ],
+  "10|The Desecrated Chambers": [
+    "2_10_4"
+  ],
+  "10|The Feeding Trough": [
+    "2_10_6"
+  ],
+  "10|The Ossuary": [
+    "2_10_9"
+  ],
+  "10|The Ravaged Square": [
+    "2_10_2"
+  ],
+  "10|The Reliquary": [
+    "2_10_8"
+  ],
+  "10|The Torched Courts": [
+    "2_10_3"
+  ],
+  "1|Flooded Depths": [
+    "1_1_4_0"
+  ],
+  "1|Mud Flats": [
+    "1_1_3"
+  ],
+  "1|Submerged Passage": [
+    "1_1_4_1"
+  ],
+  "1|The Cavern of Anger": [
+    "1_1_11_2"
+  ],
+  "1|The Cavern of Wrath": [
+    "1_1_11_1"
+  ],
+  "1|The Climb": [
+    "1_1_6"
+  ],
+  "1|The Coast": [
+    "1_1_2"
+  ],
+  "1|The Ledge": [
+    "1_1_5"
+  ],
+  "1|The Lower Prison": [
+    "1_1_7_1"
+  ],
+  "1|The Prisoner’s Gate": [
+    "1_1_8"
+  ],
+  "1|The Ship Graveyard": [
+    "1_1_9"
+  ],
+  "1|The Upper Prison": [
+    "1_1_7_2"
+  ],
+  "1|Tidal Island": [
+    "1_1_2a"
+  ],
+  "2|Ancient Pyramid": [
+    "1_2_14_3"
+  ],
+  "2|Broken Bridge": [
+    "1_2_4"
+  ],
+  "2|Chamber of Sins 1": [
+    "1_2_6_1"
+  ],
+  "2|Chamber of Sins 2": [
+    "1_2_6_2"
+  ],
+  "2|The Caverns": [
+    "1_2_14_2"
+  ],
+  "2|The Crossroads": [
+    "1_2_3"
+  ],
+  "2|The Northern Forest": [
+    "1_2_8"
+  ],
+  "2|The Old Fields": [
+    "1_2_2"
+  ],
+  "2|The Riverways": [
+    "1_2_7"
+  ],
+  "2|The Southern Forest": [
+    "1_2_1"
+  ],
+  "2|The Vaal Ruins": [
+    "1_2_11"
+  ],
+  "2|The Western Forest": [
+    "1_2_9"
+  ],
+  "2|The Wetlands": [
+    "1_2_12"
+  ],
+  "2|Weaver’s Chambers": [
+    "1_2_10"
+  ],
+  "3|Imperial Gardens": [
+    "1_3_15"
+  ],
+  "3|Lunaris Temple 1": [
+    "1_3_14_1"
+  ],
+  "3|Lunaris Temple 2": [
+    "1_3_14_2"
+  ],
+  "3|The Battlefront": [
+    "1_3_7"
+  ],
+  "3|The City of Sarn": [
+    "1_3_1"
+  ],
+  "3|The Crematorium": [
+    "1_3_3_1"
+  ],
+  "3|The Docks": [
+    "1_3_9"
+  ],
+  "3|The Ebony Barracks": [
+    "1_3_13"
+  ],
+  "3|The Marketplace": [
+    "1_3_5"
+  ],
+  "3|The Sceptre of God": [
+    "1_3_18_1"
+  ],
+  "3|The Sewers": [
+    "1_3_10_1"
+  ],
+  "3|The Slums": [
+    "1_3_2"
+  ],
+  "3|The Solaris Temple 1": [
+    "1_3_8_1"
+  ],
+  "3|The Solaris Temple 2": [
+    "1_3_8_2"
+  ],
+  "3|Upper Sceptre of God": [
+    "1_3_18_2"
+  ],
+  "4|Belly of the Beast 1": [
+    "1_4_6_1"
+  ],
+  "4|Belly of the Beast 2": [
+    "1_4_6_2"
+  ],
+  "4|Daresso’s Dream": [
+    "1_4_5_1"
+  ],
+  "4|Kaom’s Dream": [
+    "1_4_4_1"
+  ],
+  "4|Kaom’s Stronghold": [
+    "1_4_4_3"
+  ],
+  "4|The Aqueduct": [
+    "1_4_1"
+  ],
+  "4|The Ascent": [
+    "1_4_7"
+  ],
+  "4|The Crystal Veins": [
+    "1_4_3_3"
+  ],
+  "4|The Dried Lake": [
+    "1_4_2"
+  ],
+  "4|The Grand Arena": [
+    "1_4_5_2"
+  ],
+  "4|The Harvest": [
+    "1_4_6_3"
+  ],
+  "4|The Mines 1": [
+    "1_4_3_1"
+  ],
+  "4|The Mines 2": [
+    "1_4_3_2"
+  ],
+  "5|Cathedral Rooftop (3) and the End of Part 1": [
+    "1_5_8"
+  ],
+  "5|Chamber of Innocence": [
+    "1_5_5"
+  ],
+  "5|Oriath Square": [
+    "1_5_3"
+  ],
+  "5|The Control Blocks": [
+    "1_5_2"
+  ],
+  "5|The Ossuary (1)": [
+    "1_5_6"
+  ],
+  "5|The Reliquary (2)": [
+    "1_5_7"
+  ],
+  "5|The Ruined Square": [
+    "1_5_3b"
+  ],
+  "5|The Slave Pens": [
+    "1_5_1"
+  ],
+  "5|The Templar Courts": [
+    "1_5_4"
+  ],
+  "5|The Torched Courts": [
+    "1_5_4b"
+  ],
+  "6|Prisoner’s Gate": [
+    "2_6_8"
+  ],
+  "6|Shavronne’s Tower": [
+    "2_6_7_2"
+  ],
+  "6|The Beacon": [
+    "2_6_14"
+  ],
+  "6|The Brine King’s Reef": [
+    "2_6_15"
+  ],
+  "6|The Cavern of Anger": [
+    "2_6_13"
+  ],
+  "6|The Coast": [
+    "2_6_2"
+  ],
+  "6|The Karui Fortress": [
+    "2_6_5"
+  ],
+  "6|The Lower Prison": [
+    "2_6_7_1"
+  ],
+  "6|The Mud Flats": [
+    "2_6_4"
+  ],
+  "6|The Ridge": [
+    "2_6_6"
+  ],
+  "6|The Riverways": [
+    "2_6_10"
+  ],
+  "6|The Southern Forest": [
+    "2_6_12"
+  ],
+  "6|The Twilight Strand": [
+    "2_6_1"
+  ],
+  "6|The Western Forest": [
+    "2_6_9"
+  ],
+  "6|The Wetlands": [
+    "2_6_11"
+  ],
+  "7|Chamber of Sins 2": [
+    "2_7_5_2"
+  ],
+  "7|Maligaro’s Sanctum": [
+    "2_7_5_map"
+  ],
+  "7|The Ashen Fields": [
+    "2_7_7"
+  ],
+  "7|The Broken Bridge": [
+    "2_7_1"
+  ],
+  "7|The Causeway": [
+    "2_7_10"
+  ],
+  "7|The Chamber of Sins 1": [
+    "2_7_5_1"
+  ],
+  "7|The Crossroads": [
+    "2_7_2"
+  ],
+  "7|The Crypt 1": [
+    "2_7_4"
+  ],
+  "7|The Crypt 2": [
+    "2_7_4"
+  ],
+  "7|The Den": [
+    "2_7_6"
+  ],
+  "7|The Dread Thicket": [
+    "2_7_9"
+  ],
+  "7|The Fellshrine Ruins": [
+    "2_7_3"
+  ],
+  "7|The Northern Forest": [
+    "2_7_8"
+  ],
+  "7|The Temple of Decay": [
+    "2_7_12_1",
+    "2_7_12_2"
+  ],
+  "7|The Vaal City": [
+    "2_7_11"
+  ],
+  "8|Doedre’s Cesspool": [
+    "2_8_2_2"
+  ],
+  "8|Solaris Temple 1": [
+    "2_8_12_1"
+  ],
+  "8|Solaris Temple 2": [
+    "2_8_12_2"
+  ],
+  "8|The Bath House": [
+    "2_8_5"
+  ],
+  "8|The Grain Gate": [
+    "2_8_9"
+  ],
+  "8|The Grand Promenade": [
+    "2_8_3"
+  ],
+  "8|The Harbour Bridge": [
+    "2_8_13"
+  ],
+  "8|The Imperial Fields": [
+    "2_8_10"
+  ],
+  "8|The Lunaris Concourse": [
+    "2_8_6",
+    "2_8_6"
+  ],
+  "8|The Lunaris Temple 1": [
+    "2_8_7_1_"
+  ],
+  "8|The Lunaris Temple 2": [
+    "2_8_7_2"
+  ],
+  "8|The Quay": [
+    "2_8_8"
+  ],
+  "8|The Sarn Ramparts": [
+    "2_8_1"
+  ],
+  "8|The Toxic Conduits": [
+    "2_8_2_1"
+  ],
+  "8|Toxic Conduits (Waypoint)": [
+    "2_8_2_1",
+    "2_8_2_1"
+  ],
+  "9|Shrine of The Winds": [
+    "2_9_8"
+  ],
+  "9|The Belly of the Beast": [
+    "2_9_10_1"
+  ],
+  "9|The Blood Aqueduct": [
+    "2_9_1"
+  ],
+  "9|The Boiling Lake": [
+    "2_9_6"
+  ],
+  "9|The Descent": [
+    "2_9_2"
+  ],
+  "9|The Foothills": [
+    "2_9_5"
+  ],
+  "9|The Oasis": [
+    "2_9_4"
+  ],
+  "9|The Quarry": [
+    "2_9_8"
+  ],
+  "9|The Refinery": [
+    "2_9_9"
+  ],
+  "9|The Tunnel": [
+    "2_9_7"
+  ],
+  "9|The Vastiri Desert": [
+    "2_9_3"
+  ]
+}

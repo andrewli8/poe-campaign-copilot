@@ -1,0 +1,27 @@
+{
+  "area_id": "2_8_6",
+  "act": 8,
+  "display_name": "The Lunaris Concourse",
+  "docx_headings": [
+    "The Lunaris Concourse"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Go up and right for the waypoint, then up and left for the entrance.",
+    "Note: Go down and right to the exit."
+  ],
+  "images": [
+    "image38.png",
+    "image112.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

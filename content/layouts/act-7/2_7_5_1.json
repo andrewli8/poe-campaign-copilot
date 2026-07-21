@@ -1,0 +1,27 @@
+{
+  "area_id": "2_7_5_1",
+  "act": 7,
+  "display_name": "The Chamber of Sins Level 1",
+  "docx_headings": [
+    "The Chamber of Sins 1"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: This is works just like in act two, loop around to the center, then activate the waypoint and use your map in the map device and continue through the portals. After killing Maligaro, you return here and go through the hall behind the waypoint to find the exit."
+  ],
+  "images": [
+    "image33.png",
+    "image8.png",
+    "image19.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

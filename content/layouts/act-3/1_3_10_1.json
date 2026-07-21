@@ -1,0 +1,25 @@
+{
+  "area_id": "1_3_10_1",
+  "act": 3,
+  "display_name": "The Sewers",
+  "docx_headings": [
+    "The Sewers"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Pick up the bust before the waypoint, after it is another, up and left is the last bust, up and right is the exit."
+  ],
+  "images": [
+    "image28.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

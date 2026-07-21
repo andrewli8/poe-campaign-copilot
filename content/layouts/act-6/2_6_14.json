@@ -1,0 +1,25 @@
+{
+  "area_id": "2_6_14",
+  "act": 6,
+  "display_name": "The Beacon",
+  "docx_headings": [
+    "The Beacon"
+  ],
+  "descriptions": [
+    "Linear zone."
+  ],
+  "notes": [
+    "Note: Follow the shoreline until you reach the beacons."
+  ],
+  "images": [],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

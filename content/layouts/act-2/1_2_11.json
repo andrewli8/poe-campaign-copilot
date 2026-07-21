@@ -1,0 +1,27 @@
+{
+  "area_id": "1_2_11",
+  "act": 2,
+  "display_name": "The Vaal Ruins",
+  "docx_headings": [
+    "The Vaal Ruins"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Try to determine the direction, then zig and zag accordingly through the ruins."
+  ],
+  "images": [
+    "image15.png",
+    "image119.png",
+    "image63.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

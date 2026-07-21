@@ -1,0 +1,28 @@
+{
+  "area_id": "2_6_7_1",
+  "act": 6,
+  "display_name": "The Lower Prison",
+  "docx_headings": [
+    "The Lower Prison"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: You usually want to go down or left towards the exit, there is a trial here, but it is fairly close to the waypoint if you want to do it later."
+  ],
+  "images": [
+    "image169.png",
+    "image105.png",
+    "image175.png",
+    "image71.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

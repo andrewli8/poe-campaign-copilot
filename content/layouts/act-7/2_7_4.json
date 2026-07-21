@@ -1,0 +1,32 @@
+{
+  "area_id": "2_7_4",
+  "act": 7,
+  "display_name": "The Crypt",
+  "docx_headings": [
+    "The Crypt 1",
+    "The Crypt 2"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: There is a trial in this zone. Open the sarcophagus for the exit.",
+    "Note: The layouts for 1 and 2 are connected, use the same map seed, eg. if you have the second layout in The Crypt 1, use the second image in The Crypt 2. When you find the map, use go to the town and use the waypoint to The Crossroads."
+  ],
+  "images": [
+    "image14.png",
+    "image181.png",
+    "image7.png",
+    "image147.png",
+    "image187.png",
+    "image88.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

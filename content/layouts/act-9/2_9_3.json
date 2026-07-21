@@ -1,0 +1,25 @@
+{
+  "area_id": "2_9_3",
+  "act": 9,
+  "display_name": "The Vastiri Desert",
+  "docx_headings": [
+    "The Vastiri Desert"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Go right to the waypoint, then top left (1) for the Foothills. If you want to kill Shakari, go right to (2) for the Oasis, then get the quest item in town and enter the zone."
+  ],
+  "images": [
+    "image41.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

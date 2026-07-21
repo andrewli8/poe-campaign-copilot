@@ -1,0 +1,27 @@
+{
+  "area_id": "1_4_3_3",
+  "act": 4,
+  "display_name": "The Crystal Veins",
+  "docx_headings": [
+    "The Crystal Veins"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Loop around bottom right to go to the top left end. Use waypoint to go to Highgate if you made a portal to search for the spirit."
+  ],
+  "images": [
+    "image62.png",
+    "image142.png",
+    "image117.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

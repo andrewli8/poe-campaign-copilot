@@ -1,0 +1,25 @@
+{
+  "area_id": "1_5_3",
+  "act": 5,
+  "display_name": "Oriath Square",
+  "docx_headings": [
+    "Oriath Square"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Go top right until you cross the bridge, then down."
+  ],
+  "images": [
+    "image29.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

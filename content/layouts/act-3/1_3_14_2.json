@@ -1,0 +1,26 @@
+{
+  "area_id": "1_3_14_2",
+  "act": 3,
+  "display_name": "The Lunaris Temple Level 2",
+  "docx_headings": [
+    "Lunaris Temple 2"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Layout differs a lot, very generic map drawing. If you see stairs, go up these as this is the right path, then find more stairs, until you reach a larger area, there will be carts on both sides, pick the side where there is only one."
+  ],
+  "images": [
+    "image155.png",
+    "image92.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

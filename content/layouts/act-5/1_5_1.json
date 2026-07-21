@@ -1,0 +1,26 @@
+{
+  "area_id": "1_5_1",
+  "act": 5,
+  "display_name": "The Slave Pens",
+  "docx_headings": [
+    "The Slave Pens"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Go all the way down, then left."
+  ],
+  "images": [
+    "image144.png",
+    "image10.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

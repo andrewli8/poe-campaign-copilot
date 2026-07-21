@@ -1,0 +1,25 @@
+{
+  "area_id": "2_7_11",
+  "act": 7,
+  "display_name": "The Vaal City",
+  "docx_headings": [
+    "The Vaal City"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Find and follow the thick walls to guide you to the exit."
+  ],
+  "images": [
+    "image13.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

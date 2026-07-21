@@ -1,0 +1,25 @@
+{
+  "area_id": "2_6_10",
+  "act": 6,
+  "display_name": "The Riverways",
+  "docx_headings": [
+    "The Riverways"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Follow the road and when you reach the encampment, go down and right. If you want to kill Ryslatha, follow the path up at the waypoint."
+  ],
+  "images": [
+    "image87.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

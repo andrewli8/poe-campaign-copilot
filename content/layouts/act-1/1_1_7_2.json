@@ -1,0 +1,29 @@
+{
+  "area_id": "1_1_7_2",
+  "act": 1,
+  "display_name": "The Upper Prison",
+  "docx_headings": [
+    "The Upper Prison"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: More linear, almost 50/50 with advantage for left side, log out after Brutus. We do this because as soon as you kill Brutus, the waypoint is unlocked, when you log out and back in, you log in in the town and you can take the waypoint back (after doing your business in town if needed), this is faster than running out and saves a scroll."
+  ],
+  "images": [
+    "image161.png",
+    "image61.png",
+    "image156.png",
+    "image53.png",
+    "image78.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

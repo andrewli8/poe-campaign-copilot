@@ -1,0 +1,25 @@
+{
+  "area_id": "1_5_3b",
+  "act": 5,
+  "display_name": "The Ruined Square",
+  "docx_headings": [
+    "The Ruined Square"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: One layout, multiple stops, in following steps."
+  ],
+  "images": [
+    "image136.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "area_id": "2_6_1",
+  "act": 6,
+  "display_name": "The Twilight Strand",
+  "docx_headings": [
+    "The Twilight Strand"
+  ],
+  "descriptions": [
+    "Linear layout with some small rooms in the cliffs possible."
+  ],
+  "notes": [
+    "Note: This area and doing the quest is optional, this opens a level 1 gem vendor, I suggest to skip this unless you are solo self-found or do not want to trade for some gems."
+  ],
+  "images": [],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

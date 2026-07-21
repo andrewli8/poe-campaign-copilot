@@ -1,0 +1,25 @@
+{
+  "area_id": "1_5_5",
+  "act": 5,
+  "display_name": "The Chamber of Innocence",
+  "docx_headings": [
+    "Chamber of Innocence"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Go up and left, and spiral counterclockwise."
+  ],
+  "images": [
+    "image97.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

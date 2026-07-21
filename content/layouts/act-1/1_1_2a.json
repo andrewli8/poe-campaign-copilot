@@ -1,0 +1,25 @@
+{
+  "area_id": "1_1_2a",
+  "act": 1,
+  "display_name": "The Tidal Island",
+  "docx_headings": [
+    "Tidal Island"
+  ],
+  "descriptions": [
+    "This layout is always a circle."
+  ],
+  "notes": [
+    "Note: The side without a cliff is the shortest way."
+  ],
+  "images": [],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

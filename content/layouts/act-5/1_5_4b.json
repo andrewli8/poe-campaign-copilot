@@ -1,0 +1,25 @@
+{
+  "area_id": "1_5_4b",
+  "act": 5,
+  "display_name": "The Torched Courts",
+  "docx_headings": [
+    "The Torched Courts"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Loop around counterclockwise."
+  ],
+  "images": [
+    "image5.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

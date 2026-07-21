@@ -1,0 +1,25 @@
+{
+  "area_id": "1_4_6_3",
+  "act": 4,
+  "display_name": "The Harvest",
+  "docx_headings": [
+    "The Harvest"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Always one boss on right side, two on the left, random boss position, waypoint is number 1, bosses are 2, 3 and 4."
+  ],
+  "images": [
+    "image95.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

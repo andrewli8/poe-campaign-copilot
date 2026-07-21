@@ -1,0 +1,28 @@
+{
+  "area_id": "1_2_14_2",
+  "act": 2,
+  "display_name": "The Caverns",
+  "docx_headings": [
+    "The Caverns"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Pretty much guessing where the exit spawned."
+  ],
+  "images": [
+    "image50.png",
+    "image170.png",
+    "image83.png",
+    "image131.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

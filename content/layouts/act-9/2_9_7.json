@@ -1,0 +1,27 @@
+{
+  "area_id": "2_9_7",
+  "act": 9,
+  "display_name": "The Tunnel",
+  "docx_headings": [
+    "The Tunnel"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: There is a trial in this zone. Go up left, if you come across the waypoint you’re on the right path."
+  ],
+  "images": [
+    "image26.png",
+    "image158.png",
+    "image4.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

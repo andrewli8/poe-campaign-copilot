@@ -1,0 +1,25 @@
+{
+  "area_id": "2_7_3",
+  "act": 7,
+  "display_name": "The Fellshrine Ruins",
+  "docx_headings": [
+    "The Fellshrine Ruins"
+  ],
+  "descriptions": [
+    "Linear layout."
+  ],
+  "notes": [
+    "Note: Follow the road, down right until then end, then go up right."
+  ],
+  "images": [],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

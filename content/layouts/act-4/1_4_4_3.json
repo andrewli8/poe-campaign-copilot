@@ -1,0 +1,25 @@
+{
+  "area_id": "1_4_4_3",
+  "act": 4,
+  "display_name": "Kaom's Stronghold",
+  "docx_headings": [
+    "Kaom’s Stronghold"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Look for stairs and bridges, follow those."
+  ],
+  "images": [
+    "image184.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

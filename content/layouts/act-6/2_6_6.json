@@ -1,0 +1,26 @@
+{
+  "area_id": "2_6_6",
+  "act": 6,
+  "display_name": "The Ridge",
+  "docx_headings": [
+    "The Ridge"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Follow the path until you can go right, then follow that path until you have a long path up left."
+  ],
+  "images": [
+    "image103.png",
+    "image165.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

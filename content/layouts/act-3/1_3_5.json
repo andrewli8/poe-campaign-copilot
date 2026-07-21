@@ -1,0 +1,29 @@
+{
+  "area_id": "1_3_5",
+  "act": 3,
+  "display_name": "The Marketplace",
+  "docx_headings": [
+    "The Marketplace"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Usually up and right, go through the statue hall, check the waypoint (trial nearby it) and move on to find the exit."
+  ],
+  "images": [
+    "image133.png",
+    "image164.png",
+    "image102.png",
+    "image134.png",
+    "image192.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

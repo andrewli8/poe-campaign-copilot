@@ -1,0 +1,27 @@
+{
+  "area_id": "1_1_4_1",
+  "act": 1,
+  "display_name": "The Submerged Passage",
+  "docx_headings": [
+    "Submerged Passage"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Find the bridge and place a portal."
+  ],
+  "images": [
+    "image31.png",
+    "image20.png",
+    "image1.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

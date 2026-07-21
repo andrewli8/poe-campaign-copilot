@@ -1,0 +1,25 @@
+{
+  "area_id": "2_10_1",
+  "act": 10,
+  "display_name": "The Cathedral Rooftop",
+  "docx_headings": [
+    "The Cathedral Rooftop"
+  ],
+  "descriptions": [
+    "Linear layout."
+  ],
+  "notes": [
+    "Note: Go up to save Bannon, back to town, then go to down right."
+  ],
+  "images": [],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "area_id": "2_6_15",
+  "act": 6,
+  "display_name": "The Brine King's Reef",
+  "docx_headings": [
+    "The Brine King’s Reef"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Follow the left hand shoreline to the boss arena. Capped cold and lightning resistance is strongly recommended. Physical mitigation is very useful too."
+  ],
+  "images": [
+    "image84.png",
+    "image130.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

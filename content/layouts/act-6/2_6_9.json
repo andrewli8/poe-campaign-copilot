@@ -1,0 +1,25 @@
+{
+  "area_id": "2_6_9",
+  "act": 6,
+  "display_name": "The Western Forest",
+  "docx_headings": [
+    "The Western Forest"
+  ],
+  "descriptions": [
+    "Follow the road to the Riverways."
+  ],
+  "notes": [
+    "Note: There is a waypoint in this zone, this is optional but might be useful."
+  ],
+  "images": [],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "area_id": "1_4_4_1",
+  "act": 4,
+  "display_name": "Kaom's Dream",
+  "docx_headings": [
+    "Kaom’s Dream"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Look for passages and bridges, follow those."
+  ],
+  "images": [
+    "image42.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

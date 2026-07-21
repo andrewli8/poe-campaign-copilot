@@ -1,0 +1,25 @@
+{
+  "area_id": "1_3_18_1",
+  "act": 3,
+  "display_name": "The Sceptre of God",
+  "docx_headings": [
+    "The Sceptre of God"
+  ],
+  "descriptions": [
+    "Layout is generally always the same looking, but exits spawn in a random corner."
+  ],
+  "notes": [
+    "Note: The exits can often be found by travelling diagonally."
+  ],
+  "images": [],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

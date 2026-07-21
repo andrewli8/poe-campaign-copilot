@@ -1,0 +1,25 @@
+{
+  "area_id": "1_3_1",
+  "act": 3,
+  "display_name": "The City of Sarn",
+  "docx_headings": [
+    "The City of Sarn"
+  ],
+  "descriptions": [
+    "Linear layout."
+  ],
+  "notes": [
+    "Note: Don’t forget to talk to Clarissa."
+  ],
+  "images": [],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "area_id": "1_1_9",
+  "act": 1,
+  "display_name": "The Ship Graveyard",
+  "docx_headings": [
+    "The Ship Graveyard"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Look for waypoint first, then find Fairgraves, and move away from the plateau, generally up or down."
+  ],
+  "images": [
+    "image76.png",
+    "image77.png",
+    "image141.png",
+    "image140.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

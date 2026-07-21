@@ -1,0 +1,25 @@
+{
+  "area_id": "2_7_1",
+  "act": 7,
+  "display_name": "The Broken Bridge",
+  "docx_headings": [
+    "The Broken Bridge"
+  ],
+  "descriptions": [
+    "Linear layout."
+  ],
+  "notes": [
+    "Note: Follow the road to the left to the exit."
+  ],
+  "images": [],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

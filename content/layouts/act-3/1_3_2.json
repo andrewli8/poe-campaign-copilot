@@ -1,0 +1,28 @@
+{
+  "area_id": "1_3_2",
+  "act": 3,
+  "display_name": "The Slums",
+  "docx_headings": [
+    "The Slums"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Find the grates to the sewers, then take the stairs down, follow it until you have stairs up, then it’s fairly linear."
+  ],
+  "images": [
+    "image145.png",
+    "image151.png",
+    "image49.png",
+    "image108.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

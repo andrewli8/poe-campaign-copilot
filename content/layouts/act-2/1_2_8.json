@@ -1,0 +1,25 @@
+{
+  "area_id": "1_2_8",
+  "act": 2,
+  "display_name": "The Northern Forest",
+  "docx_headings": [
+    "The Northern Forest"
+  ],
+  "descriptions": [
+    "Linear layout."
+  ],
+  "notes": [
+    "Note: Go to the top right by following the shoreline."
+  ],
+  "images": [],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "area_id": "1_5_8",
+  "act": 5,
+  "display_name": "The Cathedral Rooftop",
+  "docx_headings": [
+    "Cathedral Rooftop (3) and the End of Part 1"
+  ],
+  "descriptions": [
+    "Linear zone, run top left and kill Kitava."
+  ],
+  "notes": [
+    "Note: Before accessing this, and killing Kitava, consider running your first labyrinth before the resistance penalty, making sure your fire resistances will be (close to) capped for act six is recommended as well."
+  ],
+  "images": [],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "area_id": "2_8_2_1",
+  "act": 8,
+  "display_name": "The Toxic Conduits",
+  "docx_headings": [
+    "The Toxic Conduits",
+    "Toxic Conduits (Waypoint)"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Watch the black paint on the floor as you enter the zone to see in which direction it points you.",
+    "Note: Static layout, direction depends on which side you want to do first. The Grand Promenade is on the left, The Quay on the right. This guide will go left first.",
+    "Note: Same as previously, but now we take the right side."
+  ],
+  "images": [
+    "image66.png",
+    "image43.png",
+    "image120.png",
+    "image139.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

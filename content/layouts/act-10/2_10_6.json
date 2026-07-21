@@ -1,0 +1,25 @@
+{
+  "area_id": "2_10_6",
+  "act": 10,
+  "display_name": "The Feeding Trough",
+  "docx_headings": [
+    "The Feeding Trough"
+  ],
+  "descriptions": [
+    "Linear layout."
+  ],
+  "notes": [
+    "Note: Move top left, there shouldn’t be any diversions, kill Kitava at the end to unlock maps."
+  ],
+  "images": [],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

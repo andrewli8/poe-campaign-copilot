@@ -1,0 +1,25 @@
+{
+  "area_id": "1_4_5_2",
+  "act": 4,
+  "display_name": "The Grand Arena",
+  "docx_headings": [
+    "The Grand Arena"
+  ],
+  "descriptions": [
+    "Linear layout."
+  ],
+  "notes": [
+    "Note: Move down left from waypoint, then follow path."
+  ],
+  "images": [],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

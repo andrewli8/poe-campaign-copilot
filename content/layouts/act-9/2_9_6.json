@@ -1,0 +1,25 @@
+{
+  "area_id": "2_9_6",
+  "act": 9,
+  "display_name": "The Boiling Lake",
+  "docx_headings": [
+    "The Boiling Lake"
+  ],
+  "descriptions": [
+    "Linear layout."
+  ],
+  "notes": [
+    "Note: Go to the top right zone for the quest boss, if you spot petrified men, you are close. After killing the Basilisk, go to town and teleport to the waypoint in The Foothills and go to the top left corner of the zone."
+  ],
+  "images": [],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

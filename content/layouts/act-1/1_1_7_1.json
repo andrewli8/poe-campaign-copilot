@@ -1,0 +1,28 @@
+{
+  "area_id": "1_1_7_1",
+  "act": 1,
+  "display_name": "The Lower Prison",
+  "docx_headings": [
+    "The Lower Prison"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Usually go right to find the exit, there is a trial in this zone that you can do later thanks to the waypoint."
+  ],
+  "images": [
+    "image12.png",
+    "image123.png",
+    "image143.png",
+    "image57.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

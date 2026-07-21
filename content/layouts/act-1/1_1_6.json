@@ -1,0 +1,26 @@
+{
+  "area_id": "1_1_6",
+  "act": 1,
+  "display_name": "The Climb",
+  "docx_headings": [
+    "The Climb"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Run top right and free Navali."
+  ],
+  "images": [
+    "image166.png",
+    "image58.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

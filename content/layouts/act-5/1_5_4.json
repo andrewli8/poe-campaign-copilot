@@ -1,0 +1,25 @@
+{
+  "area_id": "1_5_4",
+  "act": 5,
+  "display_name": "The Templar Courts",
+  "docx_headings": [
+    "The Templar Courts"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Loop around clockwise."
+  ],
+  "images": [
+    "image185.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

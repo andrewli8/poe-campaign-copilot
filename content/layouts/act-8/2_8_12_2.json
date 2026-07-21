@@ -1,0 +1,26 @@
+{
+  "area_id": "2_8_12_2",
+  "act": 8,
+  "display_name": "The Solaris Temple Level 2",
+  "docx_headings": [
+    "Solaris Temple 2"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Follow the carpets, quest boss Dawn at the end, capped fire resistance is recommended."
+  ],
+  "images": [
+    "image17.png",
+    "image104.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

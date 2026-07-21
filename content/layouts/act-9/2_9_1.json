@@ -1,0 +1,25 @@
+{
+  "area_id": "2_9_1",
+  "act": 9,
+  "display_name": "The Blood Aqueduct",
+  "docx_headings": [
+    "The Blood Aqueduct"
+  ],
+  "descriptions": [
+    "Linear layout."
+  ],
+  "notes": [
+    "Note: Go to the top left, cross the bridges on dead ends. This zone might be worth farming for Humility cards on your leaguestarter."
+  ],
+  "images": [],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "area_id": "2_9_9",
+  "act": 9,
+  "display_name": "The Refinery",
+  "docx_headings": [
+    "The Refinery"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Follow the cart tracks to the building top right for the quest boss, capped lightning resistance is recommended. Portal to town and waypoint back to The Quarry."
+  ],
+  "images": [
+    "image73.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "area_id": "1_3_13",
+  "act": 3,
+  "display_name": "The Ebony Barracks",
+  "docx_headings": [
+    "The Ebony Barracks"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: First image is to Lunaris, second to The Sceptre of God."
+  ],
+  "images": [
+    "image101.png",
+    "image48.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "area_id": "1_2_10",
+  "act": 2,
+  "display_name": "The Weaver's Chambers",
+  "docx_headings": [
+    "Weaver’s Chambers"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Go left when the left path spawns, otherwise loop around right side. Kill Weaver for the reward, then claim The Way Forward skillpoint."
+  ],
+  "images": [
+    "image27.png",
+    "image36.png",
+    "image80.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

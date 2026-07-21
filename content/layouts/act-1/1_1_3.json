@@ -1,0 +1,28 @@
+{
+  "area_id": "1_1_3",
+  "act": 1,
+  "display_name": "The Mud Flats",
+  "docx_headings": [
+    "Mud Flats"
+  ],
+  "descriptions": [
+    "Green circles indicate the area in which the quest items are grouped. Little rivers connect the three items."
+  ],
+  "notes": [
+    "Note: I do this first for an easier Hailrake, claim flask at level four."
+  ],
+  "images": [
+    "image160.png",
+    "image24.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "area_id": "2_8_9",
+  "act": 8,
+  "display_name": "The Grain Gate",
+  "docx_headings": [
+    "The Grain Gate"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: This zone has many buildings, only enter and leave buildings through openings that have a guard’s corpse next to it, they lead the way, kill the gemlings."
+  ],
+  "images": [
+    "image129.png",
+    "image159.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

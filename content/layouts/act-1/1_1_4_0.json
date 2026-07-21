@@ -1,0 +1,27 @@
+{
+  "area_id": "1_1_4_0",
+  "act": 1,
+  "display_name": "The Flooded Depths",
+  "docx_headings": [
+    "Flooded Depths"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Go to town for rewards after killing the Deep Dweller."
+  ],
+  "images": [
+    "image22.png",
+    "image94.png",
+    "image138.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

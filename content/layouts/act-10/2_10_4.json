@@ -1,0 +1,25 @@
+{
+  "area_id": "2_10_4",
+  "act": 10,
+  "display_name": "The Desecrated Chambers",
+  "docx_headings": [
+    "The Desecrated Chambers"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Right hand wall-follow until you come to a crossroads with four pillars, then go straight and up."
+  ],
+  "images": [
+    "image177.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

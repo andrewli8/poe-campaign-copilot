@@ -1,0 +1,25 @@
+{
+  "area_id": "1_4_1",
+  "act": 4,
+  "display_name": "The Aqueduct",
+  "docx_headings": [
+    "The Aqueduct"
+  ],
+  "descriptions": [
+    "Pretty much linear."
+  ],
+  "notes": [
+    "Note: Go upstream and cross over when the path ends."
+  ],
+  "images": [],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

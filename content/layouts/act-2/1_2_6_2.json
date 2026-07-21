@@ -1,0 +1,25 @@
+{
+  "area_id": "1_2_6_2",
+  "act": 2,
+  "display_name": "The Chamber of Sins Level 2",
+  "docx_headings": [
+    "Chamber of Sins 2"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Always go up and right, do the trial in top left or do it later when you need it and are faster."
+  ],
+  "images": [
+    "image135.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

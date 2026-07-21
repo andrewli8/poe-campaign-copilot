@@ -1,0 +1,27 @@
+{
+  "area_id": "1_2_6_1",
+  "act": 2,
+  "display_name": "The Chamber of Sins Level 1",
+  "docx_headings": [
+    "Chamber of Sins 1"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Go to the center of the zone, always left or right. Activate waypoint and follow the hallway next to the waypoint.The gray circles indicate the center area."
+  ],
+  "images": [
+    "image33.png",
+    "image8.png",
+    "image19.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

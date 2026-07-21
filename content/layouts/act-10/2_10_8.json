@@ -1,0 +1,25 @@
+{
+  "area_id": "2_10_8",
+  "act": 10,
+  "display_name": "The Reliquary",
+  "docx_headings": [
+    "The Reliquary"
+  ],
+  "descriptions": [
+    "Large fairly static layout, random quest item spawn location, movement skills that can cross gaps recommended."
+  ],
+  "notes": [
+    "Note: The item is always on the edge or a corner, to my experience it’s mostly the right side."
+  ],
+  "images": [],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}

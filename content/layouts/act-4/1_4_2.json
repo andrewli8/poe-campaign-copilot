@@ -1,0 +1,27 @@
+{
+  "area_id": "1_4_2",
+  "act": 4,
+  "display_name": "The Dried Lake",
+  "docx_headings": [
+    "The Dried Lake"
+  ],
+  "descriptions": [],
+  "notes": [
+    "Note: Kill Voll on one of the three spawns"
+  ],
+  "images": [
+    "image127.png",
+    "image157.png",
+    "image32.png"
+  ],
+  "source": {
+    "document": "PoE Map Layouts community compilation (poelayouts.docx)",
+    "images_author": "Engineering Eternity",
+    "notes_author": "community compilation author"
+  },
+  "audit": {
+    "status": "unaudited",
+    "verified_patch": null,
+    "correction": null
+  }
+}
