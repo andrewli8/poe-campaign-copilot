@@ -66,11 +66,9 @@ fn fixture_drives_engines_to_expected_overlay_states() {
         ]
     );
 
-    // The Coast overlay carried real layout content when active.
-    let m = {
-        // Recompose at the end: active zone is The Mud Flats.
-        compose(&engine, &tasks, &layouts, &areas)
-    };
+    // Recompose at the end: active zone is The Mud Flats, which carried
+    // real layout content when active.
+    let m = compose(&engine, &tasks, &layouts, &areas);
     assert_eq!(m.zone_name, "The Mud Flats");
     assert!(!m.layout_images.is_empty(), "Mud Flats has layout images");
 }

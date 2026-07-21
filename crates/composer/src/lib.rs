@@ -18,19 +18,35 @@ pub struct NoteView {
     pub stale: bool,
 }
 
+/// A layout diagram image. `file` resolves against the content pack's flat
+/// `assets/` directory (see `content::layouts` / the poelayouts extractor).
+/// `stale` mirrors the image's audit status (`Outdated`).
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct ImageView {
+    pub file: String,
+    pub stale: bool,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct OverlayModel {
     pub zone_name: String,
     pub area_id: String,
     pub act: u8,
     pub off_route_zone: Option<String>,
-    pub layout_images: Vec<String>,
+    /// Layout diagram images for the active zone. Files resolve against the
+    /// content pack's flat `assets/` directory.
+    pub layout_images: Vec<ImageView>,
     pub layout_notes: Vec<NoteView>,
     pub steps_in_zone: Vec<String>,
+    /// Rendered `#sub` hint lines for the active group's steps.
+    pub sub_hints: Vec<String>,
     pub primary: String,
     pub next_zone: Option<String>,
     pub pending_count: usize,
     pub town_reminders: Vec<String>,
+    /// Whether the active area is a town (always false once the route is
+    /// complete).
+    pub is_town: bool,
     pub route_complete: bool,
 }
 
@@ -106,8 +122,16 @@ pub fn compose(
     } else {
         layouts.get(&area_id)
     };
-    let layout_images = layout_entry
-        .map(|e| e.images.iter().map(|i| i.file.clone()).collect())
+    let layout_images: Vec<ImageView> = layout_entry
+        .map(|e| {
+            e.images
+                .iter()
+                .map(|i| ImageView {
+                    file: i.file.clone(),
+                    stale: i.audit.status == AuditStatus::Outdated,
+                })
+                .collect()
+        })
         .unwrap_or_default();
     let layout_notes = layout_entry.map(note_views).unwrap_or_default();
 
@@ -115,6 +139,14 @@ pub fn compose(
         .active_steps()
         .iter()
         .map(|s| render::render_fragments(&s.fragments, areas))
+        .filter(|s| !s.is_empty())
+        .collect();
+
+    let sub_hints: Vec<String> = engine
+        .active_steps()
+        .iter()
+        .flat_map(|s| s.sub_steps.iter())
+        .map(|frags| render::render_fragments(frags, areas))
         .filter(|s| !s.is_empty())
         .collect();
 
@@ -126,8 +158,10 @@ pub fn compose(
         String::new()
     } else if let Some(first) = steps_in_zone.first() {
         first.clone()
+    } else if let Some(nz) = &next_zone {
+        format!("Continue to {nz}")
     } else {
-        format!("Continue to {}", next_zone.clone().unwrap_or_default())
+        String::new()
     };
 
     let is_town = !route_complete && areas.get(&area_id).map(|a| a.is_town_area).unwrap_or(false);
@@ -149,10 +183,12 @@ pub fn compose(
         layout_images,
         layout_notes,
         steps_in_zone,
+        sub_hints,
         primary,
         next_zone,
         pending_count: tasks.pending_count(),
         town_reminders,
+        is_town,
         route_complete,
     }
 }
@@ -232,13 +268,47 @@ mod tests {
 
         let m = compose(&engine, &tasks, &layouts, &areas);
         assert!(m.town_reminders.is_empty(), "Twilight Strand is not a town");
+        assert!(!m.is_town);
         assert_eq!(m.pending_count, 1);
 
         engine.on_area_entered("1_1_town");
         let m = compose(&engine, &tasks, &layouts, &areas);
+        assert!(m.is_town);
         assert_eq!(
             m.town_reminders,
             vec!["Claim quest reward: Quicksilver Flask".to_string()]
         );
+    }
+
+    #[test]
+    fn route_complete_zeroing() {
+        // Feed every group's area_context in order (mirrors route_engine's
+        // full-replay test) to drive the engine to completion, then assert
+        // the composed overlay is fully zeroed out.
+        let (mut engine, tasks, layouts, areas) = fixture();
+        let contexts: Vec<String> = {
+            let mut cs = Vec::new();
+            for s in engine.steps() {
+                if cs.last() != Some(&s.area_context) {
+                    cs.push(s.area_context.clone());
+                }
+            }
+            cs
+        };
+        for c in &contexts {
+            engine.on_area_entered(c);
+        }
+        assert!(engine.is_complete());
+
+        let m = compose(&engine, &tasks, &layouts, &areas);
+        assert_eq!(m.zone_name, "Campaign complete");
+        assert_eq!(m.act, 0);
+        assert_eq!(m.area_id, "");
+        assert_eq!(m.primary, "");
+        assert!(m.next_zone.is_none());
+        assert!(m.route_complete);
+        assert!(!m.is_town);
+        assert!(m.layout_images.is_empty());
+        assert!(m.steps_in_zone.is_empty());
     }
 }
