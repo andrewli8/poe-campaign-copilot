@@ -1,11 +1,6 @@
 //! Pure pipeline: log lines -> UiModel. No Tauri types here.
 //! NOTE: images load from the repo's content/layouts/assets at runtime —
 //! fine for development; distribution packaging revisits this path.
-//!
-//! `Pipeline` is not yet wired to any Tauri command (that lands in the next
-//! task), so its public API is only exercised by this module's own tests
-//! for now; silence the resulting dead-code lint on the binary build.
-#![allow(dead_code)]
 
 use std::collections::HashMap;
 
