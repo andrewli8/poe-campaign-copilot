@@ -35,4 +35,8 @@ Simulate a play session on any OS (no game needed):
 
 Point the app's log tailer at `/tmp/fake-client.txt` to watch events flow.
 
+The pilot test (`cargo test -p composer --test pilot_act1`) drives the full
+pipeline — log fixture → session → route/task engines → composer — and is
+the quickest way to see the whole system's behavior in one place.
+
 License: MIT (code). See CREDITS.md for third-party content.

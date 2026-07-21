@@ -336,8 +336,11 @@ name = "composer"
 version = "0.1.0"
 dependencies = [
  "content",
+ "event_parser",
+ "replay",
  "route_engine",
  "serde",
+ "session",
  "task_engine",
 ]
 

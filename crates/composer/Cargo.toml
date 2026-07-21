@@ -9,3 +9,8 @@ serde = { version = "1", features = ["derive"] }
 content = { path = "../content" }
 route_engine = { path = "../route_engine" }
 task_engine = { path = "../task_engine" }
+
+[dev-dependencies]
+replay = { path = "../replay" }
+event_parser = { path = "../event_parser" }
+session = { path = "../session" }
