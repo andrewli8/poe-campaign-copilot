@@ -1,10 +1,19 @@
 use std::io::Write;
+use std::path::PathBuf;
 use std::time::Duration;
 
 use content::game_data::load_vendored;
 use input_log::FilePoller;
 use replay::{fixtures_dir, replay_fixture};
 use session::SessionTracker;
+
+/// RAII guard that removes the temp file even if the test panics.
+struct Cleanup(PathBuf);
+impl Drop for Cleanup {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_file(&self.0);
+    }
+}
 
 #[test]
 fn tailing_a_growing_file_matches_direct_replay() {
@@ -13,6 +22,7 @@ fn tailing_a_growing_file_matches_direct_replay() {
 
     let path = std::env::temp_dir().join(format!("poe-copilot-e2e-{}.log", std::process::id()));
     let _ = std::fs::remove_file(&path);
+    let _c = Cleanup(path.clone());
     std::fs::write(&path, "").unwrap();
 
     let (areas, _) = load_vendored().unwrap();
@@ -42,5 +52,4 @@ fn tailing_a_growing_file_matches_direct_replay() {
     }
 
     assert_eq!(got, expected);
-    let _ = std::fs::remove_file(&path);
 }
