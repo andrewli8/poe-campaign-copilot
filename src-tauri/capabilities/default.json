@@ -7,8 +7,6 @@
     "core:window:allow-set-ignore-cursor-events",
     "core:window:allow-set-size",
     "core:window:allow-set-resizable",
-    "core:window:allow-start-dragging",
-    "global-shortcut:allow-register",
-    "global-shortcut:allow-unregister"
+    "core:window:allow-start-dragging"
   ]
 }

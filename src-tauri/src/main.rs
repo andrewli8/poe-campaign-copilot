@@ -8,6 +8,7 @@ use pipeline::{Pipeline, UiModel};
 use tauri::menu::{CheckMenuItem, Menu, MenuItem};
 use tauri::tray::TrayIconBuilder;
 use tauri::{Emitter, Manager, State};
+use tauri_plugin_window_state::StateFlags;
 
 struct AppState {
     pipeline: Mutex<Pipeline>,
@@ -36,7 +37,9 @@ fn apply_setup_mode(app: &tauri::AppHandle, enabled: bool) {
     let state: State<AppState> = app.state();
     *state.setup_mode.lock().unwrap() = enabled;
     if let Some(win) = app.get_webview_window("main") {
-        let _ = win.set_ignore_cursor_events(!enabled);
+        if let Err(e) = win.set_ignore_cursor_events(!enabled) {
+            eprintln!("apply_setup_mode: failed to set ignore-cursor-events: {e}");
+        }
         let _ = win.set_resizable(enabled);
     }
     if let Some(item) = state.setup_item.lock().unwrap().as_ref() {
@@ -50,15 +53,21 @@ fn toggle_zoom_impl(app: &tauri::AppHandle) -> bool {
     let mut zoom = state.zoom.lock().unwrap();
     *zoom = !*zoom;
     let new_zoom = *zoom;
-    drop(zoom);
+    // Hold the zoom guard across the resize so a second toggle_zoom call
+    // (e.g. rapid tray clicks or the global shortcut firing twice) can't
+    // interleave with set_size and leave the window size out of sync with
+    // the `zoom` flag it's supposed to reflect.
     if let Some(win) = app.get_webview_window("main")
         && let Ok(scale) = win.scale_factor()
         && let Ok(size) = win.outer_size()
     {
         let logical = size.to_logical::<f64>(scale);
         let height = if new_zoom { 420.0 } else { 150.0 };
-        let _ = win.set_size(tauri::LogicalSize::new(logical.width, height));
+        if let Err(e) = win.set_size(tauri::LogicalSize::new(logical.width, height)) {
+            eprintln!("toggle_zoom: failed to resize window: {e}");
+        }
     }
+    drop(zoom);
     if let Some(item) = state.zoom_item.lock().unwrap().as_ref() {
         let _ = item.set_checked(new_zoom);
     }
@@ -70,7 +79,14 @@ fn main() {
     let pipeline = Pipeline::new().expect("content data must load");
 
     tauri::Builder::default()
-        .plugin(tauri_plugin_window_state::Builder::default().build())
+        // Position-only: persisting SIZE would let a relaunch pick up the
+        // zoomed height from a previous session instead of always starting
+        // at the compact bar height.
+        .plugin(
+            tauri_plugin_window_state::Builder::default()
+                .with_state_flags(StateFlags::POSITION)
+                .build(),
+        )
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
                 .with_shortcuts(["alt+shift+z"])
@@ -123,8 +139,10 @@ fn main() {
                 .build(app)?;
 
             // Click-through by default (play mode).
-            if let Some(win) = app.get_webview_window("main") {
-                let _ = win.set_ignore_cursor_events(true);
+            if let Some(win) = app.get_webview_window("main")
+                && let Err(e) = win.set_ignore_cursor_events(true)
+            {
+                eprintln!("setup: failed to set ignore-cursor-events: {e}");
             }
 
             // Tailer thread: POE_COPILOT_LOG -> pipeline -> emit.
