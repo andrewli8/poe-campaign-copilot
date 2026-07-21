@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::game_data::{GameDataError, load_vendored};
-use crate::layouts::{LayoutEntry, LayoutError, load_all_layouts};
+use crate::layouts::{LayoutEntry, LayoutError, load_all_layouts, load_extraction_meta};
 use crate::route_dsl::{ParseError, parse_route_file};
 use crate::vendor::read_act_route;
 use crate::walk::{CompiledStep, WalkError, WalkState, walk_act};
@@ -110,11 +110,13 @@ pub fn compile_route_pack(variant: Variant) -> Result<ContentPack, CompileError>
 
 pub fn compile_layout_pack() -> Result<LayoutPack, CompileError> {
     let entries = load_all_layouts()?;
+    let meta = load_extraction_meta()?;
+    let sha_prefix: String = meta.docx_sha256.chars().take(12).collect();
     Ok(LayoutPack {
         format_version: 1,
         source: SourceInfo {
             project: "poelayouts community compilation".to_string(),
-            reference: "extracted 2026-07-21".to_string(),
+            reference: format!("poelayouts.docx sha256:{sha_prefix}"),
             license: "used with credit — see CREDITS.md".to_string(),
         },
         entries,
@@ -192,6 +194,11 @@ mod tests {
         let pack = compile_layout_pack().expect("layout pack compiles");
         assert_eq!(pack.format_version, 1);
         assert!(crate::layouts::EXPECTED_ENTRY_COUNT_RANGE.contains(&pack.entries.len()));
+        assert!(
+            pack.source.reference.starts_with("poelayouts.docx sha256:"),
+            "unexpected reference: {}",
+            pack.source.reference
+        );
         let json = serde_json::to_string(&pack).unwrap();
         assert!(json.contains("\"first_verified_patch\""));
         assert!(json.contains("\"unaudited\""));

@@ -63,12 +63,23 @@ pub struct LayoutEntry {
     pub source: LayoutSource,
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ExtractionMeta {
+    pub docx_sha256: String,
+    pub tool: String,
+}
+
 #[derive(Debug, Error)]
 pub enum LayoutError {
     #[error("failed to read layout content: {0}")]
     Io(#[from] std::io::Error),
     #[error("failed to parse layout entry {path}: {source}")]
     Json {
+        path: String,
+        source: serde_json::Error,
+    },
+    #[error("failed to parse extraction metadata {path}: {source}")]
+    MetaJson {
         path: String,
         source: serde_json::Error,
     },
@@ -112,6 +123,15 @@ pub fn load_all_layouts() -> Result<Vec<LayoutEntry>, LayoutError> {
         entries.push(entry);
     }
     Ok(entries)
+}
+
+pub fn load_extraction_meta() -> Result<ExtractionMeta, LayoutError> {
+    let path = layouts_dir().join("extraction-meta.json");
+    let text = std::fs::read_to_string(&path)?;
+    serde_json::from_str(&text).map_err(|source| LayoutError::MetaJson {
+        path: path.display().to_string(),
+        source,
+    })
 }
 
 #[cfg(test)]

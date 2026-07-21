@@ -4,8 +4,10 @@ content/layouts/. Stdlib only. Deterministic.
 
 Usage: python3 tools/extract_poelayouts.py /path/to/poelayouts.docx
 """
+import hashlib
 import json
 import re
+import shutil
 import sys
 import zipfile
 from pathlib import Path
@@ -86,7 +88,9 @@ def parse_docx(docx_path):
                 # Single-zone table (e.g. a merged header cell spanning all
                 # grid columns). Content in data rows may sit in ANY column
                 # index — attach every cell's text/images to the one zone
-                # instead of truncating to len(header) columns.
+                # instead of truncating to len(header) columns. Merged data
+                # cells (gridSpan) are expected and harmless here since
+                # everything funnels into the same zone regardless.
                 zone = {
                     "act": current_act, "heading": non_empty_headings[0],
                     "descriptions": [], "notes": [], "images": [],
@@ -101,6 +105,29 @@ def parse_docx(docx_path):
                             zone[key].append(t)
                 zones.append(zone)
             else:
+                # Multi-zone table: content is attributed to a zone
+                # positionally by column index (cells[i] -> cols[i]). A
+                # gridSpan cell is only dangerous when it changes how many
+                # <w:tc> elements a data row has relative to the header
+                # (exactly the "Cavern of Anger" failure mode, generalized
+                # to >1 heading) — that's when positional attribution
+                # actually goes wrong, so fail loudly in that case instead
+                # of silently misattributing. A gridSpan that keeps the
+                # per-row cell count aligned with the header (e.g. a
+                # decorative wide column reproduced consistently across
+                # every row) is harmless and left alone.
+                for row_index, r in enumerate(rows[1:], start=1):
+                    cells = re.findall(r"<w:tc>.*?</w:tc>", r, re.S)
+                    has_grid_span = any("<w:gridSpan" in c for c in cells)
+                    if has_grid_span and len(cells) != len(header):
+                        raise SystemExit(
+                            "gridSpan found in a data row of a multi-heading "
+                            f"table (headings: {non_empty_headings!r}, data row "
+                            f"{row_index}) with {len(cells)} cells against "
+                            f"{len(header)} header columns — merged cells in "
+                            "multi-zone tables would misattribute content "
+                            "positionally; refusing to guess"
+                        )
                 cols = [
                     {"act": current_act, "heading": h, "descriptions": [],
                      "notes": [], "images": []}
@@ -129,9 +156,10 @@ def build_area_index(areas):
     return by_act
 
 
-def resolve_area_ids(zone, by_act, overrides):
+def resolve_area_ids(zone, by_act, overrides, used_override_keys):
     key = f"{zone['act']}|{zone['heading']}"
     if key in overrides:
+        used_override_keys.add(key)
         v = overrides[key]
         return v if isinstance(v, list) else [v]
     n = norm(zone["heading"])
@@ -150,10 +178,27 @@ def resolve_area_ids(zone, by_act, overrides):
     )
 
 
+def clear_stale_output():
+    """Delete this tool's previous output so the committed tree is always
+    exactly one run's output, never a mix of two runs."""
+    for act_dir in sorted(OUT.glob("act-*")):
+        if act_dir.is_dir():
+            shutil.rmtree(act_dir)
+    assets_dir = OUT / "assets"
+    if assets_dir.is_dir():
+        shutil.rmtree(assets_dir)
+    mapping_path = OUT / "mapping.json"
+    if mapping_path.is_file():
+        mapping_path.unlink()
+
+
 def main():
     if len(sys.argv) != 2:
         raise SystemExit(__doc__)
     docx_path = Path(sys.argv[1])
+    docx_bytes = docx_path.read_bytes()
+    docx_sha256 = hashlib.sha256(docx_bytes).hexdigest()
+
     areas = json.loads(AREAS_JSON.read_text())
     overrides = json.loads(OVERRIDES_JSON.read_text())
     by_act = build_area_index(areas)
@@ -163,8 +208,9 @@ def main():
     # Merge zone entries per area id.
     entries = {}
     mapping = {}
+    used_override_keys = set()
     for zone in zones:
-        for area_id in resolve_area_ids(zone, by_act, overrides):
+        for area_id in resolve_area_ids(zone, by_act, overrides, used_override_keys):
             area = areas[area_id]
             mapping.setdefault(f"{zone['act']}|{zone['heading']}", []).append(area_id)
             e = entries.setdefault(
@@ -185,6 +231,16 @@ def main():
             e["descriptions"] += [d for d in zone["descriptions"] if d not in e["descriptions"]]
             e["notes"] += [n for n in zone["notes"] if n not in e["notes"]]
             e["images"] += [i for i in zone["images"] if i not in e["images"]]
+
+    unused_overrides = set(overrides) - used_override_keys
+    if unused_overrides:
+        raise SystemExit(
+            "stale override key(s) never consumed during this run: "
+            f"{sorted(unused_overrides)!r} — remove them from "
+            f"{OVERRIDES_JSON.name} or fix the docx heading they target"
+        )
+
+    clear_stale_output()
 
     # Write entries (schema v2: every note/description/image carries its own
     # fresh, unaudited AUDIT record).
@@ -221,6 +277,15 @@ def main():
 
     (OUT / "mapping.json").write_text(
         json.dumps(mapping, indent=2, ensure_ascii=False, sort_keys=True) + "\n"
+    )
+
+    (OUT / "extraction-meta.json").write_text(
+        json.dumps(
+            {"docx_sha256": docx_sha256, "tool": "extract_poelayouts.py"},
+            indent=2,
+            ensure_ascii=False,
+        )
+        + "\n"
     )
 
     with_images = sum(1 for e in entries.values() if e["images"])
