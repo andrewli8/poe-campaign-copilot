@@ -33,23 +33,28 @@ pub enum RawEvent {
 }
 
 pub fn fingerprint(message: &str) -> String {
-    message
+    let mapped: String = message
         .chars()
         .map(|c| if c.is_ascii_digit() { '#' } else { c })
-        .collect()
+        .collect();
+    mapped.chars().take(48).collect()
 }
 
 pub fn parse_line(line: &str) -> RawEvent {
     let at = line.get(..19).unwrap_or("").to_string();
-    let unknown = |at: String| RawEvent::Unknown {
-        fingerprint: fingerprint(line),
-        at,
-    };
 
     let Some(bracket_end) = line.find("] ") else {
-        return unknown(at);
+        // No "] " marker: fingerprint whole line as fallback
+        return RawEvent::Unknown {
+            fingerprint: fingerprint(line),
+            at,
+        };
     };
     let msg = &line[bracket_end + 2..];
+    let unknown = |at: String| RawEvent::Unknown {
+        fingerprint: fingerprint(msg),
+        at,
+    };
 
     if let Some(rest) = msg.strip_prefix(": ") {
         if let Some(name) = rest
@@ -195,5 +200,19 @@ mod tests {
                 at: "2023/12/09 21:00:00".into(),
             }
         );
+    }
+
+    #[test]
+    fn unknown_line_without_bracket_marker_fingerprints_whole_line() {
+        let line = "2023/12/09 21:30:00 some malformed line without bracket marker";
+        match parse_line(line) {
+            RawEvent::Unknown { fingerprint: f, at } => {
+                assert_eq!(at, "2023/12/09 21:30:00");
+                // Digits are masked; the whole line is fingerprinted
+                assert!(!f.chars().any(|c| c.is_ascii_digit()));
+                assert!(f.len() <= 48); // truncated to char boundary
+            }
+            other => panic!("expected Unknown, got {other:?}"),
+        }
     }
 }
