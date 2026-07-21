@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
+import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { useEffect, useState } from "react";
 import type { UiModel } from "./types";
 
@@ -10,16 +10,56 @@ export function useOverlay() {
 
   useEffect(() => {
     let disposed = false;
-    const unlisteners: Array<() => void> = [];
-    invoke<UiModel>("get_model").then((m) => {
-      if (!disposed) setModel(m);
-    });
-    listen<UiModel>("overlay-model", (e) => setModel(e.payload)).then((u) => unlisteners.push(u));
-    listen<boolean>("zoom", (e) => setZoom(e.payload)).then((u) => unlisteners.push(u));
-    listen<boolean>("setup-mode", (e) => setSetupMode(e.payload)).then((u) => unlisteners.push(u));
+    let eventModelArrived = false;
+    const unlisteners: UnlistenFn[] = [];
+
+    // Registers a listener and makes sure it is always torn down exactly
+    // once: if disposal (StrictMode double-mount, or a real unmount)
+    // happens before the `listen()` promise resolves, unsubscribe as soon
+    // as it resolves instead of stashing the unlisten fn for a cleanup
+    // that already ran (which would leak the subscription).
+    function registerListener<T>(event: string, onPayload: (payload: T) => void) {
+      const promise = listen<T>(event, (e) => onPayload(e.payload));
+      promise.then((unlisten) => {
+        if (disposed) {
+          unlisten();
+        } else {
+          unlisteners.push(unlisten);
+        }
+      });
+      return promise;
+    }
+
+    async function setup() {
+      // Register all listeners first, and wait for them to be live,
+      // before asking for the current model. Otherwise an overlay-model
+      // event emitted between the invoke() call and the listener actually
+      // being registered would be silently missed.
+      const listenersReady = Promise.all([
+        registerListener<UiModel>("overlay-model", (m) => {
+          eventModelArrived = true;
+          setModel(m);
+        }),
+        registerListener<boolean>("zoom", (z) => setZoom(z)),
+        registerListener<boolean>("setup-mode", (s) => setSetupMode(s)),
+      ]);
+      await listenersReady;
+      if (disposed) return;
+
+      const initial = await invoke<UiModel>("get_model");
+      // Only apply the invoke() result if no overlay-model event arrived
+      // while we were waiting on it — an event always wins because it
+      // reflects a newer state than the snapshot we requested.
+      if (!disposed && !eventModelArrived) {
+        setModel(initial);
+      }
+    }
+
+    setup();
+
     return () => {
       disposed = true;
-      unlisteners.forEach((u) => u());
+      unlisteners.forEach((unlisten) => unlisten());
     };
   }, []);
 
