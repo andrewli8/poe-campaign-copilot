@@ -1,0 +1,176 @@
+html,
+body,
+#root {
+  background: transparent;
+  margin: 0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.filmstrip {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  background: rgba(10, 10, 12, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  color: #ffffff;
+  font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+  font-size: 13px;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.filmstrip.setup-mode {
+  border: 1px solid rgba(200, 169, 90, 0.6);
+}
+
+.setup-hint {
+  font-size: 10px;
+  color: #8a94a8;
+  text-align: center;
+}
+
+.waiting-pill {
+  align-self: center;
+  padding: 4px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #8a94a8;
+  font-size: 12px;
+}
+
+.complete-bar {
+  padding: 10px;
+  text-align: center;
+  font-weight: 600;
+  color: #6fbf73;
+  background: rgba(111, 191, 115, 0.12);
+  border-radius: 4px;
+}
+
+.header-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.zone-name {
+  color: #c8a95a;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.act-badge,
+.layout-count {
+  font-size: 11px;
+  color: #8a94a8;
+}
+
+.pending-badge {
+  font-size: 11px;
+  color: #c8a95a;
+}
+
+.town-chip {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #10121a;
+  background: #c8a95a;
+  border-radius: 3px;
+  padding: 1px 5px;
+}
+
+.off-route-banner {
+  font-size: 11px;
+  color: #e0785a;
+  background: rgba(224, 120, 90, 0.12);
+  border-radius: 4px;
+  padding: 3px 6px;
+}
+
+.image-row {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+}
+
+.image-cell {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.image-cell img {
+  width: 118px;
+  height: auto;
+  border-radius: 3px;
+  display: block;
+}
+
+.filmstrip.zoom .image-cell img {
+  height: 236px;
+  width: auto;
+}
+
+.image-cell img.stale {
+  opacity: 0.55;
+}
+
+.outdated-badge {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: rgba(0, 0, 0, 0.7);
+  color: #e0785a;
+  border-radius: 2px;
+  padding: 1px 4px;
+}
+
+.notes-list,
+.steps-list,
+.town-reminders {
+  margin: 0;
+  padding-left: 16px;
+}
+
+.notes-list li.stale {
+  color: #e0785a;
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+.text-block .primary {
+  font-weight: 700;
+  font-size: 13px;
+  color: #ffffff;
+}
+
+.sub-hints {
+  margin-top: 2px;
+}
+
+.sub-hint {
+  font-size: 11px;
+  color: #8a94a8;
+}
+
+.next-line {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #8a94a8;
+}
+
+.town-reminders li {
+  color: #6fbf73;
+  font-size: 12px;
+}

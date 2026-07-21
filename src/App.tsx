@@ -1,8 +1,8 @@
+import { FilmstripBar } from "./FilmstripBar";
+import { useOverlay } from "./useOverlay";
+
 export default function App() {
-  return (
-    <main style={{ fontFamily: "system-ui", padding: "2rem" }}>
-      <h1>PoE Campaign Copilot</h1>
-      <p>Development shell. Overlay and settings UI land in later plans.</p>
-    </main>
-  );
+  const { model, zoom, setupMode } = useOverlay();
+  if (!model) return null;
+  return <FilmstripBar model={model} zoom={zoom} setupMode={setupMode} />;
 }

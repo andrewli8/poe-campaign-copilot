@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "test": "vitest run"
   },
   "dependencies": {
     "@tauri-apps/api": "^2",
@@ -16,10 +17,14 @@
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2",
+    "@testing-library/jest-dom": "^6",
+    "@testing-library/react": "^16",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "@vitejs/plugin-react": "^4",
+    "jsdom": "^25",
     "typescript": "^5",
-    "vite": "^6"
+    "vite": "^6",
+    "vitest": "^3"
   }
 }
