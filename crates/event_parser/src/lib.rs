@@ -3,6 +3,10 @@
 
 use serde::Serialize;
 
+/// NOTE: There is deliberately no session-end/disconnect variant yet. The
+/// real disconnect/"Async connecting" line shapes must be captured from a
+/// real Client.txt during the Windows validation session before we parse
+/// them — fixtures are never invented (see Plan 3 global constraints).
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum RawEvent {
