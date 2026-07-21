@@ -3,6 +3,7 @@
 
 pub mod compile;
 pub mod game_data;
+pub mod layouts;
 pub mod route_dsl;
 pub mod vendor;
 pub mod walk;
