@@ -70,20 +70,40 @@ def parse_docx(docx_path):
                 text_of(c).strip()
                 for c in re.findall(r"<w:tc>.*?</w:tc>", rows[0], re.S)
             ]
-            cols = [
-                {"act": current_act, "heading": h, "descriptions": [],
-                 "notes": [], "images": []}
-                for h in header
-            ]
-            for row_index, r in enumerate(rows[1:], start=1):
-                cells = re.findall(r"<w:tc>.*?</w:tc>", r, re.S)
-                for i, c in enumerate(cells[: len(cols)]):
-                    cols[i]["images"] += images_of(c, rid_to_file)
-                    t = text_of(c).strip()
-                    if t:
-                        key = "notes" if t.startswith("Note:") else "descriptions"
-                        cols[i][key].append(t)
-            zones.extend(c for c in cols if c["heading"])
+            non_empty_headings = [h for h in header if h]
+            if len(non_empty_headings) == 1:
+                # Single-zone table (e.g. a merged header cell spanning all
+                # grid columns). Content in data rows may sit in ANY column
+                # index — attach every cell's text/images to the one zone
+                # instead of truncating to len(header) columns.
+                zone = {
+                    "act": current_act, "heading": non_empty_headings[0],
+                    "descriptions": [], "notes": [], "images": [],
+                }
+                for r in rows[1:]:
+                    cells = re.findall(r"<w:tc>.*?</w:tc>", r, re.S)
+                    for c in cells:
+                        zone["images"] += images_of(c, rid_to_file)
+                        t = text_of(c).strip()
+                        if t:
+                            key = "notes" if t.startswith("Note:") else "descriptions"
+                            zone[key].append(t)
+                zones.append(zone)
+            else:
+                cols = [
+                    {"act": current_act, "heading": h, "descriptions": [],
+                     "notes": [], "images": []}
+                    for h in header
+                ]
+                for row_index, r in enumerate(rows[1:], start=1):
+                    cells = re.findall(r"<w:tc>.*?</w:tc>", r, re.S)
+                    for i, c in enumerate(cells[: len(cols)]):
+                        cols[i]["images"] += images_of(c, rid_to_file)
+                        t = text_of(c).strip()
+                        if t:
+                            key = "notes" if t.startswith("Note:") else "descriptions"
+                            cols[i][key].append(t)
+                zones.extend(c for c in cols if c["heading"])
         else:
             t = text_of(e).strip()
             if t in ACT_NUM:

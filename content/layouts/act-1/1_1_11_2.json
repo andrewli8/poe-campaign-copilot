@@ -7,9 +7,12 @@
   ],
   "descriptions": [],
   "notes": [
-    "Cavern variant of The Cavern of Wrath."
+    "Note: Often bottom right, you can follow the spirits, if you see piles of gold you’re close to Merveil."
   ],
-  "images": [],
+  "images": [
+    "image188.png",
+    "image189.png"
+  ],
   "source": {
     "document": "PoE Map Layouts community compilation (poelayouts.docx)",
     "images_author": "Engineering Eternity",
