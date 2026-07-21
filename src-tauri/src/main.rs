@@ -13,6 +13,8 @@ struct AppState {
     pipeline: Mutex<Pipeline>,
     setup_mode: Mutex<bool>,
     zoom: Mutex<bool>,
+    setup_item: Mutex<Option<CheckMenuItem<tauri::Wry>>>,
+    zoom_item: Mutex<Option<CheckMenuItem<tauri::Wry>>>,
 }
 
 #[tauri::command]
@@ -37,6 +39,9 @@ fn apply_setup_mode(app: &tauri::AppHandle, enabled: bool) {
         let _ = win.set_ignore_cursor_events(!enabled);
         let _ = win.set_resizable(enabled);
     }
+    if let Some(item) = state.setup_item.lock().unwrap().as_ref() {
+        let _ = item.set_checked(enabled);
+    }
     let _ = app.emit("setup-mode", enabled);
 }
 
@@ -47,10 +52,15 @@ fn toggle_zoom_impl(app: &tauri::AppHandle) -> bool {
     let new_zoom = *zoom;
     drop(zoom);
     if let Some(win) = app.get_webview_window("main")
+        && let Ok(scale) = win.scale_factor()
         && let Ok(size) = win.outer_size()
     {
-        let height = if new_zoom { 420 } else { 150 };
-        let _ = win.set_size(tauri::PhysicalSize::new(size.width, height));
+        let logical = size.to_logical::<f64>(scale);
+        let height = if new_zoom { 420.0 } else { 150.0 };
+        let _ = win.set_size(tauri::LogicalSize::new(logical.width, height));
+    }
+    if let Some(item) = state.zoom_item.lock().unwrap().as_ref() {
+        let _ = item.set_checked(new_zoom);
     }
     let _ = app.emit("zoom", new_zoom);
     new_zoom
@@ -76,6 +86,8 @@ fn main() {
             pipeline: Mutex::new(pipeline),
             setup_mode: Mutex::new(false),
             zoom: Mutex::new(false),
+            setup_item: Mutex::new(None),
+            zoom_item: Mutex::new(None),
         })
         .invoke_handler(tauri::generate_handler![
             get_model,
@@ -89,6 +101,10 @@ fn main() {
             let zoom_item = CheckMenuItem::with_id(app, "zoom", "Zoom", true, false, None::<&str>)?;
             let quit_item = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&setup_item, &zoom_item, &quit_item])?;
+
+            let state: State<AppState> = app.state();
+            *state.setup_item.lock().unwrap() = Some(setup_item.clone());
+            *state.zoom_item.lock().unwrap() = Some(zoom_item.clone());
             TrayIconBuilder::new()
                 .icon(app.default_window_icon().unwrap().clone())
                 .menu(&menu)
