@@ -14,7 +14,7 @@ for act in 1 2 3 4 5 6 7 8 9 10; do
     -o "${DEST}/routes/act-${act}.txt"
 done
 
-for f in areas.json quests.json kill-waypoints.json; do
+for f in areas.json quests.json kill-waypoints.json gems.json; do
   curl -fsSL "${BASE}/common/data/json/${f}" -o "${DEST}/data/${f}"
 done
 

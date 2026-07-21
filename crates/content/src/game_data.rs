@@ -29,8 +29,17 @@ pub struct Quest {
     pub name: String,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+pub struct Gem {
+    pub id: String,
+    pub name: String,
+    pub required_level: u8,
+    pub is_support: bool,
+}
+
 pub type AreaMap = BTreeMap<String, Area>;
 pub type QuestMap = BTreeMap<String, Quest>;
+pub type GemMap = BTreeMap<String, Gem>;
 
 #[derive(Debug, Error)]
 pub enum GameDataError {
@@ -48,11 +57,36 @@ pub fn load_quests(json: &str) -> Result<QuestMap, serde_json::Error> {
     serde_json::from_str(json)
 }
 
+pub fn load_gems(json: &str) -> Result<GemMap, serde_json::Error> {
+    serde_json::from_str(json)
+}
+
 pub fn load_vendored() -> Result<(AreaMap, QuestMap), GameDataError> {
     let data = vendor_dir().join("data");
     let areas = load_areas(&std::fs::read_to_string(data.join("areas.json"))?)?;
     let quests = load_quests(&std::fs::read_to_string(data.join("quests.json"))?)?;
     Ok((areas, quests))
+}
+
+pub fn load_vendored_gems() -> Result<GemMap, GameDataError> {
+    let data = vendor_dir().join("data");
+    let json = std::fs::read_to_string(data.join("gems.json"))?;
+    load_gems(&json).map_err(GameDataError::Json)
+}
+
+pub fn gems_by_name(gems: &GemMap) -> BTreeMap<String, Gem> {
+    let mut result = BTreeMap::new();
+    for gem in gems.values() {
+        result
+            .entry(gem.name.clone())
+            .and_modify(|existing: &mut Gem| {
+                if gem.required_level < existing.required_level {
+                    *existing = gem.clone();
+                }
+            })
+            .or_insert_with(|| gem.clone());
+    }
+    result
 }
 
 #[cfg(test)]
@@ -79,5 +113,19 @@ mod tests {
 
         assert!(areas.len() > 100);
         assert!(quests.len() > 40);
+    }
+
+    #[test]
+    fn loads_vendored_gems() {
+        let gems = load_vendored_gems().expect("gems load");
+        assert!(gems.len() > 500);
+        let by_name = gems_by_name(&gems);
+        let fb = by_name.get("Frostblink").expect("Frostblink exists");
+        assert_eq!(fb.required_level, 4);
+        assert!(!fb.is_support);
+        // Duplicate-name rule: "Fireball" and "Vaal Fireball" are distinct
+        // names, but e.g. transfigured/vaal variants sharing a base name must
+        // resolve to the lowest required_level.
+        assert!(by_name.contains_key("Fireball"));
     }
 }
