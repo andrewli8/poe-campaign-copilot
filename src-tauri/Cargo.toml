@@ -12,3 +12,11 @@ tauri = { version = "2", features = [] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 content = { path = "../crates/content" }
+base64 = "0.22"
+thiserror = "2"
+event_parser = { path = "../crates/event_parser" }
+session = { path = "../crates/session" }
+route_engine = { path = "../crates/route_engine" }
+task_engine = { path = "../crates/task_engine" }
+composer = { path = "../crates/composer" }
+input_log = { path = "../crates/input_log" }

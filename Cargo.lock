@@ -2211,11 +2211,19 @@ dependencies = [
 name = "poe-copilot-app"
 version = "0.1.0"
 dependencies = [
+ "base64 0.22.1",
+ "composer",
  "content",
+ "event_parser",
+ "input_log",
+ "route_engine",
  "serde",
  "serde_json",
+ "session",
+ "task_engine",
  "tauri",
  "tauri-build",
+ "thiserror 2.0.19",
 ]
 
 [[package]]
