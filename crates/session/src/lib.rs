@@ -162,10 +162,10 @@ impl SessionTracker {
 
     /// Fallback when no Generating line was captured: resolve by display
     /// name, preferring the candidate whose act is closest to the current
-    /// act (ties break to the lower act). `content::game_data::Area` does
-    /// not carry a per-area game level, so `area_level` defaults to 0 in
-    /// this path. Seed 0 marks "unknown instance" (treated as new only if
-    /// no prior seed is recorded).
+    /// act (ties break to the lower act). `area_level` comes from the
+    /// vendored `Area::level`, defaulting to 0 if the vendored data omits
+    /// it for that area. Seed 0 marks "unknown instance" (treated as new
+    /// only if no prior seed is recorded).
     fn resolve_by_name(&self, display_name: &str) -> Option<(String, u8, u64)> {
         let current = self.current_act.unwrap_or(1) as i16;
         self.areas
@@ -174,7 +174,7 @@ impl SessionTracker {
             .min_by_key(|a| ((a.act as i16 - current).abs(), a.act))
             .map(|a| {
                 let seed = self.last_seed_by_area.get(&a.id).copied().unwrap_or(0);
-                (a.id.clone(), 0u8, seed)
+                (a.id.clone(), a.level.unwrap_or(0), seed)
             })
     }
 }
@@ -301,9 +301,18 @@ mod tests {
         ]);
         let last = out.last().unwrap();
         match last {
-            SessionEvent::AreaEntered { area_id, act, .. } => {
+            SessionEvent::AreaEntered {
+                area_id,
+                act,
+                area_level,
+                ..
+            } => {
                 assert_eq!(area_id, "2_6_2");
                 assert_eq!(*act, 6);
+                // Vendored level for "2_6_2" in areas.json is 45; the
+                // name-only fallback must read the real level from the
+                // area map rather than defaulting to 0.
+                assert_eq!(*area_level, 45);
             }
             other => panic!("expected AreaEntered, got {other:?}"),
         }

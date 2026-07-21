@@ -12,6 +12,8 @@ pub struct Area {
     pub id: String,
     pub name: String,
     pub act: u8,
+    #[serde(default)]
+    pub level: Option<u8>,
     pub has_waypoint: bool,
     pub is_town_area: bool,
     pub parent_town_area_id: Option<String>,
