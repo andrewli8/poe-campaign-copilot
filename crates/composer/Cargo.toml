@@ -1,0 +1,11 @@
+[package]
+name = "composer"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+content = { path = "../content" }
+route_engine = { path = "../route_engine" }
+task_engine = { path = "../task_engine" }

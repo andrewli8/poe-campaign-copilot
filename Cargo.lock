@@ -332,6 +332,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "composer"
+version = "0.1.0"
+dependencies = [
+ "content",
+ "route_engine",
+ "serde",
+ "task_engine",
+]
+
+[[package]]
 name = "content"
 version = "0.1.0"
 dependencies = [
