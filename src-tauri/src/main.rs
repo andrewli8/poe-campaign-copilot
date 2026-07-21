@@ -131,7 +131,17 @@ fn main() {
             if let Ok(log_path) = std::env::var("POE_COPILOT_LOG") {
                 let handle = app.handle().clone();
                 std::thread::spawn(move || {
-                    let poller = match input_log::FilePoller::new(log_path.into(), false) {
+                    // Real Client.txt files are huge, append-only histories
+                    // going back to whenever the character was created, so
+                    // the tailer defaults to starting at end-of-file (skip
+                    // the backlog, only react to new lines). The fake-play
+                    // demo harness instead writes a small fixture log from
+                    // scratch and needs the tailer to read it from byte 0,
+                    // so POE_COPILOT_LOG_REPLAY=1 flips that default for
+                    // local development/demo runs only.
+                    let start_at_end =
+                        std::env::var("POE_COPILOT_LOG_REPLAY").as_deref() != Ok("1");
+                    let poller = match input_log::FilePoller::new(log_path.into(), start_at_end) {
                         Ok(p) => p,
                         Err(e) => {
                             eprintln!("tailer: cannot open log: {e}");

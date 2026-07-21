@@ -36,7 +36,15 @@ export function FilmstripBar({ model, zoom, setupMode }: FilmstripBarProps) {
         <div className="complete-bar">Campaign complete</div>
       ) : (
         <>
-          <div className="header-row">
+          {/* data-tauri-drag-region lives on the header row, not the
+              filmstrip root: Tauri's drag region only activates when the
+              pointer is directly over the tagged element, and the root
+              contains interactive children (image cells, lists) that
+              would otherwise swallow the drag. */}
+          <div
+            className="header-row"
+            data-tauri-drag-region={setupMode ? true : undefined}
+          >
             <span className="zone-name">{overlay.zone_name}</span>
             <span className="act-badge">ACT {overlay.act}</span>
             {/* Intentionally overlay.layout_images.length, not images.length below —

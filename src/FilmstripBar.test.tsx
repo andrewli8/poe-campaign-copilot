@@ -96,4 +96,17 @@ describe("FilmstripBar", () => {
     expect(container.firstChild).toHaveClass("zoom");
     expect(screen.getByText(/drag to move/i)).toBeInTheDocument();
   });
+
+  it("marks the header row as a drag region only in setup mode", () => {
+    const { container, rerender } = render(
+      <FilmstripBar model={model()} zoom={false} setupMode={true} />,
+    );
+    const headerRow = container.querySelector(".header-row");
+    expect(headerRow).toHaveAttribute("data-tauri-drag-region");
+
+    rerender(<FilmstripBar model={model()} zoom={false} setupMode={false} />);
+    expect(container.querySelector(".header-row")).not.toHaveAttribute(
+      "data-tauri-drag-region",
+    );
+  });
 });

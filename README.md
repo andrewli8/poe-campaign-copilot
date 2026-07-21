@@ -39,10 +39,17 @@ Two terminals. The app tails a log file via `POE_COPILOT_LOG`; `fake-play`
 simulates a play session by appending fixture lines to that file on a
 delay, so you can watch the overlay react without the game running.
 
+By default the tailer starts reading at end-of-file, since a real
+`Client.txt` is a huge append-only history and replaying it all on launch
+would be both slow and wrong. The demo below writes a *new*, empty log
+file and then appends fixture lines to it, so it needs the tailer to
+start reading from byte 0 instead — set `POE_COPILOT_LOG_REPLAY=1` to
+opt into that for local development/demo runs only.
+
 Terminal 1 — start the app pointed at a scratch log file:
 
     rm -f /tmp/fake-client.txt && touch /tmp/fake-client.txt
-    POE_COPILOT_LOG=/tmp/fake-client.txt npm run tauri dev
+    POE_COPILOT_LOG=/tmp/fake-client.txt POE_COPILOT_LOG_REPLAY=1 npm run tauri dev
 
 Wait for the Vite + Cargo build to finish; a transparent, always-on-top,
 click-through bar appears reading "Waiting for Client.txt…".
