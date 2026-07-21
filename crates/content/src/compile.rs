@@ -2,7 +2,7 @@
 
 use std::collections::BTreeSet;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::game_data::{GameDataError, load_vendored};
@@ -42,7 +42,7 @@ impl Variant {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct SourceInfo {
     pub project: String,
     pub reference: String,
@@ -63,7 +63,7 @@ pub struct ContentPack {
     pub acts: Vec<ActRoute>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct LayoutPack {
     pub format_version: u32,
     pub source: SourceInfo,
@@ -191,9 +191,9 @@ mod tests {
     fn compiles_layout_pack() {
         let pack = compile_layout_pack().expect("layout pack compiles");
         assert_eq!(pack.format_version, 1);
-        assert!((120..=132).contains(&pack.entries.len()));
+        assert!(crate::layouts::EXPECTED_ENTRY_COUNT_RANGE.contains(&pack.entries.len()));
         let json = serde_json::to_string(&pack).unwrap();
-        assert!(json.contains("\"audit\""));
+        assert!(json.contains("\"first_verified_patch\""));
         assert!(json.contains("\"unaudited\""));
     }
 }

@@ -7,21 +7,48 @@
   ],
   "descriptions": [],
   "notes": [
-    "Note: Go to the center of the zone, always left or right. Activate waypoint and follow the hallway next to the waypoint.The gray circles indicate the center area."
+    {
+      "text": "Note: Go to the center of the zone, always left or right. Activate waypoint and follow the hallway next to the waypoint.The gray circles indicate the center area.",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    }
   ],
   "images": [
-    "image33.png",
-    "image8.png",
-    "image19.png"
+    {
+      "file": "image33.png",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    },
+    {
+      "file": "image8.png",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    },
+    {
+      "file": "image19.png",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    }
   ],
   "source": {
     "document": "PoE Map Layouts community compilation (poelayouts.docx)",
     "images_author": "Engineering Eternity",
     "notes_author": "community compilation author"
-  },
-  "audit": {
-    "status": "unaudited",
-    "verified_patch": null,
-    "correction": null
   }
 }

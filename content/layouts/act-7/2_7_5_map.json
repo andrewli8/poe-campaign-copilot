@@ -6,20 +6,31 @@
     "Maligaro’s Sanctum"
   ],
   "descriptions": [
-    "Somewhat linear."
+    {
+      "text": "Somewhat linear.",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    }
   ],
   "notes": [
-    "Note: Follow the edges of the zone, and cross the bridges you encounter until you find the arena (Maligaro’s Workshop). Capped lightning resistance is recommended. Use a portal scroll to port out to Silk."
+    {
+      "text": "Note: Follow the edges of the zone, and cross the bridges you encounter until you find the arena (Maligaro’s Workshop). Capped lightning resistance is recommended. Use a portal scroll to port out to Silk.",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    }
   ],
   "images": [],
   "source": {
     "document": "PoE Map Layouts community compilation (poelayouts.docx)",
     "images_author": "Engineering Eternity",
     "notes_author": "community compilation author"
-  },
-  "audit": {
-    "status": "unaudited",
-    "verified_patch": null,
-    "correction": null
   }
 }

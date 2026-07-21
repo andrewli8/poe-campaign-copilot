@@ -1,10 +1,19 @@
 //! Zone layout content (notes + diagram images) extracted from the
 //! community poelayouts compilation. See tools/extract_poelayouts.py.
+//!
+//! Schema v2: every note, description, and image carries its own audit
+//! record (Plan 2 spec §4) rather than one audit record per entry — a zone
+//! can have some notes verified and others not.
 
 use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
+
+/// Sanity bounds on the number of extracted layout entries. Both the
+/// extractor's output and the compiled pack are expected to fall in this
+/// range; a count outside it likely indicates a parsing regression.
+pub const EXPECTED_ENTRY_COUNT_RANGE: std::ops::RangeInclusive<usize> = 120..=132;
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -18,8 +27,21 @@ pub enum AuditStatus {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Audit {
     pub status: AuditStatus,
-    pub verified_patch: Option<String>,
+    pub first_verified_patch: Option<String>,
+    pub last_verified_patch: Option<String>,
     pub correction: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AuditedText {
+    pub text: String,
+    pub audit: Audit,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AuditedImage {
+    pub file: String,
+    pub audit: Audit,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -35,11 +57,10 @@ pub struct LayoutEntry {
     pub act: u8,
     pub display_name: String,
     pub docx_headings: Vec<String>,
-    pub descriptions: Vec<String>,
-    pub notes: Vec<String>,
-    pub images: Vec<String>,
+    pub descriptions: Vec<AuditedText>,
+    pub notes: Vec<AuditedText>,
+    pub images: Vec<AuditedImage>,
     pub source: LayoutSource,
-    pub audit: Audit,
 }
 
 #[derive(Debug, Error)]

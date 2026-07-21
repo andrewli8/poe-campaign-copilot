@@ -7,22 +7,57 @@
   ],
   "descriptions": [],
   "notes": [
-    "Note: Usually go right to find the exit, there is a trial in this zone that you can do later thanks to the waypoint."
+    {
+      "text": "Note: Usually go right to find the exit, there is a trial in this zone that you can do later thanks to the waypoint.",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    }
   ],
   "images": [
-    "image12.png",
-    "image123.png",
-    "image143.png",
-    "image57.png"
+    {
+      "file": "image12.png",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    },
+    {
+      "file": "image123.png",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    },
+    {
+      "file": "image143.png",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    },
+    {
+      "file": "image57.png",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    }
   ],
   "source": {
     "document": "PoE Map Layouts community compilation (poelayouts.docx)",
     "images_author": "Engineering Eternity",
     "notes_author": "community compilation author"
-  },
-  "audit": {
-    "status": "unaudited",
-    "verified_patch": null,
-    "correction": null
   }
 }

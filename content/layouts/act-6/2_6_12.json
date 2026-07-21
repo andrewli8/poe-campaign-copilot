@@ -7,17 +7,20 @@
   ],
   "descriptions": [],
   "notes": [
-    "Note: Follow the right hand wall until you find The Cavern of Anger."
+    {
+      "text": "Note: Follow the right hand wall until you find The Cavern of Anger.",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    }
   ],
   "images": [],
   "source": {
     "document": "PoE Map Layouts community compilation (poelayouts.docx)",
     "images_author": "Engineering Eternity",
     "notes_author": "community compilation author"
-  },
-  "audit": {
-    "status": "unaudited",
-    "verified_patch": null,
-    "correction": null
   }
 }

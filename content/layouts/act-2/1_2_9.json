@@ -6,20 +6,31 @@
     "The Western Forest"
   ],
   "descriptions": [
-    "Linear layout."
+    {
+      "text": "Linear layout.",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    }
   ],
   "notes": [
-    "Note: Follow the road, Alira is on the side of the waypoint where the road has a broken section. Go back to the road for The Way Forward quest. The entrance to The Weaver's Chambers can be found on the opposite side of the road from Alira, trees covered in spiderwebs indicate that you're close to the entrance."
+    {
+      "text": "Note: Follow the road, Alira is on the side of the waypoint where the road has a broken section. Go back to the road for The Way Forward quest. The entrance to The Weaver's Chambers can be found on the opposite side of the road from Alira, trees covered in spiderwebs indicate that you're close to the entrance.",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    }
   ],
   "images": [],
   "source": {
     "document": "PoE Map Layouts community compilation (poelayouts.docx)",
     "images_author": "Engineering Eternity",
     "notes_author": "community compilation author"
-  },
-  "audit": {
-    "status": "unaudited",
-    "verified_patch": null,
-    "correction": null
   }
 }

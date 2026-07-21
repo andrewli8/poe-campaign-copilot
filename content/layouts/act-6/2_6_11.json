@@ -6,20 +6,31 @@
     "The Wetlands"
   ],
   "descriptions": [
-    "Linear zone."
+    {
+      "text": "Linear zone.",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    }
   ],
   "notes": [
-    "Note: Stick to the left hand side and find the entrance to the Spawning Ground. Having some physical mitigation and good life flasks is useful."
+    {
+      "text": "Note: Stick to the left hand side and find the entrance to the Spawning Ground. Having some physical mitigation and good life flasks is useful.",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    }
   ],
   "images": [],
   "source": {
     "document": "PoE Map Layouts community compilation (poelayouts.docx)",
     "images_author": "Engineering Eternity",
     "notes_author": "community compilation author"
-  },
-  "audit": {
-    "status": "unaudited",
-    "verified_patch": null,
-    "correction": null
   }
 }

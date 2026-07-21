@@ -6,20 +6,31 @@
     "Daresso’s Dream"
   ],
   "descriptions": [
-    "Fairly linear."
+    {
+      "text": "Fairly linear.",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    }
   ],
   "notes": [
-    "Note: Move towards the top right, some dead ends."
+    {
+      "text": "Note: Move towards the top right, some dead ends.",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    }
   ],
   "images": [],
   "source": {
     "document": "PoE Map Layouts community compilation (poelayouts.docx)",
     "images_author": "Engineering Eternity",
     "notes_author": "community compilation author"
-  },
-  "audit": {
-    "status": "unaudited",
-    "verified_patch": null,
-    "correction": null
   }
 }

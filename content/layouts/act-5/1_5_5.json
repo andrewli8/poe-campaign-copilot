@@ -7,19 +7,30 @@
   ],
   "descriptions": [],
   "notes": [
-    "Note: Go up and left, and spiral counterclockwise."
+    {
+      "text": "Note: Go up and left, and spiral counterclockwise.",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    }
   ],
   "images": [
-    "image97.png"
+    {
+      "file": "image97.png",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    }
   ],
   "source": {
     "document": "PoE Map Layouts community compilation (poelayouts.docx)",
     "images_author": "Engineering Eternity",
     "notes_author": "community compilation author"
-  },
-  "audit": {
-    "status": "unaudited",
-    "verified_patch": null,
-    "correction": null
   }
 }

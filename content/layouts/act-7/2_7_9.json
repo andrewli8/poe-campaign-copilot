@@ -6,20 +6,31 @@
     "The Dread Thicket"
   ],
   "descriptions": [
-    "Varied zone with dead ends."
+    {
+      "text": "Varied zone with dead ends.",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    }
   ],
   "notes": [
-    "Note: Explore the zone and find the fireflies, Gruthkul is in this zone, physical mitigation recommended."
+    {
+      "text": "Note: Explore the zone and find the fireflies, Gruthkul is in this zone, physical mitigation recommended.",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    }
   ],
   "images": [],
   "source": {
     "document": "PoE Map Layouts community compilation (poelayouts.docx)",
     "images_author": "Engineering Eternity",
     "notes_author": "community compilation author"
-  },
-  "audit": {
-    "status": "unaudited",
-    "verified_patch": null,
-    "correction": null
   }
 }

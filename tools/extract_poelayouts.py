@@ -27,6 +27,17 @@ SOURCE = {
 }
 
 
+def fresh_audit():
+    """Construct a brand-new unaudited AUDIT dict. Never share/alias this
+    across items — every note/description/image gets its own object."""
+    return {
+        "status": "unaudited",
+        "first_verified_patch": None,
+        "last_verified_patch": None,
+        "correction": None,
+    }
+
+
 def text_of(fragment):
     return "".join(re.findall(r"<w:t[^>]*>([^<]*)</w:t>", fragment))
 
@@ -167,11 +178,6 @@ def main():
                     "notes": [],
                     "images": [],
                     "source": SOURCE,
-                    "audit": {
-                        "status": "unaudited",
-                        "verified_patch": None,
-                        "correction": None,
-                    },
                 },
             )
             if zone["heading"] not in e["docx_headings"]:
@@ -180,15 +186,30 @@ def main():
             e["notes"] += [n for n in zone["notes"] if n not in e["notes"]]
             e["images"] += [i for i in zone["images"] if i not in e["images"]]
 
-    # Write entries.
+    # Write entries (schema v2: every note/description/image carries its own
+    # fresh, unaudited AUDIT record).
     used_images = set()
     for area_id in sorted(entries):
         e = entries[area_id]
         used_images.update(e["images"])
         act_dir = OUT / f"act-{e['act']}"
         act_dir.mkdir(parents=True, exist_ok=True)
+        out_entry = {
+            "area_id": e["area_id"],
+            "act": e["act"],
+            "display_name": e["display_name"],
+            "docx_headings": e["docx_headings"],
+            "descriptions": [
+                {"text": d, "audit": fresh_audit()} for d in e["descriptions"]
+            ],
+            "notes": [{"text": n, "audit": fresh_audit()} for n in e["notes"]],
+            "images": [
+                {"file": f, "audit": fresh_audit()} for f in e["images"]
+            ],
+            "source": e["source"],
+        }
         (act_dir / f"{area_id}.json").write_text(
-            json.dumps(e, indent=2, ensure_ascii=False) + "\n"
+            json.dumps(out_entry, indent=2, ensure_ascii=False) + "\n"
         )
 
     # Copy referenced images.

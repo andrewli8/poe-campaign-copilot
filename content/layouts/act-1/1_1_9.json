@@ -7,22 +7,57 @@
   ],
   "descriptions": [],
   "notes": [
-    "Note: Look for waypoint first, then find Fairgraves, and move away from the plateau, generally up or down."
+    {
+      "text": "Note: Look for waypoint first, then find Fairgraves, and move away from the plateau, generally up or down.",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    }
   ],
   "images": [
-    "image76.png",
-    "image77.png",
-    "image141.png",
-    "image140.png"
+    {
+      "file": "image76.png",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    },
+    {
+      "file": "image77.png",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    },
+    {
+      "file": "image141.png",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    },
+    {
+      "file": "image140.png",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    }
   ],
   "source": {
     "document": "PoE Map Layouts community compilation (poelayouts.docx)",
     "images_author": "Engineering Eternity",
     "notes_author": "community compilation author"
-  },
-  "audit": {
-    "status": "unaudited",
-    "verified_patch": null,
-    "correction": null
   }
 }

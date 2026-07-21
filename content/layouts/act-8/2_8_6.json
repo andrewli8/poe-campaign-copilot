@@ -7,21 +7,48 @@
   ],
   "descriptions": [],
   "notes": [
-    "Note: Go up and right for the waypoint, then up and left for the entrance.",
-    "Note: Go down and right to the exit."
+    {
+      "text": "Note: Go up and right for the waypoint, then up and left for the entrance.",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    },
+    {
+      "text": "Note: Go down and right to the exit.",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    }
   ],
   "images": [
-    "image38.png",
-    "image112.png"
+    {
+      "file": "image38.png",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    },
+    {
+      "file": "image112.png",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    }
   ],
   "source": {
     "document": "PoE Map Layouts community compilation (poelayouts.docx)",
     "images_author": "Engineering Eternity",
     "notes_author": "community compilation author"
-  },
-  "audit": {
-    "status": "unaudited",
-    "verified_patch": null,
-    "correction": null
   }
 }

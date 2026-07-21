@@ -7,20 +7,39 @@
   ],
   "descriptions": [],
   "notes": [
-    "Note: Kill the Dishonoured Queen (1) on the right side to get the key to open the gate to the next zone (2) on the left side."
+    {
+      "text": "Note: Kill the Dishonoured Queen (1) on the right side to get the key to open the gate to the next zone (2) on the left side.",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    }
   ],
   "images": [
-    "image44.png",
-    "image125.png"
+    {
+      "file": "image44.png",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    },
+    {
+      "file": "image125.png",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    }
   ],
   "source": {
     "document": "PoE Map Layouts community compilation (poelayouts.docx)",
     "images_author": "Engineering Eternity",
     "notes_author": "community compilation author"
-  },
-  "audit": {
-    "status": "unaudited",
-    "verified_patch": null,
-    "correction": null
   }
 }

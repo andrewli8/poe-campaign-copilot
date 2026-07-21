@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 
 use content::game_data::load_vendored;
-use content::layouts::{AuditStatus, layouts_dir, load_all_layouts};
+use content::layouts::{AuditStatus, EXPECTED_ENTRY_COUNT_RANGE, layouts_dir, load_all_layouts};
 
 #[test]
 fn all_layout_entries_are_valid() {
@@ -9,7 +9,7 @@ fn all_layout_entries_are_valid() {
     let entries = load_all_layouts().expect("layouts load");
 
     assert!(
-        (120..=132).contains(&entries.len()),
+        EXPECTED_ENTRY_COUNT_RANGE.contains(&entries.len()),
         "unexpected entry count {}",
         entries.len()
     );
@@ -27,25 +27,41 @@ fn all_layout_entries_are_valid() {
             "{}: duplicate entry",
             e.area_id
         );
-        assert_eq!(
-            e.audit.status,
-            AuditStatus::Unaudited,
-            "{}: initial content must be unaudited",
-            e.area_id
-        );
         assert!(
             !e.notes.is_empty() || !e.descriptions.is_empty(),
             "{}: entry has no text at all",
             e.area_id
         );
+        for d in &e.descriptions {
+            assert_eq!(
+                d.audit.status,
+                AuditStatus::Unaudited,
+                "{}: initial description content must be unaudited",
+                e.area_id
+            );
+        }
+        for n in &e.notes {
+            assert_eq!(
+                n.audit.status,
+                AuditStatus::Unaudited,
+                "{}: initial note content must be unaudited",
+                e.area_id
+            );
+        }
         for img in &e.images {
-            let p = layouts_dir().join("assets").join(img);
-            assert!(p.is_file(), "{}: missing image {}", e.area_id, img);
+            assert_eq!(
+                img.audit.status,
+                AuditStatus::Unaudited,
+                "{}: initial image content must be unaudited",
+                e.area_id
+            );
+            let p = layouts_dir().join("assets").join(&img.file);
+            assert!(p.is_file(), "{}: missing image {}", e.area_id, img.file);
             assert!(
-                img.ends_with(".png"),
+                img.file.ends_with(".png"),
                 "{}: non-png image {}",
                 e.area_id,
-                img
+                img.file
             );
         }
         acts.insert(e.act);

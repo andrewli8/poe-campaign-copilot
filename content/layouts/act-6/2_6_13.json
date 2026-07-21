@@ -7,20 +7,39 @@
   ],
   "descriptions": [],
   "notes": [
-    "Note: Don’t forget the black flag upon entering this zone. Head down then up first, then go right, the exit can be up or down."
+    {
+      "text": "Note: Don’t forget the black flag upon entering this zone. Head down then up first, then go right, the exit can be up or down.",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    }
   ],
   "images": [
-    "image16.png",
-    "image37.png"
+    {
+      "file": "image16.png",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    },
+    {
+      "file": "image37.png",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    }
   ],
   "source": {
     "document": "PoE Map Layouts community compilation (poelayouts.docx)",
     "images_author": "Engineering Eternity",
     "notes_author": "community compilation author"
-  },
-  "audit": {
-    "status": "unaudited",
-    "verified_patch": null,
-    "correction": null
   }
 }

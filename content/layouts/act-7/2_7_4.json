@@ -8,25 +8,84 @@
   ],
   "descriptions": [],
   "notes": [
-    "Note: There is a trial in this zone. Open the sarcophagus for the exit.",
-    "Note: The layouts for 1 and 2 are connected, use the same map seed, eg. if you have the second layout in The Crypt 1, use the second image in The Crypt 2. When you find the map, use go to the town and use the waypoint to The Crossroads."
+    {
+      "text": "Note: There is a trial in this zone. Open the sarcophagus for the exit.",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    },
+    {
+      "text": "Note: The layouts for 1 and 2 are connected, use the same map seed, eg. if you have the second layout in The Crypt 1, use the second image in The Crypt 2. When you find the map, use go to the town and use the waypoint to The Crossroads.",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    }
   ],
   "images": [
-    "image14.png",
-    "image181.png",
-    "image7.png",
-    "image147.png",
-    "image187.png",
-    "image88.png"
+    {
+      "file": "image14.png",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    },
+    {
+      "file": "image181.png",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    },
+    {
+      "file": "image7.png",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    },
+    {
+      "file": "image147.png",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    },
+    {
+      "file": "image187.png",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    },
+    {
+      "file": "image88.png",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    }
   ],
   "source": {
     "document": "PoE Map Layouts community compilation (poelayouts.docx)",
     "images_author": "Engineering Eternity",
     "notes_author": "community compilation author"
-  },
-  "audit": {
-    "status": "unaudited",
-    "verified_patch": null,
-    "correction": null
   }
 }

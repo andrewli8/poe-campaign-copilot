@@ -7,21 +7,48 @@
   ],
   "descriptions": [],
   "notes": [
-    "Note: Try to reach the top left part of the zone in The Belly of The Beast, this leads to The Rotting core which is fairly static, and where you will want to go top left again, then you have The Black Heart where there are three boss zones with a linear path to them. Kill ‘em all, then fight the Depraved Trinity act boss after entering at the center.(boss and lead up video)"
+    {
+      "text": "Note: Try to reach the top left part of the zone in The Belly of The Beast, this leads to The Rotting core which is fairly static, and where you will want to go top left again, then you have The Black Heart where there are three boss zones with a linear path to them. Kill ‘em all, then fight the Depraved Trinity act boss after entering at the center.(boss and lead up video)",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    }
   ],
   "images": [
-    "image179.png",
-    "image75.png",
-    "image35.png"
+    {
+      "file": "image179.png",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    },
+    {
+      "file": "image75.png",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    },
+    {
+      "file": "image35.png",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    }
   ],
   "source": {
     "document": "PoE Map Layouts community compilation (poelayouts.docx)",
     "images_author": "Engineering Eternity",
     "notes_author": "community compilation author"
-  },
-  "audit": {
-    "status": "unaudited",
-    "verified_patch": null,
-    "correction": null
   }
 }

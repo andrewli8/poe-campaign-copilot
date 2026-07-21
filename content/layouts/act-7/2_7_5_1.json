@@ -7,21 +7,48 @@
   ],
   "descriptions": [],
   "notes": [
-    "Note: This is works just like in act two, loop around to the center, then activate the waypoint and use your map in the map device and continue through the portals. After killing Maligaro, you return here and go through the hall behind the waypoint to find the exit."
+    {
+      "text": "Note: This is works just like in act two, loop around to the center, then activate the waypoint and use your map in the map device and continue through the portals. After killing Maligaro, you return here and go through the hall behind the waypoint to find the exit.",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    }
   ],
   "images": [
-    "image33.png",
-    "image8.png",
-    "image19.png"
+    {
+      "file": "image33.png",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    },
+    {
+      "file": "image8.png",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    },
+    {
+      "file": "image19.png",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    }
   ],
   "source": {
     "document": "PoE Map Layouts community compilation (poelayouts.docx)",
     "images_author": "Engineering Eternity",
     "notes_author": "community compilation author"
-  },
-  "audit": {
-    "status": "unaudited",
-    "verified_patch": null,
-    "correction": null
   }
 }

@@ -6,22 +6,41 @@
     "Chamber of Sins 2"
   ],
   "descriptions": [
-    "There is another less common layout explained in bold text in the notes."
+    {
+      "text": "There is another less common layout explained in bold text in the notes.",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    }
   ],
   "notes": [
-    "Note: There is a trial in this zone on the left side. Go to the top right side, until you find the narrow long hallway, move to the end where you fought Fidelitas in act two, then go right up and right down afterwards.There is a layout that goes to the bottom left instead, if you encounter a dead end when going to the top right, do a right hand wall-follow to the end. Click the wall to reveal the exit."
+    {
+      "text": "Note: There is a trial in this zone on the left side. Go to the top right side, until you find the narrow long hallway, move to the end where you fought Fidelitas in act two, then go right up and right down afterwards.There is a layout that goes to the bottom left instead, if you encounter a dead end when going to the top right, do a right hand wall-follow to the end. Click the wall to reveal the exit.",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    }
   ],
   "images": [
-    "image135.png"
+    {
+      "file": "image135.png",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    }
   ],
   "source": {
     "document": "PoE Map Layouts community compilation (poelayouts.docx)",
     "images_author": "Engineering Eternity",
     "notes_author": "community compilation author"
-  },
-  "audit": {
-    "status": "unaudited",
-    "verified_patch": null,
-    "correction": null
   }
 }

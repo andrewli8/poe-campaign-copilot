@@ -7,19 +7,30 @@
   ],
   "descriptions": [],
   "notes": [
-    "Note: Don’t forget the waypoint, this zone leads to two new zones. Go to The Fellshrine Ruins (1) first."
+    {
+      "text": "Note: Don’t forget the waypoint, this zone leads to two new zones. Go to The Fellshrine Ruins (1) first.",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    }
   ],
   "images": [
-    "image109.png"
+    {
+      "file": "image109.png",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    }
   ],
   "source": {
     "document": "PoE Map Layouts community compilation (poelayouts.docx)",
     "images_author": "Engineering Eternity",
     "notes_author": "community compilation author"
-  },
-  "audit": {
-    "status": "unaudited",
-    "verified_patch": null,
-    "correction": null
   }
 }

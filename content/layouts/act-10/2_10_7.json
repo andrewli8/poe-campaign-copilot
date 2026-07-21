@@ -6,20 +6,31 @@
     "The Control Blocks"
   ],
   "descriptions": [
-    "Optional, static layout, quest boss for a skill point."
+    {
+      "text": "Optional, static layout, quest boss for a skill point.",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    }
   ],
   "notes": [
-    "Note: Right hand wall-follow all the way to the end. Use movement skills to jump through fences."
+    {
+      "text": "Note: Right hand wall-follow all the way to the end. Use movement skills to jump through fences.",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    }
   ],
   "images": [],
   "source": {
     "document": "PoE Map Layouts community compilation (poelayouts.docx)",
     "images_author": "Engineering Eternity",
     "notes_author": "community compilation author"
-  },
-  "audit": {
-    "status": "unaudited",
-    "verified_patch": null,
-    "correction": null
   }
 }

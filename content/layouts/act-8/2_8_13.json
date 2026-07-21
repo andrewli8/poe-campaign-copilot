@@ -6,20 +6,31 @@
     "The Harbour Bridge"
   ],
   "descriptions": [
-    "Linear layout."
+    {
+      "text": "Linear layout.",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    }
   ],
   "notes": [
-    "Note: Go top right to find the arena with Solaris and Lunaris, capped fire and cold resistance is recommended."
+    {
+      "text": "Note: Go top right to find the arena with Solaris and Lunaris, capped fire and cold resistance is recommended.",
+      "audit": {
+        "status": "unaudited",
+        "first_verified_patch": null,
+        "last_verified_patch": null,
+        "correction": null
+      }
+    }
   ],
   "images": [],
   "source": {
     "document": "PoE Map Layouts community compilation (poelayouts.docx)",
     "images_author": "Engineering Eternity",
     "notes_author": "community compilation author"
-  },
-  "audit": {
-    "status": "unaudited",
-    "verified_patch": null,
-    "correction": null
   }
 }
