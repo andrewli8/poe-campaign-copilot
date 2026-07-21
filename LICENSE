@@ -19,3 +19,11 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+Third-party content exception: the files under content/layouts/ and vendor/
+contain third-party material (zone layout images by Engineering Eternity,
+community-authored layout notes, and exile-leveling route data) that is NOT
+covered by the MIT grant above. That material remains under its owners'
+terms; see CREDITS.md for attribution and details.
