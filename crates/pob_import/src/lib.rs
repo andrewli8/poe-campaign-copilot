@@ -141,6 +141,27 @@ mod tests {
     }
 
     #[test]
+    fn support_gem_without_suffix_resolves_via_fallback() {
+        let gems = load_vendored_gems().unwrap();
+        let plan = parse_build(&fixture_xml(), &gems).unwrap();
+
+        // Real-export shape: nameSpec="Pierce" (no " Support" suffix) still
+        // enriches via the "{name} Support" fallback.
+        let pierce = plan
+            .skill_sets
+            .iter()
+            .flat_map(|s| &s.gems)
+            .find(|g| g.name == "Pierce")
+            .expect("fixture has a Pierce gem in the real-export shape");
+        assert_eq!(pierce.is_support, Some(true));
+        assert_eq!(pierce.required_level, Some(4));
+
+        // Support gems (whether looked up via exact match or the fallback)
+        // never produce a milestone.
+        assert!(!plan.milestones.iter().any(|m| m.label.contains("Pierce")));
+    }
+
+    #[test]
     fn unparseable_build_is_unsupported_not_error() {
         let gems = load_vendored_gems().unwrap();
         let plan = parse_build(

@@ -157,7 +157,14 @@ impl ParseState {
         let enabled = get_attr(e, "enabled")?
             .map(|v| v == "true")
             .unwrap_or(false);
-        let enriched = by_name.get(&name);
+        // Real Path of Building exports write support gems' `nameSpec`
+        // WITHOUT the " Support" suffix that the vendored gem data's `name`
+        // field carries (e.g. nameSpec="Pierce", not "Pierce Support"), so
+        // an exact-name lookup misses every support gem in a real export.
+        // Fall back to the suffixed name before giving up.
+        let enriched = by_name
+            .get(&name)
+            .or_else(|| by_name.get(&format!("{name} Support")));
         set.gems.push(GemPlan {
             name,
             required_level: enriched.map(|g| g.required_level),

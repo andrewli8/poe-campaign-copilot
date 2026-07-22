@@ -3,10 +3,13 @@
   Hand-written fixture, structurally faithful to a real Path of Building
   export (root element, attribute names/shapes, nesting) but trimmed of
   fields the leveling-plan parser does not read (Items, Calcs internals,
-  full passive tree node lists, etc). Gem nameSpecs use the exact vendored
-  gem names from vendor/exile-leveling/data/gems.json, including the
-  " Support" suffix that support gems carry in-game, so enrichment
-  (required_level / is_support) actually resolves.
+  full passive tree node lists, etc). Most gem nameSpecs here match the
+  vendored gem names from vendor/exile-leveling/data/gems.json exactly
+  (e.g. "Pierce Support"), but real Path of Building exports actually OMIT
+  the " Support" suffix that the vendored data's `name` field carries for
+  support gems — a real export writes nameSpec="Pierce", not "Pierce
+  Support". The second Skill in SkillSet 1 below uses that real, unsuffixed
+  shape to exercise the parser's "{name} Support" enrichment fallback.
 -->
 <PathOfBuilding>
     <Build level="32" targetVersion="3_0" className="Ranger" ascendClassName="Deadeye" mainSocketGroup="1" viewMode="TREE">
@@ -19,6 +22,11 @@
             <Skill enabled="true" slot="Weapon 1" mainActiveSkill="1">
                 <Gem nameSpec="Caustic Arrow" skillId="PoisonArrow" level="1" quality="0" enabled="true" count="1"/>
                 <Gem nameSpec="Pierce Support" skillId="SupportGemPierce" level="1" quality="0" enabled="true" count="1"/>
+            </Skill>
+            <!-- Real-export shape: support gem nameSpec with no " Support"
+                 suffix. Exercises the "{name} Support" enrichment fallback. -->
+            <Skill enabled="true" slot="Weapon 2" mainActiveSkill="1">
+                <Gem nameSpec="Pierce" skillId="SupportGemPierce" level="1" quality="0" enabled="true" count="1"/>
             </Skill>
         </SkillSet>
         <SkillSet id="2" title="13-32">
