@@ -42,6 +42,14 @@ struct PendingGenerated {
     seed: u64,
 }
 
+/// Tracks the progress of a session, resolving raw log events into authoritative
+/// area transitions and player level updates.
+///
+/// **Assumption:** Each session involves a single playable character. The first
+/// LevelUp event's character becomes the "pinned" player, and only their
+/// subsequent LevelUps update `player_level()`. Other characters' levels are
+/// ignored. This tracker is regenerated on config changes (e.g. area map updates);
+/// do not cache it across configuration reloads.
 pub struct SessionTracker {
     areas: AreaMap,
     started: bool,
@@ -49,6 +57,8 @@ pub struct SessionTracker {
     current_act: Option<u8>,
     pending: Option<PendingGenerated>,
     last_seed_by_area: std::collections::BTreeMap<String, u64>,
+    pinned_character: Option<String>,
+    player_level: Option<u16>,
 }
 
 impl SessionTracker {
@@ -60,6 +70,8 @@ impl SessionTracker {
             current_act: None,
             pending: None,
             last_seed_by_area: std::collections::BTreeMap::new(),
+            pinned_character: None,
+            player_level: None,
         }
     }
 
@@ -69,6 +81,14 @@ impl SessionTracker {
 
     pub fn current_act(&self) -> Option<u8> {
         self.current_act
+    }
+
+    pub fn pinned_character(&self) -> Option<&str> {
+        self.pinned_character.as_deref()
+    }
+
+    pub fn player_level(&self) -> Option<u16> {
+        self.player_level
     }
 
     pub fn on_raw(&mut self, event: &RawEvent) -> Vec<SessionEvent> {
@@ -101,6 +121,14 @@ impl SessionTracker {
                 level,
                 at,
             } => {
+                // Pin the first character to level up; only their levels update player_level.
+                if self.pinned_character.is_none() {
+                    self.pinned_character = Some(character.clone());
+                }
+                if self.pinned_character.as_ref() == Some(character) {
+                    self.player_level = Some(*level);
+                }
+                // LevelUp SessionEvents pass through unchanged.
                 out.push(SessionEvent::LevelUp {
                     character: character.clone(),
                     class: class.clone(),
@@ -489,5 +517,37 @@ mod tests {
             "expected fallback resolution despite unknown pending area id, got {:?}",
             more[0]
         );
+    }
+
+    #[test]
+    fn pins_first_leveling_character_and_tracks_their_level() {
+        let (mut t, _) = {
+            let (areas, _) = load_vendored().unwrap();
+            (SessionTracker::new(areas), ())
+        };
+        assert_eq!(t.player_level(), None);
+        t.on_raw(&RawEvent::LevelUp {
+            character: "Me".into(),
+            class: "Ranger".into(),
+            level: 5,
+            at: "t".into(),
+        });
+        assert_eq!(t.pinned_character(), Some("Me"));
+        assert_eq!(t.player_level(), Some(5));
+        // A party member levels: ignored.
+        t.on_raw(&RawEvent::LevelUp {
+            character: "Friend".into(),
+            class: "Witch".into(),
+            level: 40,
+            at: "t".into(),
+        });
+        assert_eq!(t.player_level(), Some(5));
+        t.on_raw(&RawEvent::LevelUp {
+            character: "Me".into(),
+            class: "Ranger".into(),
+            level: 6,
+            at: "t".into(),
+        });
+        assert_eq!(t.player_level(), Some(6));
     }
 }
