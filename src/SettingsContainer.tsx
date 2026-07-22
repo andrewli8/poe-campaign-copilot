@@ -24,18 +24,24 @@ export function SettingsContainer() {
 
   useEffect(() => {
     let disposed = false;
-    invoke<AppConfig>("get_config").then((cfg) => {
-      if (!disposed) setConfig(cfg);
-    });
+    invoke<AppConfig>("get_config")
+      .then((cfg) => {
+        if (!disposed) setConfig(cfg);
+      })
+      .catch((e) => console.error("get_config failed:", e));
     return () => {
       disposed = true;
     };
   }, []);
 
   async function handlePick() {
-    const path = await invoke<string | null>("pick_log_file");
-    if (path) {
-      setConfig((prev) => (prev ? { ...prev, client_log_path: path } : prev));
+    try {
+      const path = await invoke<string | null>("pick_log_file");
+      if (path) {
+        setConfig((prev) => (prev ? { ...prev, client_log_path: path } : prev));
+      }
+    } catch (e) {
+      console.error("pick_log_file failed:", e);
     }
   }
 
@@ -58,6 +64,9 @@ export function SettingsContainer() {
     try {
       await invoke("apply_settings", { cfg });
       setConfig(cfg);
+      // A previous failed save (e.g. "log file not found") may have left
+      // previewError set; a successful save supersedes it.
+      setPreviewError(null);
       setSavedAt(Date.now());
     } catch (e) {
       // SettingsPage's props (fixed by the brief) only have one error slot —

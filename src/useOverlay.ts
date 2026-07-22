@@ -46,12 +46,16 @@ export function useOverlay() {
       await listenersReady;
       if (disposed) return;
 
-      const initial = await invoke<UiModel>("get_model");
-      // Only apply the invoke() result if no overlay-model event arrived
-      // while we were waiting on it — an event always wins because it
-      // reflects a newer state than the snapshot we requested.
-      if (!disposed && !eventModelArrived) {
-        setModel(initial);
+      try {
+        const initial = await invoke<UiModel>("get_model");
+        // Only apply the invoke() result if no overlay-model event arrived
+        // while we were waiting on it — an event always wins because it
+        // reflects a newer state than the snapshot we requested.
+        if (!disposed && !eventModelArrived) {
+          setModel(initial);
+        }
+      } catch (e) {
+        console.error("get_model failed:", e);
       }
     }
 

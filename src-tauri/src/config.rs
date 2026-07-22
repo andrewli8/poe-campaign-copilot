@@ -8,6 +8,8 @@ pub fn default_variant() -> String {
     "league-start".to_string()
 }
 
+const KNOWN_VARIANTS: [&str; 2] = ["league-start", "standard"];
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct AppConfig {
     pub client_log_path: Option<String>,
@@ -42,6 +44,24 @@ fn try_parse(json: &str) -> Result<AppConfig, serde_json::Error> {
 /// readable.
 pub fn config_json(cfg: &AppConfig) -> String {
     serde_json::to_string_pretty(cfg).unwrap_or_default()
+}
+
+/// Returns a copy of `cfg` with an unrecognized `variant` value replaced by
+/// `default_variant()` — used by `load()` so a corrupt or hand-edited
+/// config.json with a bogus/stale variant (e.g. from a removed route
+/// variant) degrades gracefully to the default rather than getting
+/// rejected wholesale by `map_variant` at pipeline-build time. Returns
+/// `cfg` unchanged (no clone-and-replace) when the variant is already
+/// known.
+fn normalize_variant(cfg: AppConfig) -> AppConfig {
+    if KNOWN_VARIANTS.contains(&cfg.variant.as_str()) {
+        cfg
+    } else {
+        AppConfig {
+            variant: default_variant(),
+            ..cfg
+        }
+    }
 }
 
 /// True when every persisted field of `a` and `b` matches. Used by
@@ -85,7 +105,16 @@ pub fn load(app: &tauri::AppHandle) -> AppConfig {
     if let Err(e) = &parsed {
         eprintln!("config: corrupt config at {}: {e}", path.display());
     }
-    parsed.unwrap_or_default()
+    let cfg = parsed.unwrap_or_default();
+    if !KNOWN_VARIANTS.contains(&cfg.variant.as_str()) {
+        eprintln!(
+            "config: unknown route variant {:?} at {}; normalizing to {}",
+            cfg.variant,
+            path.display(),
+            default_variant()
+        );
+    }
+    normalize_variant(cfg)
 }
 
 /// Saves the config file, creating the app config directory if needed.
@@ -134,6 +163,32 @@ mod tests {
     fn empty_object_still_defaults_variant() {
         let cfg = parse_config("{}");
         assert_eq!(cfg.variant, "league-start");
+    }
+
+    #[test]
+    fn normalize_variant_replaces_unknown_values() {
+        let cfg = AppConfig {
+            client_log_path: Some("/tmp/Client.txt".into()),
+            variant: "hardcore-solo-self-found".into(),
+            pob_code: None,
+        };
+        let normalized = normalize_variant(cfg);
+        assert_eq!(normalized.variant, "league-start");
+        assert_eq!(
+            normalized.client_log_path.as_deref(),
+            Some("/tmp/Client.txt"),
+            "other fields are preserved"
+        );
+    }
+
+    #[test]
+    fn normalize_variant_leaves_known_values_untouched() {
+        let cfg = AppConfig {
+            client_log_path: None,
+            variant: "standard".into(),
+            pob_code: None,
+        };
+        assert_eq!(normalize_variant(cfg).variant, "standard");
     }
 
     #[test]
