@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Hand-written fixture, structurally faithful to a real Path of Building
+  export (root element, attribute names/shapes, nesting) but trimmed of
+  fields the leveling-plan parser does not read (Items, Calcs internals,
+  full passive tree node lists, etc). Gem nameSpecs use the exact vendored
+  gem names from vendor/exile-leveling/data/gems.json, including the
+  " Support" suffix that support gems carry in-game, so enrichment
+  (required_level / is_support) actually resolves.
+-->
+<PathOfBuilding>
+    <Build level="32" targetVersion="3_0" className="Ranger" ascendClassName="Deadeye" mainSocketGroup="1" viewMode="TREE">
+        <PlayerStat stat="Life" value="850"/>
+    </Build>
+    <Import lastAccountHash="" lastCharacterHash="" lastRealm="pc"/>
+    <Calcs/>
+    <Skills activeSkillSet="1" sortGemsByDPS="true" defaultGemLevel="20" defaultGemQuality="0">
+        <SkillSet id="1" title="1-12">
+            <Skill enabled="true" slot="Weapon 1" mainActiveSkill="1">
+                <Gem nameSpec="Caustic Arrow" skillId="PoisonArrow" level="1" quality="0" enabled="true" count="1"/>
+                <Gem nameSpec="Pierce Support" skillId="SupportGemPierce" level="1" quality="0" enabled="true" count="1"/>
+            </Skill>
+        </SkillSet>
+        <SkillSet id="2" title="13-32">
+            <Skill enabled="true" slot="Weapon 1" mainActiveSkill="1">
+                <Gem nameSpec="Toxic Rain" skillId="ToxicRain" level="1" quality="0" enabled="true" count="1"/>
+                <Gem nameSpec="Mirage Archer Support" skillId="SupportGemMirageArcher" level="1" quality="0" enabled="true" count="1"/>
+                <Gem nameSpec="Frostblink" skillId="Frostblink" level="1" quality="0" enabled="true" count="1"/>
+            </Skill>
+        </SkillSet>
+    </Skills>
+    <Tree activeSpec="1">
+        <Spec title="Level 20" treeVersion="3_0" ascendClassId="3" classId="4" nodes=""/>
+        <Spec title="Level 45" treeVersion="3_0" ascendClassId="3" classId="4" nodes=""/>
+    </Tree>
+    <Notes>Rush Merveil. Buy Toxic Rain at 12.</Notes>
+</PathOfBuilding>
