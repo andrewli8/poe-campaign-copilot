@@ -28,6 +28,7 @@ function model(overrides: Partial<UiModel["overlay"]> = {}, extra: Partial<UiMod
     },
     images: [{ file: "a.png", stale: false, data_url: PIXEL }],
     waiting_for_log: false,
+    build_summary: null,
     ...extra,
   };
 }
@@ -111,6 +112,25 @@ describe("FilmstripBar", () => {
     );
     expect(container.firstChild).toHaveClass("zoom");
     expect(screen.getByText(/drag to move/i)).toBeInTheDocument();
+  });
+
+  it("renders the build summary when present, with the build-summary class", () => {
+    render(
+      <FilmstripBar
+        model={model({}, { build_summary: "Ranger (Deadeye) — 12 milestones" })}
+        zoom={false}
+        setupMode={false}
+      />,
+    );
+    const summary = screen.getByText("Ranger (Deadeye) — 12 milestones");
+    expect(summary).toHaveClass("build-summary");
+  });
+
+  it("omits the build summary line when there is no build", () => {
+    const { container } = render(
+      <FilmstripBar model={model()} zoom={false} setupMode={false} />,
+    );
+    expect(container.querySelector(".build-summary")).not.toBeInTheDocument();
   });
 
   it("marks the header row as a drag region only in setup mode", () => {

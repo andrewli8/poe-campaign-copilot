@@ -37,6 +37,7 @@ export interface UiModel {
   overlay: OverlayModel;
   images: UiImage[];
   waiting_for_log: boolean;
+  build_summary: string | null;
 }
 
 export type RouteVariant = "league-start" | "standard";

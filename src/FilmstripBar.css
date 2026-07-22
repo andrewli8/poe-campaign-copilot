@@ -34,6 +34,11 @@ body,
   text-align: center;
 }
 
+.build-summary {
+  font-size: 10px;
+  color: #8a94a8;
+}
+
 .waiting-pill {
   align-self: center;
   padding: 4px 12px;

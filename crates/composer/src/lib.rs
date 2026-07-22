@@ -212,8 +212,14 @@ pub fn compose(
 /// known player level, for a plan whose reliability is not `Unsupported`.
 /// A milestone `m` is shown when `m.level <= player_level + 2 &&
 /// m.level + 5 >= player_level` — i.e. it's coming up within the next two
-/// levels or hasn't aged out more than five levels back. Sorted by level,
-/// capped at 4.
+/// levels or hasn't aged out more than five levels back.
+///
+/// Capped at 4: when more than 4 milestones fall in the window, keep the 4
+/// CLOSEST to (or above) the player's level rather than the 4 lowest —
+/// sorting ascending by level and taking the last 4 does exactly that,
+/// since the window is already level-bounded on both sides. The result
+/// stays sorted ascending for display (it's a suffix of an ascending sort,
+/// so no re-sort is needed).
 fn build_reminders_for(is_town: bool, build: Option<&BuildContext<'_>>) -> Vec<String> {
     let Some(build) = build else {
         return vec![];
@@ -232,7 +238,8 @@ fn build_reminders_for(is_town: bool, build: Option<&BuildContext<'_>>) -> Vec<S
         .filter(|m| m.level <= player_level + 2 && m.level + 5 >= player_level)
         .collect();
     due.sort_by_key(|m| m.level);
-    due.into_iter().take(4).map(|m| m.label.clone()).collect()
+    let keep_from = due.len().saturating_sub(4);
+    due[keep_from..].iter().map(|m| m.label.clone()).collect()
 }
 
 #[cfg(test)]
@@ -425,5 +432,53 @@ mod tests {
         // No build: nothing (and everything else unchanged).
         let m = compose(&engine, &tasks, &layouts, &areas, None);
         assert!(m.build_reminders.is_empty());
+    }
+
+    #[test]
+    fn build_reminders_cap_keeps_closest_upcoming_when_over_four() {
+        let (mut engine, tasks, layouts, areas) = fixture();
+        let milestone = |level: u16, label: &str| pob_import::Milestone {
+            level,
+            label: label.to_string(),
+            reliability: pob_import::Reliability::Structured,
+        };
+        // 6 milestones, levels 2..7, all Structured.
+        let plan = pob_import::LevelingBuildPlan {
+            class_name: "Ranger".into(),
+            ascend_name: None,
+            skill_sets: vec![],
+            passive_spec_titles: vec![],
+            notes: None,
+            milestones: vec![
+                milestone(2, "A"),
+                milestone(3, "B"),
+                milestone(4, "C"),
+                milestone(5, "D"),
+                milestone(6, "E"),
+                milestone(7, "F"),
+            ],
+            reliability: pob_import::Reliability::Structured,
+        };
+        engine.on_area_entered("1_1_town");
+
+        // Level 7: window is m.level <= 9 && m.level + 5 >= 7, i.e.
+        // m.level >= 2 — all 6 milestones (levels 2..7) fall in the window.
+        // Old rule (lowest 4) would show A,B,C,D (levels 2-5). New rule
+        // (closest-to-or-above player level, i.e. highest 4) shows C,D,E,F
+        // (levels 4-7), still ascending.
+        let ctx = Some(BuildContext {
+            plan: &plan,
+            player_level: Some(7),
+        });
+        let m = compose(&engine, &tasks, &layouts, &areas, ctx);
+        assert_eq!(
+            m.build_reminders,
+            vec![
+                "C".to_string(),
+                "D".to_string(),
+                "E".to_string(),
+                "F".to_string()
+            ]
+        );
     }
 }

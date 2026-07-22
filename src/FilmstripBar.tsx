@@ -32,6 +32,10 @@ export function FilmstripBar({ model, zoom, setupMode }: FilmstripBarProps) {
         <div className="setup-hint">drag to move &middot; resize edges &middot; toggle via tray</div>
       )}
 
+      {model.build_summary && (
+        <div className="build-summary">{model.build_summary}</div>
+      )}
+
       {overlay.route_complete ? (
         <div className="complete-bar">Campaign complete</div>
       ) : (
