@@ -1,6 +1,8 @@
 // Mirrors the Rust UiModel/OverlayModel JSON payloads (snake_case) exactly.
-// See src-tauri/src/pipeline.rs (UiModel, UiImage) and
-// crates/composer/src/lib.rs (OverlayModel, NoteView, ImageView).
+// See src-tauri/src/pipeline.rs (UiModel, UiImage),
+// crates/composer/src/lib.rs (OverlayModel, NoteView, ImageView),
+// src-tauri/src/config.rs (AppConfig), and src-tauri/src/main.rs
+// (PobSummary).
 
 export interface NoteView {
   text: string;
@@ -35,4 +37,17 @@ export interface UiModel {
   overlay: OverlayModel;
   images: UiImage[];
   waiting_for_log: boolean;
+}
+
+export interface AppConfig {
+  client_log_path: string | null;
+  variant: string;
+  pob_code: string | null;
+}
+
+export interface PobSummary {
+  class_name: string;
+  ascend_name: string | null;
+  milestone_count: number;
+  reliability: string;
 }

@@ -23,6 +23,37 @@ build reminders — passively, from Client.txt only.
 - Route data based on [exile-leveling](https://github.com/HeartofPhos/exile-leveling) (MIT).
 - Layout images by Engineering Eternity — see [CREDITS.md](CREDITS.md).
 
+## Settings
+
+The overlay reads its Client.txt path, route variant, and (optional) Path
+of Building build from a small settings window, not from editing files by
+hand:
+
+1. Right-click the tray icon and choose **Settings…**.
+2. **Client.txt log path** — click **Browse…** and pick your Path of
+   Exile `Client.txt` (typically under
+   `.../Path of Exile/logs/Client.txt` on Windows). This is required —
+   the overlay shows a "Waiting for Client.txt…" state until a valid path
+   is configured.
+3. **Route variant** — `league-start` (a fresh character, the default) or
+   `standard` (an existing character skipping early-game quests).
+4. **Path of Building import (optional)** — paste a PoB share code (or
+   raw XML export) to get build-specific reminders (e.g. "Gem available:
+   Frostblink") alongside the route. Click **Preview import** first to
+   see the parsed class/ascendancy, milestone count, and a reliability
+   badge before saving — a `structured` badge means normalized gem/tree
+   data was found; `unsupported` means the build parsed but yields no
+   reminders (the route still works fine without one).
+5. Click **Save**. This validates the settings, rebuilds the route
+   pipeline for the new variant/build, restarts the log tailer at the new
+   path if it changed, and persists everything to the app's config
+   directory (`config.json`) for next launch.
+
+Settings persist across restarts. The environment variables described
+below (`POE_COPILOT_LOG`, `POE_COPILOT_LOG_REPLAY`) remain available as
+developer-only overrides for local runs/demos — they take priority over
+the configured path but are never written to `config.json`.
+
 ## Development
 
 Rust workspace + Tauri 2. Built on macOS, validated on Windows.
