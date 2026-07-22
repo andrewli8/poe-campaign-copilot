@@ -89,6 +89,17 @@ fn import_pob(code: String) -> Result<PobSummary, String> {
 
 #[tauri::command]
 fn apply_settings(app: tauri::AppHandle, cfg: AppConfig) -> Result<(), String> {
+    // (0) No-op guard: if the incoming config is byte-for-byte identical to
+    // what's already persisted, skip the rebuild entirely and report
+    // success. Settings can be reopened and Saved without changing
+    // anything (or Save can be double-clicked), and rebuilding the
+    // pipeline/tailer on every Save — even a no-op one — would tear down
+    // and recreate route-engine/task-engine state mid-run, resetting route
+    // progress and un-pinning the player's level for no reason.
+    if config::configs_equal(&config::load(&app), &cfg) {
+        return Ok(());
+    }
+
     // (a) Validate first: nothing below should mutate shared state or the
     // config file on disk if the submitted settings don't even parse.
     let variant = map_variant(&cfg.variant)?;
@@ -139,9 +150,14 @@ fn apply_settings(app: tauri::AppHandle, cfg: AppConfig) -> Result<(), String> {
         *state.pipeline.lock().unwrap() = new_pipeline;
     }
 
-    // (e) Spawn the new tailer at the configured path.
+    // (e) Spawn the new tailer at the configured path. A failure here
+    // (e.g. the configured path was removed between validation above and
+    // now) propagates as an error rather than being swallowed: the caller
+    // ordering below means config::save (f) never runs in that case, so a
+    // Save that can't actually start tailing doesn't get persisted as if
+    // it had succeeded.
     if let Some(path) = cfg.client_log_path.clone() {
-        spawn_tail(&app, path, true);
+        spawn_tail(&app, path, true)?;
     }
 
     // (f) Persist only after the rebuild above fully succeeded.
@@ -258,14 +274,15 @@ fn toggle_zoom_impl(app: &tauri::AppHandle) -> bool {
 /// `AppState.tailer`, replacing (but not stopping) whatever was there —
 /// callers that are replacing a live tailer must `take()` and `.stop()`
 /// the old handle themselves first. Shared by startup and `apply_settings`.
-fn spawn_tail(app: &tauri::AppHandle, path: String, start_at_end: bool) {
-    let poller = match input_log::FilePoller::new(path.clone().into(), start_at_end) {
-        Ok(p) => p,
-        Err(e) => {
-            eprintln!("tailer: cannot open log at {path}: {e}");
-            return;
-        }
-    };
+///
+/// Returns `Err` if the poller could not be created (e.g. the file doesn't
+/// exist) instead of logging and swallowing the failure itself, so
+/// `apply_settings` can propagate it as a failed Save. Startup call sites
+/// can't propagate (there's no request to fail), so they log the error
+/// themselves and continue without a tailer.
+fn spawn_tail(app: &tauri::AppHandle, path: String, start_at_end: bool) -> Result<(), String> {
+    let poller = input_log::FilePoller::new(path.clone().into(), start_at_end)
+        .map_err(|e| format!("cannot open log at {path}: {e}"))?;
     let (tx, rx) = std::sync::mpsc::channel();
     let handle = input_log::spawn_tailer(poller, std::time::Duration::from_millis(250), tx);
 
@@ -301,6 +318,7 @@ fn spawn_tail(app: &tauri::AppHandle, path: String, start_at_end: bool) {
 
     let state: State<AppState> = app.state();
     *state.tailer.lock().unwrap() = Some(handle);
+    Ok(())
 }
 
 fn main() {
@@ -420,9 +438,13 @@ fn main() {
                 // so POE_COPILOT_LOG_REPLAY=1 flips that default for
                 // local development/demo runs only.
                 let start_at_end = std::env::var("POE_COPILOT_LOG_REPLAY").as_deref() != Ok("1");
-                spawn_tail(app.handle(), log_path, start_at_end);
+                if let Err(e) = spawn_tail(app.handle(), log_path, start_at_end) {
+                    eprintln!("tailer: {e}");
+                }
             } else if let Some(log_path) = cfg.client_log_path.clone() {
-                spawn_tail(app.handle(), log_path, true);
+                if let Err(e) = spawn_tail(app.handle(), log_path, true) {
+                    eprintln!("tailer: {e}");
+                }
             } else {
                 eprintln!("no client log configured — overlay will wait for Settings");
             }

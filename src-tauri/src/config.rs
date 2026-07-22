@@ -44,6 +44,16 @@ pub fn config_json(cfg: &AppConfig) -> String {
     serde_json::to_string_pretty(cfg).unwrap_or_default()
 }
 
+/// True when every persisted field of `a` and `b` matches. Used by
+/// `apply_settings` to detect a no-op Save (e.g. re-opening Settings and
+/// clicking Save without changing anything) so it can skip the
+/// pipeline/tailer rebuild entirely — rebuilding on a no-op Save would
+/// otherwise reset in-progress route/task state and the player's pinned
+/// level for no reason.
+pub fn configs_equal(a: &AppConfig, b: &AppConfig) -> bool {
+    a.client_log_path == b.client_log_path && a.variant == b.variant && a.pob_code == b.pob_code
+}
+
 fn config_path(app: &tauri::AppHandle) -> tauri::Result<std::path::PathBuf> {
     use tauri::Manager;
     Ok(app.path().app_config_dir()?.join("config.json"))
@@ -124,5 +134,34 @@ mod tests {
     fn empty_object_still_defaults_variant() {
         let cfg = parse_config("{}");
         assert_eq!(cfg.variant, "league-start");
+    }
+
+    #[test]
+    fn configs_equal_compares_all_three_fields() {
+        let a = AppConfig {
+            client_log_path: Some("/tmp/Client.txt".into()),
+            variant: "standard".into(),
+            pob_code: Some("code".into()),
+        };
+        let same = a.clone();
+        assert!(configs_equal(&a, &same));
+
+        let different_path = AppConfig {
+            client_log_path: Some("/tmp/Other.txt".into()),
+            ..a.clone()
+        };
+        assert!(!configs_equal(&a, &different_path));
+
+        let different_variant = AppConfig {
+            variant: "league-start".into(),
+            ..a.clone()
+        };
+        assert!(!configs_equal(&a, &different_variant));
+
+        let different_code = AppConfig {
+            pob_code: None,
+            ..a.clone()
+        };
+        assert!(!configs_equal(&a, &different_code));
     }
 }
