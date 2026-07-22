@@ -21,8 +21,21 @@ pub struct AppConfig {
 /// `AppConfig::default()` rather than erroring. A JSON object that's simply
 /// missing the `variant` key still parses fine and picks up
 /// `default_variant()` via serde's per-field default.
+///
+/// `load()` doesn't call this directly — it needs the `Result` (not just
+/// the collapsed `AppConfig`) so it can log a corrupt-file warning without
+/// parsing the JSON twice, so it shares `try_parse` with this function
+/// instead. Kept as its own pure, `Result`-free function because that's
+/// the shape unit tests (and any future non-I/O consumer, e.g. a settings
+/// preview) want; not currently called from any non-test code path, hence
+/// the explicit `allow` rather than a misleading production call site.
+#[allow(dead_code)]
 pub fn parse_config(json: &str) -> AppConfig {
-    serde_json::from_str(json).unwrap_or_default()
+    try_parse(json).unwrap_or_default()
+}
+
+fn try_parse(json: &str) -> Result<AppConfig, serde_json::Error> {
+    serde_json::from_str(json)
 }
 
 /// Pure serialize: pretty-printed so a hand-edited config.json stays
@@ -55,10 +68,14 @@ pub fn load(app: &tauri::AppHandle) -> AppConfig {
             return AppConfig::default();
         }
     };
-    if let Err(e) = serde_json::from_str::<AppConfig>(&json) {
+    // Single parse: log from this same Result rather than parsing twice
+    // (once to check for an error, again via parse_config to get the
+    // value).
+    let parsed = try_parse(&json);
+    if let Err(e) = &parsed {
         eprintln!("config: corrupt config at {}: {e}", path.display());
     }
-    parse_config(&json)
+    parsed.unwrap_or_default()
 }
 
 /// Saves the config file, creating the app config directory if needed.

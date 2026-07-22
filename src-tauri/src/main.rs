@@ -58,11 +58,11 @@ fn get_config(app: tauri::AppHandle) -> AppConfig {
 }
 
 /// Blocks the invoking thread until the user picks a file or closes the
-/// dialog. Tauri commands (sync or async) already run off the main/event
-/// loop thread by default — sync commands are dispatched via
-/// `spawn_blocking`, async commands onto the async runtime's worker pool —
-/// so calling the plugin's blocking API directly here does not freeze the
-/// UI. See tauri-plugin-dialog's `FileDialogBuilder::blocking_pick_file`.
+/// dialog. This is safe to call directly, with no async wrapper or manual
+/// off-thread dispatch: Tauri v2's IPC layer never runs a command handler
+/// on the main/event-loop thread, so blocking here doesn't freeze the UI —
+/// this is exactly the usage `tauri-plugin-dialog` documents for
+/// `FileDialogBuilder::blocking_pick_file`.
 #[tauri::command]
 fn pick_log_file(app: tauri::AppHandle) -> Option<String> {
     app.dialog()
@@ -89,6 +89,8 @@ fn import_pob(code: String) -> Result<PobSummary, String> {
 
 #[tauri::command]
 fn apply_settings(app: tauri::AppHandle, cfg: AppConfig) -> Result<(), String> {
+    // (a) Validate first: nothing below should mutate shared state or the
+    // config file on disk if the submitted settings don't even parse.
     let variant = map_variant(&cfg.variant)?;
     let build = match cfg.pob_code.as_deref().map(str::trim) {
         Some(code) if !code.is_empty() => Some(parse_pob_code(code)?),
@@ -100,14 +102,29 @@ fn apply_settings(app: tauri::AppHandle, cfg: AppConfig) -> Result<(), String> {
         return Err(format!("log file not found: {path}"));
     }
 
-    config::save(&app, &cfg)?;
-
+    // (b) Build the new Pipeline before touching any shared state or the
+    // config file. If content data fails to load here, `apply_settings`
+    // returns before the tailer is touched or the config is saved, so a
+    // bad settings submission can't leave the live app (or the next
+    // launch, which re-`Pipeline::new`s from the saved config and
+    // `.expect()`s success) in a broken state.
     let new_pipeline = Pipeline::new(variant, build).map_err(|e| e.to_string())?;
-    {
-        let state: State<AppState> = app.state();
-        *state.pipeline.lock().unwrap() = new_pipeline;
-    }
 
+    // (c) Stop the OLD tailer's producer thread BEFORE swapping the
+    // pipeline into state.pipeline. This ordering matters: the tailer's
+    // consumer thread (the `for line in rx` loop spawned in `spawn_tail`)
+    // re-fetches `state.pipeline` fresh on every line rather than holding
+    // a reference to a specific Pipeline instance, so if the pipeline swap
+    // (d) happened first, any Client.txt lines still arriving from the OLD
+    // log file would get fed into the NEW pipeline — wrong route/variant/
+    // build context — for as long as the old tailer kept running (up to
+    // its 250ms poll interval, or indefinitely on an idle log). Stopping
+    // first closes that window: `TailerHandle::stop()` blocks until the
+    // producer thread has exited and dropped its `Sender`, which in turn
+    // ends the consumer thread's `for line in rx` loop once it drains
+    // whatever was already buffered. See the consumer-thread trace note
+    // below `spawn_tail` for the (much narrower, and accepted) residual
+    // race this doesn't fully close.
     let old_tailer = {
         let state: State<AppState> = app.state();
         state.tailer.lock().unwrap().take()
@@ -116,10 +133,21 @@ fn apply_settings(app: tauri::AppHandle, cfg: AppConfig) -> Result<(), String> {
         tailer.stop();
     }
 
+    // (d) Now it's safe to swap the pipeline: the old producer is gone.
+    {
+        let state: State<AppState> = app.state();
+        *state.pipeline.lock().unwrap() = new_pipeline;
+    }
+
+    // (e) Spawn the new tailer at the configured path.
     if let Some(path) = cfg.client_log_path.clone() {
         spawn_tail(&app, path, true);
     }
 
+    // (f) Persist only after the rebuild above fully succeeded.
+    config::save(&app, &cfg)?;
+
+    // (g) Emit a fresh model with no lock held.
     let model = {
         let state: State<AppState> = app.state();
         state.pipeline.lock().unwrap().current_model()
@@ -241,6 +269,25 @@ fn spawn_tail(app: &tauri::AppHandle, path: String, start_at_end: bool) {
     let (tx, rx) = std::sync::mpsc::channel();
     let handle = input_log::spawn_tailer(poller, std::time::Duration::from_millis(250), tx);
 
+    // Consumer-thread trace (referenced from apply_settings's reorder
+    // comment): this thread holds no state across iterations — each pass
+    // through the loop re-fetches `state.pipeline` from `app_handle`
+    // rather than capturing a specific `Pipeline`, and it terminates on
+    // its own once the channel closes (`for line in rx` ends when every
+    // `Sender` — here, the one owned by the tailer's producer thread — has
+    // been dropped, which `TailerHandle::stop()` guarantees by joining
+    // that producer thread before returning). So it never leaks/spins
+    // forever, and once `stop()` returns, no *new* lines can arrive on
+    // this channel — only whatever was already buffered in-flight before
+    // the stop flag took effect. Those last few buffered lines (if any)
+    // are still delivered and applied to whatever `state.pipeline`
+    // currently holds, which can race a concurrent pipeline swap in
+    // `apply_settings`. That's a narrow, accepted residual: reordering
+    // stop-before-swap (see apply_settings) closes the large window
+    // (the old tailer running and emitting for the pipeline's whole
+    // rebuild) down to at most one already-in-flight poll batch, rather
+    // than eliminating the race outright, which would need the consumer
+    // thread's own join handle threaded back to apply_settings.
     let app_handle = app.clone();
     std::thread::spawn(move || {
         for line in rx {
