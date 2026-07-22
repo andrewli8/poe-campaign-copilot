@@ -1,6 +1,6 @@
 import { useState } from "react";
 import "./SettingsPage.css";
-import type { AppConfig, PobSummary } from "./types";
+import type { AppConfig, PobSummary, RouteVariant } from "./types";
 
 export interface SettingsPageProps {
   config: AppConfig;
@@ -13,7 +13,7 @@ export interface SettingsPageProps {
   savedAt: number | null;
 }
 
-const VARIANTS: { value: string; label: string }[] = [
+const VARIANTS: { value: RouteVariant; label: string }[] = [
   { value: "league-start", label: "League start (fresh, recommended default)" },
   { value: "standard", label: "Standard (existing character)" },
 ];
@@ -35,14 +35,15 @@ export function SettingsPage({
   saving,
   savedAt,
 }: SettingsPageProps) {
-  const [variant, setVariant] = useState(config.variant);
+  const [variant, setVariant] = useState<RouteVariant>(config.variant);
   const [pobText, setPobText] = useState(config.pob_code ?? "");
 
   function handleSave() {
+    const trimmed = pobText.trim();
     onSave({
       client_log_path: config.client_log_path,
       variant,
-      pob_code: pobText.trim() === "" ? null : pobText,
+      pob_code: trimmed === "" ? null : trimmed,
     });
   }
 
@@ -70,7 +71,7 @@ export function SettingsPage({
           id="variant-select"
           className="settings-select"
           value={variant}
-          onChange={(e) => setVariant(e.target.value)}
+          onChange={(e) => setVariant(e.target.value as RouteVariant)}
         >
           {VARIANTS.map((v) => (
             <option key={v.value} value={v.value}>

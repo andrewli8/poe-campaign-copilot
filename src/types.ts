@@ -39,15 +39,19 @@ export interface UiModel {
   waiting_for_log: boolean;
 }
 
+export type RouteVariant = "league-start" | "standard";
+
 export interface AppConfig {
   client_log_path: string | null;
-  variant: string;
+  variant: RouteVariant;
   pob_code: string | null;
 }
+
+export type Reliability = "explicit" | "structured" | "inferred" | "unsupported";
 
 export interface PobSummary {
   class_name: string;
   ascend_name: string | null;
   milestone_count: number;
-  reliability: string;
+  reliability: Reliability;
 }

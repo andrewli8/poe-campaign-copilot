@@ -154,6 +154,31 @@ describe("SettingsPage", () => {
     expect(screen.getByText(/invalid share code/i)).toBeInTheDocument();
   });
 
+  it("passes the original config through to onSave untouched when nothing is edited", () => {
+    // Regression guard for the "seeded from a placeholder config" bug: a
+    // populated, non-default config (variant "standard", a real pob_code)
+    // rendered once and Saved with no edits must round-trip exactly —
+    // proving the form's initial state comes from the `config` prop's
+    // actual values, not from defaults that happen to get overwritten
+    // later.
+    const onSave = vi.fn();
+    const populated = config({ variant: "standard", pob_code: "https://pobb.in/existing" });
+    render(
+      <SettingsPage
+        config={populated}
+        onPick={noop}
+        onImportPreview={noop}
+        preview={null}
+        previewError={null}
+        onSave={onSave}
+        saving={false}
+        savedAt={null}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /^save$/i }));
+    expect(onSave).toHaveBeenCalledWith(populated);
+  });
+
   it("passes the edited variant and PoB text to onSave", () => {
     const onSave = vi.fn();
     render(
