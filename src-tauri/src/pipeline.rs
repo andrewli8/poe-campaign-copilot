@@ -85,7 +85,9 @@ impl Pipeline {
     }
 
     pub fn current_model(&mut self) -> UiModel {
-        let overlay = compose(&self.engine, &self.tasks, &self.layouts, &self.areas);
+        // TODO(plan6-task5): thread the real BuildContext once builds are
+        // imported into the pipeline.
+        let overlay = compose(&self.engine, &self.tasks, &self.layouts, &self.areas, None);
         let images = overlay
             .layout_images
             .iter()

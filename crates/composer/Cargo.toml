@@ -7,6 +7,7 @@ license = "MIT"
 [dependencies]
 serde = { version = "1", features = ["derive"] }
 content = { path = "../content" }
+pob_import = { path = "../pob_import" }
 route_engine = { path = "../route_engine" }
 task_engine = { path = "../task_engine" }
 

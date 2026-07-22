@@ -26,6 +26,7 @@ export interface OverlayModel {
   next_zone: string | null;
   pending_count: number;
   town_reminders: string[];
+  build_reminders: string[];
   is_town: boolean;
   route_complete: boolean;
 }

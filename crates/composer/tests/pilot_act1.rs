@@ -30,7 +30,7 @@ fn fixture_drives_engines_to_expected_overlay_states() {
                     let step = engine.steps()[i].clone();
                     tasks.on_step_passed(&step, status);
                 }
-                let m = compose(&engine, &tasks, &layouts, &areas);
+                let m = compose(&engine, &tasks, &layouts, &areas, None);
                 observed.push((
                     area_id.clone(),
                     format!("{:?}", advance.kind),
@@ -68,7 +68,7 @@ fn fixture_drives_engines_to_expected_overlay_states() {
 
     // Recompose at the end: active zone is The Mud Flats, which carried
     // real layout content when active.
-    let m = compose(&engine, &tasks, &layouts, &areas);
+    let m = compose(&engine, &tasks, &layouts, &areas, None);
     assert_eq!(m.zone_name, "The Mud Flats");
     assert!(!m.layout_images.is_empty(), "Mud Flats has layout images");
 }

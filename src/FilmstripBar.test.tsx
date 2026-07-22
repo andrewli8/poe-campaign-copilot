@@ -21,6 +21,7 @@ function model(overrides: Partial<UiModel["overlay"]> = {}, extra: Partial<UiMod
       next_zone: "The Mud Flats",
       pending_count: 2,
       town_reminders: [],
+      build_reminders: [],
       is_town: false,
       route_complete: false,
       ...overrides,
@@ -68,6 +69,21 @@ describe("FilmstripBar", () => {
     );
     expect(screen.getByText(/off route/i)).toBeInTheDocument();
     expect(screen.getByText(/quicksilver flask/i)).toBeInTheDocument();
+  });
+
+  it("shows build reminders with the build class", () => {
+    render(
+      <FilmstripBar
+        model={model({
+          is_town: true,
+          build_reminders: ["Gem available: Frostblink"],
+        })}
+        zoom={false}
+        setupMode={false}
+      />,
+    );
+    const item = screen.getByText(/gem available: frostblink/i);
+    expect(item).toHaveClass("build");
   });
 
   it("marks stale images and notes", () => {

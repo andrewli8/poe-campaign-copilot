@@ -337,6 +337,7 @@ version = "0.1.0"
 dependencies = [
  "content",
  "event_parser",
+ "pob_import",
  "replay",
  "route_engine",
  "serde",

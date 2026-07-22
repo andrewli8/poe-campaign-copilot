@@ -138,7 +138,8 @@ body,
 
 .notes-list,
 .steps-list,
-.town-reminders {
+.town-reminders,
+.build-reminders {
   margin: 0;
   padding-left: 16px;
 }
@@ -172,5 +173,10 @@ body,
 
 .town-reminders li {
   color: #6fbf73;
+  font-size: 12px;
+}
+
+.build-reminders li.build {
+  color: #7aa2e0;
   font-size: 12px;
 }

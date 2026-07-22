@@ -27,6 +27,14 @@ pub struct ImageView {
     pub stale: bool,
 }
 
+/// Build-plan context threaded into `compose` so it can surface leveling
+/// milestones as reminders while in town. `None` when no build has been
+/// imported (or the current session predates build import).
+pub struct BuildContext<'a> {
+    pub plan: &'a pob_import::LevelingBuildPlan,
+    pub player_level: Option<u16>,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct OverlayModel {
     pub zone_name: String,
@@ -44,6 +52,9 @@ pub struct OverlayModel {
     pub next_zone: Option<String>,
     pub pending_count: usize,
     pub town_reminders: Vec<String>,
+    /// Leveling-build milestones due soon, shown only while in town. See
+    /// `build_reminders` (the free function) for the level-window rule.
+    pub build_reminders: Vec<String>,
     /// Whether the active area is a town (always false once the route is
     /// complete).
     pub is_town: bool,
@@ -99,6 +110,7 @@ pub fn compose(
     tasks: &TaskEngine,
     layouts: &BTreeMap<String, LayoutEntry>,
     areas: &AreaMap,
+    build: Option<BuildContext<'_>>,
 ) -> OverlayModel {
     let route_complete = engine.is_complete();
     let active_area_id = engine.active_area();
@@ -175,6 +187,8 @@ pub fn compose(
         vec![]
     };
 
+    let build_reminders = build_reminders_for(is_town, build.as_ref());
+
     OverlayModel {
         zone_name,
         area_id,
@@ -188,9 +202,37 @@ pub fn compose(
         next_zone,
         pending_count: tasks.pending_count(),
         town_reminders,
+        build_reminders,
         is_town,
         route_complete,
     }
+}
+
+/// Leveling-build milestones due soon: shown only while in town, with a
+/// known player level, for a plan whose reliability is not `Unsupported`.
+/// A milestone `m` is shown when `m.level <= player_level + 2 &&
+/// m.level + 5 >= player_level` — i.e. it's coming up within the next two
+/// levels or hasn't aged out more than five levels back. Sorted by level,
+/// capped at 4.
+fn build_reminders_for(is_town: bool, build: Option<&BuildContext<'_>>) -> Vec<String> {
+    let Some(build) = build else {
+        return vec![];
+    };
+    let Some(player_level) = build.player_level else {
+        return vec![];
+    };
+    if !is_town || build.plan.reliability == pob_import::Reliability::Unsupported {
+        return vec![];
+    }
+
+    let mut due: Vec<&pob_import::Milestone> = build
+        .plan
+        .milestones
+        .iter()
+        .filter(|m| m.level <= player_level + 2 && m.level + 5 >= player_level)
+        .collect();
+    due.sort_by_key(|m| m.level);
+    due.into_iter().take(4).map(|m| m.label.clone()).collect()
 }
 
 #[cfg(test)]
@@ -221,7 +263,7 @@ mod tests {
         engine.on_area_entered("1_1_town");
         engine.on_area_entered("1_1_2");
 
-        let m = compose(&engine, &tasks, &layouts, &areas);
+        let m = compose(&engine, &tasks, &layouts, &areas, None);
         assert_eq!(m.zone_name, "The Coast");
         assert_eq!(m.area_id, "1_1_2");
         assert_eq!(m.act, 1);
@@ -245,7 +287,7 @@ mod tests {
         engine.on_area_entered("1_1_town");
         engine.on_area_entered("1_1_2");
         engine.on_area_entered("1_1_town"); // off-route
-        let m = compose(&engine, &tasks, &layouts, &areas);
+        let m = compose(&engine, &tasks, &layouts, &areas, None);
         assert_eq!(m.off_route_zone.as_deref(), Some("Lioneye's Watch"));
         assert_eq!(m.zone_name, "The Coast"); // progress display unchanged
     }
@@ -266,13 +308,13 @@ mod tests {
         };
         tasks.on_step_passed(&s, route_engine::StepStatus::Skipped);
 
-        let m = compose(&engine, &tasks, &layouts, &areas);
+        let m = compose(&engine, &tasks, &layouts, &areas, None);
         assert!(m.town_reminders.is_empty(), "Twilight Strand is not a town");
         assert!(!m.is_town);
         assert_eq!(m.pending_count, 1);
 
         engine.on_area_entered("1_1_town");
-        let m = compose(&engine, &tasks, &layouts, &areas);
+        let m = compose(&engine, &tasks, &layouts, &areas, None);
         assert!(m.is_town);
         assert_eq!(
             m.town_reminders,
@@ -300,7 +342,7 @@ mod tests {
         }
         assert!(engine.is_complete());
 
-        let m = compose(&engine, &tasks, &layouts, &areas);
+        let m = compose(&engine, &tasks, &layouts, &areas, None);
         assert_eq!(m.zone_name, "Campaign complete");
         assert_eq!(m.act, 0);
         assert_eq!(m.area_id, "");
@@ -310,5 +352,78 @@ mod tests {
         assert!(!m.is_town);
         assert!(m.layout_images.is_empty());
         assert!(m.steps_in_zone.is_empty());
+    }
+
+    #[test]
+    fn build_reminders_are_town_gated_and_level_windowed() {
+        let (mut engine, tasks, layouts, areas) = fixture();
+        let plan = pob_import::LevelingBuildPlan {
+            class_name: "Ranger".into(),
+            ascend_name: None,
+            skill_sets: vec![],
+            passive_spec_titles: vec![],
+            notes: None,
+            milestones: vec![
+                pob_import::Milestone {
+                    level: 4,
+                    label: "Gem available: Frostblink".into(),
+                    reliability: pob_import::Reliability::Structured,
+                },
+                pob_import::Milestone {
+                    level: 12,
+                    label: "Gem available: Toxic Rain".into(),
+                    reliability: pob_import::Reliability::Structured,
+                },
+                pob_import::Milestone {
+                    level: 2,
+                    label: "Old".into(),
+                    reliability: pob_import::Reliability::Structured,
+                },
+            ],
+            reliability: pob_import::Reliability::Structured,
+        };
+        let ctx = |lvl| {
+            Some(BuildContext {
+                plan: &plan,
+                player_level: Some(lvl),
+            })
+        };
+
+        // Not in town: no reminders even with a build.
+        let m = compose(&engine, &tasks, &layouts, &areas, ctx(5));
+        assert!(m.build_reminders.is_empty());
+
+        engine.on_area_entered("1_1_town");
+        // Level 5: window is m.level <= 7 && m.level + 5 >= 5.
+        // Frostblink (4): 4<=7 && 9>=5 -> shown. Old (2): 2<=7 && 7>=5 -> ALSO
+        // shown (not aged out at level 5). Toxic Rain (12): 12<=7 is false ->
+        // not shown. Sorted by level: Old (2) before Frostblink (4).
+        let m = compose(&engine, &tasks, &layouts, &areas, ctx(5));
+        assert_eq!(
+            m.build_reminders,
+            vec!["Old".to_string(), "Gem available: Frostblink".to_string()]
+        );
+        // Level 10: Toxic Rain (12) now within +2 lookahead (12<=12 && 17>=10);
+        // Frostblink (4+5=9 < 10) and Old (2+5=7 < 10) have aged out.
+        let m = compose(&engine, &tasks, &layouts, &areas, ctx(10));
+        assert_eq!(
+            m.build_reminders,
+            vec!["Gem available: Toxic Rain".to_string()]
+        );
+        // No player level: nothing.
+        let m = compose(
+            &engine,
+            &tasks,
+            &layouts,
+            &areas,
+            Some(BuildContext {
+                plan: &plan,
+                player_level: None,
+            }),
+        );
+        assert!(m.build_reminders.is_empty());
+        // No build: nothing (and everything else unchanged).
+        let m = compose(&engine, &tasks, &layouts, &areas, None);
+        assert!(m.build_reminders.is_empty());
     }
 }

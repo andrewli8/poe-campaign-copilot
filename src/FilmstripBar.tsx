@@ -110,6 +110,15 @@ export function FilmstripBar({ model, zoom, setupMode }: FilmstripBarProps) {
                 ))}
               </ul>
             )}
+            {overlay.build_reminders.length > 0 && (
+              <ul className="build-reminders">
+                {overlay.build_reminders.map((reminder, i) => (
+                  <li key={i} className="build">
+                    {reminder}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </>
       )}
