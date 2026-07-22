@@ -1,13 +1,20 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod config;
 mod pipeline;
 
 use std::sync::Mutex;
 
+use config::AppConfig;
+use content::compile::Variant;
+use input_log::TailerHandle;
 use pipeline::{Pipeline, UiModel};
+use pob_import::LevelingBuildPlan;
+use serde::Serialize;
 use tauri::menu::{CheckMenuItem, Menu, MenuItem};
 use tauri::tray::TrayIconBuilder;
 use tauri::{Emitter, Manager, State};
+use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_window_state::StateFlags;
 
 struct AppState {
@@ -16,6 +23,18 @@ struct AppState {
     zoom: Mutex<bool>,
     setup_item: Mutex<Option<CheckMenuItem<tauri::Wry>>>,
     zoom_item: Mutex<Option<CheckMenuItem<tauri::Wry>>>,
+    /// The currently running Client.txt tailer, if any (`None` while
+    /// waiting for a log path to be configured). Swapped out by
+    /// `apply_settings` whenever the configured path changes.
+    tailer: Mutex<Option<TailerHandle>>,
+}
+
+#[derive(Debug, Serialize)]
+struct PobSummary {
+    class_name: String,
+    ascend_name: Option<String>,
+    milestone_count: usize,
+    reliability: String,
 }
 
 #[tauri::command]
@@ -31,6 +50,138 @@ fn set_setup_mode(app: tauri::AppHandle, enabled: bool) {
 #[tauri::command]
 fn toggle_zoom(app: tauri::AppHandle) -> bool {
     toggle_zoom_impl(&app)
+}
+
+#[tauri::command]
+fn get_config(app: tauri::AppHandle) -> AppConfig {
+    config::load(&app)
+}
+
+/// Blocks the invoking thread until the user picks a file or closes the
+/// dialog. Tauri commands (sync or async) already run off the main/event
+/// loop thread by default — sync commands are dispatched via
+/// `spawn_blocking`, async commands onto the async runtime's worker pool —
+/// so calling the plugin's blocking API directly here does not freeze the
+/// UI. See tauri-plugin-dialog's `FileDialogBuilder::blocking_pick_file`.
+#[tauri::command]
+fn pick_log_file(app: tauri::AppHandle) -> Option<String> {
+    app.dialog()
+        .file()
+        .set_title("Select Client.txt")
+        .blocking_pick_file()
+        .and_then(|fp| fp.into_path().ok())
+        .map(|p| p.to_string_lossy().into_owned())
+}
+
+/// Decodes and parses a Path of Building share code/XML into a preview
+/// summary WITHOUT saving it — the settings UI uses this to validate a
+/// pasted code before the user commits to `apply_settings`.
+#[tauri::command]
+fn import_pob(code: String) -> Result<PobSummary, String> {
+    let plan = parse_pob_code(&code)?;
+    Ok(PobSummary {
+        class_name: plan.class_name,
+        ascend_name: plan.ascend_name,
+        milestone_count: plan.milestones.len(),
+        reliability: reliability_str(plan.reliability),
+    })
+}
+
+#[tauri::command]
+fn apply_settings(app: tauri::AppHandle, cfg: AppConfig) -> Result<(), String> {
+    let variant = map_variant(&cfg.variant)?;
+    let build = match cfg.pob_code.as_deref().map(str::trim) {
+        Some(code) if !code.is_empty() => Some(parse_pob_code(code)?),
+        _ => None,
+    };
+    if let Some(path) = &cfg.client_log_path
+        && !std::path::Path::new(path).exists()
+    {
+        return Err(format!("log file not found: {path}"));
+    }
+
+    config::save(&app, &cfg)?;
+
+    let new_pipeline = Pipeline::new(variant, build).map_err(|e| e.to_string())?;
+    {
+        let state: State<AppState> = app.state();
+        *state.pipeline.lock().unwrap() = new_pipeline;
+    }
+
+    let old_tailer = {
+        let state: State<AppState> = app.state();
+        state.tailer.lock().unwrap().take()
+    };
+    if let Some(tailer) = old_tailer {
+        tailer.stop();
+    }
+
+    if let Some(path) = cfg.client_log_path.clone() {
+        spawn_tail(&app, path, true);
+    }
+
+    let model = {
+        let state: State<AppState> = app.state();
+        state.pipeline.lock().unwrap().current_model()
+    };
+    let _ = app.emit("overlay-model", &model);
+    Ok(())
+}
+
+#[tauri::command]
+fn open_settings(app: tauri::AppHandle) {
+    open_settings_window(&app);
+}
+
+fn open_settings_window(app: &tauri::AppHandle) {
+    if let Some(win) = app.get_webview_window("settings") {
+        if let Err(e) = win.set_focus() {
+            eprintln!("open_settings: failed to focus existing window: {e}");
+        }
+        return;
+    }
+    let result = tauri::WebviewWindowBuilder::new(
+        app,
+        "settings",
+        tauri::WebviewUrl::App("index.html?window=settings".into()),
+    )
+    .title("Settings")
+    .inner_size(560.0, 680.0)
+    .decorations(true)
+    .resizable(true)
+    .focused(true)
+    .build();
+    if let Err(e) = result {
+        eprintln!("open_settings: failed to create settings window: {e}");
+    }
+}
+
+/// Maps the config's persisted variant string to the compiled route pack
+/// selector. Anything other than the two known variants is a validation
+/// error (surfaced to the settings UI by `apply_settings`); callers that
+/// can't fail loudly (startup) fall back to `Variant::LeagueStart` instead.
+fn map_variant(s: &str) -> Result<Variant, String> {
+    match s {
+        "league-start" => Ok(Variant::LeagueStart),
+        "standard" => Ok(Variant::Standard),
+        other => Err(format!("unknown route variant: {other}")),
+    }
+}
+
+fn reliability_str(r: pob_import::Reliability) -> String {
+    match r {
+        pob_import::Reliability::Explicit => "explicit",
+        pob_import::Reliability::Structured => "structured",
+        pob_import::Reliability::Inferred => "inferred",
+        pob_import::Reliability::Unsupported => "unsupported",
+    }
+    .to_string()
+}
+
+fn parse_pob_code(code: &str) -> Result<LevelingBuildPlan, String> {
+    let gems = content::game_data::load_vendored_gems().map_err(|e| e.to_string())?;
+    let xml = pob_import::decode_share_code(code).map_err(|e| e.to_string())?;
+    pob_import::parse_build(&xml, &gems).map_err(|e| e.to_string())
 }
 
 fn apply_setup_mode(app: &tauri::AppHandle, enabled: bool) {
@@ -75,9 +226,37 @@ fn toggle_zoom_impl(app: &tauri::AppHandle) -> bool {
     new_zoom
 }
 
-fn main() {
-    let pipeline = Pipeline::new().expect("content data must load");
+/// Spawns a background tailer at `path` and stores its handle in
+/// `AppState.tailer`, replacing (but not stopping) whatever was there —
+/// callers that are replacing a live tailer must `take()` and `.stop()`
+/// the old handle themselves first. Shared by startup and `apply_settings`.
+fn spawn_tail(app: &tauri::AppHandle, path: String, start_at_end: bool) {
+    let poller = match input_log::FilePoller::new(path.clone().into(), start_at_end) {
+        Ok(p) => p,
+        Err(e) => {
+            eprintln!("tailer: cannot open log at {path}: {e}");
+            return;
+        }
+    };
+    let (tx, rx) = std::sync::mpsc::channel();
+    let handle = input_log::spawn_tailer(poller, std::time::Duration::from_millis(250), tx);
 
+    let app_handle = app.clone();
+    std::thread::spawn(move || {
+        for line in rx {
+            let state: State<AppState> = app_handle.state();
+            let model = state.pipeline.lock().unwrap().on_line(&line);
+            if let Some(model) = model {
+                let _ = app_handle.emit("overlay-model", &model);
+            }
+        }
+    });
+
+    let state: State<AppState> = app.state();
+    *state.tailer.lock().unwrap() = Some(handle);
+}
+
+fn main() {
     tauri::Builder::default()
         // Position-only: persisting SIZE would let a relaunch pick up the
         // zoomed height from a previous session instead of always starting
@@ -98,25 +277,58 @@ fn main() {
                 })
                 .build(),
         )
-        .manage(AppState {
-            pipeline: Mutex::new(pipeline),
-            setup_mode: Mutex::new(false),
-            zoom: Mutex::new(false),
-            setup_item: Mutex::new(None),
-            zoom_item: Mutex::new(None),
-        })
+        .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             get_model,
             set_setup_mode,
-            toggle_zoom
+            toggle_zoom,
+            get_config,
+            pick_log_file,
+            import_pob,
+            apply_settings,
+            open_settings
         ])
         .setup(|app| {
+            // Config load and initial Pipeline construction happen here
+            // (rather than before the Builder chain) because building the
+            // real pipeline needs the resolved variant/build from the
+            // config file, which in turn needs an AppHandle to locate the
+            // app config dir.
+            let cfg = config::load(app.handle());
+            let variant = map_variant(&cfg.variant).unwrap_or_else(|e| {
+                eprintln!("config: {e}; falling back to league-start");
+                Variant::LeagueStart
+            });
+            let build = cfg
+                .pob_code
+                .as_deref()
+                .and_then(|code| match parse_pob_code(code) {
+                    Ok(plan) => Some(plan),
+                    Err(e) => {
+                        eprintln!("config: failed to parse saved PoB code: {e}");
+                        None
+                    }
+                });
+            let pipeline = Pipeline::new(variant, build).expect("content data must load");
+
+            app.manage(AppState {
+                pipeline: Mutex::new(pipeline),
+                setup_mode: Mutex::new(false),
+                zoom: Mutex::new(false),
+                setup_item: Mutex::new(None),
+                zoom_item: Mutex::new(None),
+                tailer: Mutex::new(None),
+            });
+
             // Tray menu
             let setup_item =
                 CheckMenuItem::with_id(app, "setup", "Setup Mode", true, false, None::<&str>)?;
             let zoom_item = CheckMenuItem::with_id(app, "zoom", "Zoom", true, false, None::<&str>)?;
+            let settings_item =
+                MenuItem::with_id(app, "settings", "Settings…", true, None::<&str>)?;
             let quit_item = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
-            let menu = Menu::with_items(app, &[&setup_item, &zoom_item, &quit_item])?;
+            let menu =
+                Menu::with_items(app, &[&setup_item, &zoom_item, &settings_item, &quit_item])?;
 
             let state: State<AppState> = app.state();
             *state.setup_item.lock().unwrap() = Some(setup_item.clone());
@@ -133,6 +345,9 @@ fn main() {
                     "zoom" => {
                         toggle_zoom_impl(app);
                     }
+                    "settings" => {
+                        open_settings_window(app);
+                    }
                     "quit" => app.exit(0),
                     _ => {}
                 })
@@ -145,40 +360,24 @@ fn main() {
                 eprintln!("setup: failed to set ignore-cursor-events: {e}");
             }
 
-            // Tailer thread: POE_COPILOT_LOG -> pipeline -> emit.
+            // Tailer startup: POE_COPILOT_LOG (dev/demo override) beats the
+            // configured client_log_path, which beats no tailer at all
+            // (waiting state, until Settings configures a path).
             if let Ok(log_path) = std::env::var("POE_COPILOT_LOG") {
-                let handle = app.handle().clone();
-                std::thread::spawn(move || {
-                    // Real Client.txt files are huge, append-only histories
-                    // going back to whenever the character was created, so
-                    // the tailer defaults to starting at end-of-file (skip
-                    // the backlog, only react to new lines). The fake-play
-                    // demo harness instead writes a small fixture log from
-                    // scratch and needs the tailer to read it from byte 0,
-                    // so POE_COPILOT_LOG_REPLAY=1 flips that default for
-                    // local development/demo runs only.
-                    let start_at_end =
-                        std::env::var("POE_COPILOT_LOG_REPLAY").as_deref() != Ok("1");
-                    let poller = match input_log::FilePoller::new(log_path.into(), start_at_end) {
-                        Ok(p) => p,
-                        Err(e) => {
-                            eprintln!("tailer: cannot open log: {e}");
-                            return;
-                        }
-                    };
-                    let (tx, rx) = std::sync::mpsc::channel();
-                    let _tailer =
-                        input_log::spawn_tailer(poller, std::time::Duration::from_millis(250), tx);
-                    for line in rx {
-                        let state: State<AppState> = handle.state();
-                        let model = state.pipeline.lock().unwrap().on_line(&line);
-                        if let Some(model) = model {
-                            let _ = handle.emit("overlay-model", &model);
-                        }
-                    }
-                });
+                // Real Client.txt files are huge, append-only histories
+                // going back to whenever the character was created, so
+                // the tailer defaults to starting at end-of-file (skip
+                // the backlog, only react to new lines). The fake-play
+                // demo harness instead writes a small fixture log from
+                // scratch and needs the tailer to read it from byte 0,
+                // so POE_COPILOT_LOG_REPLAY=1 flips that default for
+                // local development/demo runs only.
+                let start_at_end = std::env::var("POE_COPILOT_LOG_REPLAY").as_deref() != Ok("1");
+                spawn_tail(app.handle(), log_path, start_at_end);
+            } else if let Some(log_path) = cfg.client_log_path.clone() {
+                spawn_tail(app.handle(), log_path, true);
             } else {
-                eprintln!("POE_COPILOT_LOG not set — overlay will wait (settings UI comes later)");
+                eprintln!("no client log configured — overlay will wait for Settings");
             }
             Ok(())
         })

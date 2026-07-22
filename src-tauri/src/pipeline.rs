@@ -5,7 +5,7 @@
 use std::collections::HashMap;
 
 use base64::Engine as _;
-use composer::{OverlayModel, compose, layouts_by_area};
+use composer::{BuildContext, OverlayModel, compose, layouts_by_area};
 use content::compile::{Variant, compile_route_pack};
 use content::game_data::{AreaMap, load_vendored};
 use content::layouts::{LayoutEntry, layouts_dir, load_all_layouts};
@@ -27,6 +27,9 @@ pub struct UiModel {
     pub overlay: OverlayModel,
     pub images: Vec<UiImage>,
     pub waiting_for_log: bool,
+    /// Short label for the imported leveling build, e.g. "Ranger (Deadeye)
+    /// — 12 milestones". `None` when no build has been imported.
+    pub build_summary: Option<String>,
 }
 
 #[derive(Debug, Error)]
@@ -47,12 +50,19 @@ pub struct Pipeline {
     areas: AreaMap,
     seen_area_event: bool,
     encoded: HashMap<String, String>,
+    build: Option<pob_import::LevelingBuildPlan>,
 }
 
 impl Pipeline {
-    pub fn new() -> Result<Self, PipelineError> {
+    /// `variant` selects the compiled route pack (league-start vs.
+    /// standard); `build` is the imported leveling-build plan, if any —
+    /// `None` when the user hasn't imported a Path of Building code.
+    pub fn new(
+        variant: Variant,
+        build: Option<pob_import::LevelingBuildPlan>,
+    ) -> Result<Self, PipelineError> {
         let (areas, _) = load_vendored()?;
-        let pack = compile_route_pack(Variant::LeagueStart)?;
+        let pack = compile_route_pack(variant)?;
         let engine = RouteEngine::from_pack(&pack, areas.clone());
         let layouts = layouts_by_area(load_all_layouts()?);
         Ok(Self {
@@ -63,6 +73,7 @@ impl Pipeline {
             areas,
             seen_area_event: false,
             encoded: HashMap::new(),
+            build,
         })
     }
 
@@ -85,9 +96,18 @@ impl Pipeline {
     }
 
     pub fn current_model(&mut self) -> UiModel {
-        // TODO(plan6-task5): thread the real BuildContext once builds are
-        // imported into the pipeline.
-        let overlay = compose(&self.engine, &self.tasks, &self.layouts, &self.areas, None);
+        let player_level = self.tracker.player_level();
+        let build_ctx = self
+            .build
+            .as_ref()
+            .map(|plan| BuildContext { plan, player_level });
+        let overlay = compose(
+            &self.engine,
+            &self.tasks,
+            &self.layouts,
+            &self.areas,
+            build_ctx,
+        );
         let images = overlay
             .layout_images
             .iter()
@@ -101,6 +121,7 @@ impl Pipeline {
             overlay,
             images,
             waiting_for_log: !self.seen_area_event,
+            build_summary: self.build.as_ref().map(build_summary),
         }
     }
 
@@ -126,6 +147,16 @@ impl Pipeline {
     }
 }
 
+/// "Ranger (Deadeye) — 12 milestones", or "Ranger — 12 milestones" when the
+/// build has no ascendancy recorded yet.
+fn build_summary(plan: &pob_import::LevelingBuildPlan) -> String {
+    let count = plan.milestones.len();
+    match &plan.ascend_name {
+        Some(ascend) => format!("{} ({ascend}) — {count} milestones", plan.class_name),
+        None => format!("{} — {count} milestones", plan.class_name),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -141,14 +172,14 @@ mod tests {
 
     #[test]
     fn initial_model_is_waiting() {
-        let mut p = Pipeline::new().unwrap();
+        let mut p = Pipeline::new(Variant::LeagueStart, None).unwrap();
         let m = p.current_model();
         assert!(m.waiting_for_log);
     }
 
     #[test]
     fn area_entry_produces_model_with_images() {
-        let mut p = Pipeline::new().unwrap();
+        let mut p = Pipeline::new(Variant::LeagueStart, None).unwrap();
         assert!(
             p.on_line(GEN_STRAND).is_none(),
             "generating alone changes nothing"
@@ -169,7 +200,7 @@ mod tests {
 
     #[test]
     fn non_area_lines_produce_none() {
-        let mut p = Pipeline::new().unwrap();
+        let mut p = Pipeline::new(Variant::LeagueStart, None).unwrap();
         assert!(p.on_line("garbage").is_none());
         assert!(p
             .on_line("2026/07/21 19:02:10 130000 f22b6b26 [INFO Client 900] : Wanderer (Ranger) is now level 2")
@@ -178,7 +209,7 @@ mod tests {
 
     #[test]
     fn data_urls_are_memoized() {
-        let mut p = Pipeline::new().unwrap();
+        let mut p = Pipeline::new(Variant::LeagueStart, None).unwrap();
         p.on_line(GEN_COAST);
         let m1 = p.on_line(ENTER_COAST).unwrap();
         // Re-enter: same encoded strings (pointer equality is not observable;
@@ -187,5 +218,63 @@ mod tests {
         let m2 = p.on_line(ENTER_COAST).unwrap();
         assert_eq!(m1.images[0].data_url, m2.images[0].data_url);
         assert_eq!(p.encoded_cache_len(), m1.images.len());
+    }
+
+    fn hand_built_plan() -> pob_import::LevelingBuildPlan {
+        pob_import::LevelingBuildPlan {
+            class_name: "Ranger".into(),
+            ascend_name: Some("Deadeye".into()),
+            skill_sets: vec![],
+            passive_spec_titles: vec![],
+            notes: None,
+            milestones: vec![pob_import::Milestone {
+                level: 2,
+                label: "Gem available: Frostblink".into(),
+                reliability: pob_import::Reliability::Structured,
+            }],
+            reliability: pob_import::Reliability::Structured,
+        }
+    }
+
+    #[test]
+    fn pipeline_with_build_surfaces_summary_and_town_reminders() {
+        let mut p = Pipeline::new(Variant::LeagueStart, Some(hand_built_plan())).unwrap();
+
+        // No area entered yet: still waiting, but the build summary is
+        // already available (it doesn't depend on session state).
+        let m = p.current_model();
+        assert!(m.waiting_for_log);
+        assert_eq!(
+            m.build_summary.as_deref(),
+            Some("Ranger (Deadeye) — 1 milestones")
+        );
+
+        // Pin the player's level (LevelUp lines alone never yield a model).
+        assert!(
+            p.on_line(
+                "2026/07/21 19:02:10 130000 f22b6b26 [INFO Client 900] : Wanderer (Ranger) is now level 2"
+            )
+            .is_none()
+        );
+
+        // Enter town: the milestone (level 2) is within the reminder window
+        // for a level-2 player.
+        p.on_line(GEN_TOWN);
+        let m = p.on_line(ENTER_TOWN).expect("entered town -> model");
+        assert_eq!(
+            m.build_summary.as_deref(),
+            Some("Ranger (Deadeye) — 1 milestones")
+        );
+        assert_eq!(
+            m.overlay.build_reminders,
+            vec!["Gem available: Frostblink".to_string()]
+        );
+    }
+
+    #[test]
+    fn pipeline_without_build_has_no_summary() {
+        let mut p = Pipeline::new(Variant::LeagueStart, None).unwrap();
+        let m = p.current_model();
+        assert_eq!(m.build_summary, None);
     }
 }

@@ -11,6 +11,7 @@ tauri-build = { version = "2", features = [] }
 tauri = { version = "2", features = ["tray-icon", "macos-private-api"] }
 tauri-plugin-window-state = "2"
 tauri-plugin-global-shortcut = "2"
+tauri-plugin-dialog = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 content = { path = "../crates/content" }
@@ -22,3 +23,4 @@ route_engine = { path = "../crates/route_engine" }
 task_engine = { path = "../crates/task_engine" }
 composer = { path = "../crates/composer" }
 input_log = { path = "../crates/input_log" }
+pob_import = { path = "../crates/pob_import" }
