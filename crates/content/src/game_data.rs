@@ -120,12 +120,28 @@ mod tests {
         let gems = load_vendored_gems().expect("gems load");
         assert!(gems.len() > 500);
         let by_name = gems_by_name(&gems);
+
+        // Test single gem without duplicates
         let fb = by_name.get("Frostblink").expect("Frostblink exists");
         assert_eq!(fb.required_level, 4);
         assert!(!fb.is_support);
-        // Duplicate-name rule: "Fireball" and "Vaal Fireball" are distinct
-        // names, but e.g. transfigured/vaal variants sharing a base name must
-        // resolve to the lowest required_level.
+
+        // Distinct names are separate
         assert!(by_name.contains_key("Fireball"));
+
+        // Deduplication: keep lowest required_level on name collision
+        // Ice Nova: base level 12, Royale variant level 4 → keep level 4
+        let ice_nova = by_name.get("Ice Nova").expect("Ice Nova exists");
+        assert_eq!(
+            ice_nova.required_level, 4,
+            "Ice Nova should deduplicate to lowest level (4, not 12)"
+        );
+
+        // Leap Slam: base level 10, Royale variant level 4 → keep level 4
+        let leap_slam = by_name.get("Leap Slam").expect("Leap Slam exists");
+        assert_eq!(
+            leap_slam.required_level, 4,
+            "Leap Slam should deduplicate to lowest level (4, not 10)"
+        );
     }
 }
