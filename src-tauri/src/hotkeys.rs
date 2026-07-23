@@ -155,7 +155,7 @@ pub fn register_all(
         if let Err(e) = result {
             for s in registered {
                 if let Err(e2) = app.global_shortcut().unregister(s) {
-                    eprintln!("hotkeys: rollback unregister failed: {e2}");
+                    crate::diagnostics::diag(&format!("hotkeys: rollback unregister failed: {e2}"));
                 }
             }
             return Err(format!(
@@ -176,10 +176,14 @@ pub fn unregister_all(app: &tauri::AppHandle, cfg: &HotkeyConfig) {
         match parse_shortcut(combo) {
             Ok(shortcut) => {
                 if let Err(e) = app.global_shortcut().unregister(shortcut) {
-                    eprintln!("hotkeys: failed to unregister {combo:?}: {e}");
+                    crate::diagnostics::diag(&format!(
+                        "hotkeys: failed to unregister {combo:?}: {e}"
+                    ));
                 }
             }
-            Err(e) => eprintln!("hotkeys: skipping unregister of {combo:?}: {e}"),
+            Err(e) => {
+                crate::diagnostics::diag(&format!("hotkeys: skipping unregister of {combo:?}: {e}"))
+            }
         }
     }
 }

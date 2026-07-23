@@ -108,7 +108,7 @@ pub fn path(app: &tauri::AppHandle) -> Option<PathBuf> {
     match app.path().app_config_dir() {
         Ok(dir) => Some(dir.join("run_timer.json")),
         Err(e) => {
-            eprintln!("run_timer: could not resolve app config dir: {e}");
+            crate::diagnostics::diag(&format!("run_timer: could not resolve app config dir: {e}"));
             None
         }
     }
@@ -122,20 +122,28 @@ pub fn load(path: &Path) -> RunTimerState {
         Err(_) => return RunTimerState::default(), // missing: expected first-run state
     };
     if metadata.len() > MAX_STATE_BYTES {
-        eprintln!("run_timer: state file exceeds {MAX_STATE_BYTES} bytes; ignoring");
+        crate::diagnostics::diag(&format!(
+            "run_timer: state file exceeds {MAX_STATE_BYTES} bytes; ignoring"
+        ));
         return RunTimerState::default();
     }
     let json = match std::fs::read_to_string(path) {
         Ok(j) => j,
         Err(e) => {
-            eprintln!("run_timer: failed to read {}: {e}", path.display());
+            crate::diagnostics::diag(&format!(
+                "run_timer: failed to read {}: {e}",
+                path.display()
+            ));
             return RunTimerState::default();
         }
     };
     match serde_json::from_str(&json) {
         Ok(state) => state,
         Err(e) => {
-            eprintln!("run_timer: corrupt state at {}: {e}", path.display());
+            crate::diagnostics::diag(&format!(
+                "run_timer: corrupt state at {}: {e}",
+                path.display()
+            ));
             RunTimerState::default()
         }
     }
@@ -147,16 +155,19 @@ pub fn store(path: &Path, state: &RunTimerState) {
     if let Some(dir) = path.parent()
         && let Err(e) = std::fs::create_dir_all(dir)
     {
-        eprintln!("run_timer: could not create config dir: {e}");
+        crate::diagnostics::diag(&format!("run_timer: could not create config dir: {e}"));
         return;
     }
     match serde_json::to_string(state) {
         Ok(json) => {
             if let Err(e) = std::fs::write(path, json) {
-                eprintln!("run_timer: failed to write {}: {e}", path.display());
+                crate::diagnostics::diag(&format!(
+                    "run_timer: failed to write {}: {e}",
+                    path.display()
+                ));
             }
         }
-        Err(e) => eprintln!("run_timer: failed to serialize state: {e}"),
+        Err(e) => crate::diagnostics::diag(&format!("run_timer: failed to serialize state: {e}")),
     }
 }
 
@@ -165,7 +176,10 @@ pub fn clear(path: &Path) {
     if let Err(e) = std::fs::remove_file(path)
         && e.kind() != std::io::ErrorKind::NotFound
     {
-        eprintln!("run_timer: failed to remove {}: {e}", path.display());
+        crate::diagnostics::diag(&format!(
+            "run_timer: failed to remove {}: {e}",
+            path.display()
+        ));
     }
 }
 

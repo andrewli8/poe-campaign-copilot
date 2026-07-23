@@ -57,7 +57,7 @@ pub fn journal_path(app: &tauri::AppHandle) -> Option<PathBuf> {
     match app.path().app_config_dir() {
         Ok(dir) => Some(dir.join("session_journal.log")),
         Err(e) => {
-            eprintln!("journal: could not resolve app config dir: {e}");
+            crate::diagnostics::diag(&format!("journal: could not resolve app config dir: {e}"));
             None
         }
     }
@@ -79,32 +79,32 @@ pub fn load_lines(path: &Path, cap: u64) -> Vec<String> {
         Ok(f) => f,
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Vec::new(),
         Err(e) => {
-            eprintln!("journal: failed to open {}: {e}", path.display());
+            crate::diagnostics::diag(&format!("journal: failed to open {}: {e}", path.display()));
             return Vec::new();
         }
     };
     let len = match file.metadata() {
         Ok(m) => m.len(),
         Err(e) => {
-            eprintln!("journal: failed to stat {}: {e}", path.display());
+            crate::diagnostics::diag(&format!("journal: failed to stat {}: {e}", path.display()));
             return Vec::new();
         }
     };
     let over_cap = len > cap;
     if over_cap {
-        eprintln!(
+        crate::diagnostics::diag(&format!(
             "journal: {} is {len} bytes (over the {cap} byte cap); \
              restoring from the newest {cap}-byte tail only",
             path.display()
-        );
+        ));
         if let Err(e) = file.seek(SeekFrom::End(-(cap as i64))) {
-            eprintln!("journal: failed to seek {}: {e}", path.display());
+            crate::diagnostics::diag(&format!("journal: failed to seek {}: {e}", path.display()));
             return Vec::new();
         }
     }
     let mut buf = Vec::with_capacity(len.min(cap) as usize);
     if let Err(e) = file.read_to_end(&mut buf) {
-        eprintln!("journal: failed to read {}: {e}", path.display());
+        crate::diagnostics::diag(&format!("journal: failed to read {}: {e}", path.display()));
         return Vec::new();
     }
     // The seek above may have landed mid-line (and, for that matter,

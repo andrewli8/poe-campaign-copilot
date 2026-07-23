@@ -202,7 +202,7 @@ pub fn load(app: &tauri::AppHandle) -> AppConfig {
     let path = match config_path(app) {
         Ok(p) => p,
         Err(e) => {
-            eprintln!("config: could not resolve app config dir: {e}");
+            crate::diagnostics::diag(&format!("config: could not resolve app config dir: {e}"));
             return AppConfig::default();
         }
     };
@@ -210,7 +210,7 @@ pub fn load(app: &tauri::AppHandle) -> AppConfig {
         Ok(j) => j,
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => return AppConfig::default(),
         Err(e) => {
-            eprintln!("config: failed to read {}: {e}", path.display());
+            crate::diagnostics::diag(&format!("config: failed to read {}: {e}", path.display()));
             return AppConfig::default();
         }
     };
@@ -219,16 +219,19 @@ pub fn load(app: &tauri::AppHandle) -> AppConfig {
     // value).
     let parsed = try_parse(&json);
     if let Err(e) = &parsed {
-        eprintln!("config: corrupt config at {}: {e}", path.display());
+        crate::diagnostics::diag(&format!(
+            "config: corrupt config at {}: {e}",
+            path.display()
+        ));
     }
     let cfg = parsed.unwrap_or_default();
     if !KNOWN_VARIANTS.contains(&cfg.variant.as_str()) {
-        eprintln!(
+        crate::diagnostics::diag(&format!(
             "config: unknown route variant {:?} at {}; normalizing to {}",
             cfg.variant,
             path.display(),
             default_variant()
-        );
+        ));
     }
     normalize_opacity(normalize_variant(cfg))
 }

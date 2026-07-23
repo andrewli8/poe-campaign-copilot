@@ -1,6 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod config;
+mod diagnostics;
 mod hotkeys;
 mod journal;
 mod pipeline;
@@ -18,6 +19,7 @@ use tauri::menu::{CheckMenuItem, Menu, MenuItem};
 use tauri::tray::TrayIconBuilder;
 use tauri::{Emitter, Manager, State};
 use tauri_plugin_dialog::DialogExt;
+use tauri_plugin_opener::OpenerExt;
 use tauri_plugin_window_state::StateFlags;
 
 struct AppState {
@@ -205,7 +207,7 @@ fn apply_settings(app: tauri::AppHandle, cfg: AppConfig) -> Result<(), String> {
         if let Some(journal_path) = journal::journal_path(&app)
             && let Err(e) = journal::clear(&journal_path)
         {
-            eprintln!("journal: {e}");
+            diagnostics::diag(&format!("journal: {e}"));
         }
 
         // (d3) A new log path/route/build is a new run: reset the run
@@ -233,7 +235,9 @@ fn apply_settings(app: tauri::AppHandle, cfg: AppConfig) -> Result<(), String> {
         if let Err(e) = hotkeys::register_all(&app, &cfg.hotkeys, dispatch_hotkey) {
             if let Err(revert_err) = hotkeys::register_all(&app, &old_cfg.hotkeys, dispatch_hotkey)
             {
-                eprintln!("hotkeys: failed to restore previous bindings: {revert_err}");
+                diagnostics::diag(&format!(
+                    "hotkeys: failed to restore previous bindings: {revert_err}"
+                ));
             }
             return Err(e);
         }
@@ -246,12 +250,16 @@ fn apply_settings(app: tauri::AppHandle, cfg: AppConfig) -> Result<(), String> {
     // window — this also snaps any un-saved slider preview value back to
     // what was actually saved.
     if let Err(e) = app.emit("overlay-opacity", cfg.overlay_opacity) {
-        eprintln!("apply_settings: failed to emit overlay-opacity: {e}");
+        diagnostics::diag(&format!(
+            "apply_settings: failed to emit overlay-opacity: {e}"
+        ));
     }
 
     // (f3) Push the persisted run-timer visibility to the overlay window.
     if let Err(e) = app.emit("show-run-timer", cfg.show_run_timer) {
-        eprintln!("apply_settings: failed to emit show-run-timer: {e}");
+        diagnostics::diag(&format!(
+            "apply_settings: failed to emit show-run-timer: {e}"
+        ));
     }
 
     // (g) Emit a fresh model with no lock held.
@@ -278,7 +286,7 @@ fn open_settings(app: tauri::AppHandle) {
 fn set_overlay_opacity(app: tauri::AppHandle, opacity: f64) -> f64 {
     let clamped = config::clamp_opacity(opacity);
     if let Err(e) = app.emit("overlay-opacity", clamped) {
-        eprintln!("set_overlay_opacity: failed to emit: {e}");
+        diagnostics::diag(&format!("set_overlay_opacity: failed to emit: {e}"));
     }
     clamped
 }
@@ -316,7 +324,9 @@ fn dispatch_hotkey(app: &tauri::AppHandle, action: hotkeys::HotkeyAction) {
 fn open_settings_window(app: &tauri::AppHandle) {
     if let Some(win) = app.get_webview_window("settings") {
         if let Err(e) = win.set_focus() {
-            eprintln!("open_settings: failed to focus existing window: {e}");
+            diagnostics::diag(&format!(
+                "open_settings: failed to focus existing window: {e}"
+            ));
         }
         return;
     }
@@ -346,11 +356,15 @@ fn open_settings_window(app: &tauri::AppHandle) {
         .focused(true)
         .build();
         if let Err(e) = result {
-            eprintln!("open_settings: failed to create settings window: {e}");
+            diagnostics::diag(&format!(
+                "open_settings: failed to create settings window: {e}"
+            ));
         }
     });
     if let Err(e) = schedule {
-        eprintln!("open_settings: failed to schedule window creation: {e}");
+        diagnostics::diag(&format!(
+            "open_settings: failed to schedule window creation: {e}"
+        ));
     }
 }
 
@@ -402,7 +416,9 @@ fn apply_setup_mode(app: &tauri::AppHandle, enabled: bool) {
     *state.setup_mode.lock().unwrap() = enabled;
     if let Some(win) = app.get_webview_window("main") {
         if let Err(e) = win.set_ignore_cursor_events(!enabled) {
-            eprintln!("apply_setup_mode: failed to set ignore-cursor-events: {e}");
+            diagnostics::diag(&format!(
+                "apply_setup_mode: failed to set ignore-cursor-events: {e}"
+            ));
         }
         let _ = win.set_resizable(enabled);
     }
@@ -434,7 +450,7 @@ fn overlay_height_in_range(height: f64) -> bool {
 fn set_overlay_height(app: tauri::AppHandle, height: f64) -> Result<(), String> {
     if !overlay_height_in_range(height) {
         let msg = format!("set_overlay_height: rejected out-of-range height {height}");
-        eprintln!("{msg}");
+        diagnostics::diag(&msg);
         return Err(msg);
     }
     let Some(win) = app.get_webview_window("main") else {
@@ -443,7 +459,7 @@ fn set_overlay_height(app: tauri::AppHandle, height: f64) -> Result<(), String> 
     if let (Ok(scale), Ok(size)) = (win.scale_factor(), win.outer_size()) {
         let logical = size.to_logical::<f64>(scale);
         if let Err(e) = win.set_size(tauri::LogicalSize::new(logical.width, height)) {
-            eprintln!("set_overlay_height: failed to resize window: {e}");
+            diagnostics::diag(&format!("set_overlay_height: failed to resize window: {e}"));
             return Err(e.to_string());
         }
     }
@@ -499,11 +515,11 @@ fn toggle_hide_impl(app: &tauri::AppHandle) -> bool {
     if let Some(win) = app.get_webview_window("main") {
         if new_hidden {
             if let Err(e) = win.hide() {
-                eprintln!("toggle_hide: failed to hide window: {e}");
+                diagnostics::diag(&format!("toggle_hide: failed to hide window: {e}"));
             }
         } else {
             if let Err(e) = win.show() {
-                eprintln!("toggle_hide: failed to show window: {e}");
+                diagnostics::diag(&format!("toggle_hide: failed to show window: {e}"));
             }
             // The overlay is transparent/always-on-top/click-through by
             // design. `always_on_top`/`transparent` are static window
@@ -514,7 +530,9 @@ fn toggle_hide_impl(app: &tauri::AppHandle) -> bool {
             // doesn't fully preserve window attributes set before a hide.
             let setup_mode = *state.setup_mode.lock().unwrap();
             if let Err(e) = win.set_ignore_cursor_events(!setup_mode) {
-                eprintln!("toggle_hide: failed to restore ignore-cursor-events: {e}");
+                diagnostics::diag(&format!(
+                    "toggle_hide: failed to restore ignore-cursor-events: {e}"
+                ));
             }
         }
     }
@@ -640,7 +658,7 @@ fn spawn_tail(
                 && journal::is_significant(&line)
                 && let Err(e) = journal::append_line(journal_path, &line)
             {
-                eprintln!("journal: {e}");
+                diagnostics::diag(&format!("journal: {e}"));
             }
             // Auto-start the run timer on the first zone entry of a run.
             // Costs one extra parse_line per tailed line (the pipeline
@@ -662,7 +680,37 @@ fn spawn_tail(
     Ok(())
 }
 
+/// Reveals the diagnostics log for the user (tray "Open logs" item). Opens
+/// the log file itself when it exists, or falls back to its containing
+/// directory when it doesn't (e.g. a fresh install that hasn't logged
+/// anything user-relevant yet) — either way the user ends up looking at
+/// the right folder in their OS file manager / default text handler.
+fn open_logs_impl(app: &tauri::AppHandle) {
+    let Some(path) = diagnostics::log_path(app) else {
+        diagnostics::diag("open-logs: could not resolve diagnostics log path");
+        return;
+    };
+    let target = if path.exists() {
+        path.clone()
+    } else {
+        match path.parent() {
+            Some(dir) => dir.to_path_buf(),
+            None => path.clone(),
+        }
+    };
+    if let Err(e) = app
+        .opener()
+        .open_path(target.to_string_lossy().into_owned(), None::<&str>)
+    {
+        diagnostics::diag(&format!(
+            "open-logs: failed to open {}: {e}",
+            target.display()
+        ));
+    }
+}
+
 fn main() {
+    diagnostics::install_panic_hook();
     tauri::Builder::default()
         // Position-only: persisting SIZE would let a relaunch pick up the
         // zoomed height from a previous session instead of always starting
@@ -681,6 +729,7 @@ fn main() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             get_model,
             set_setup_mode,
@@ -697,6 +746,15 @@ fn main() {
             get_run_timer
         ])
         .setup(|app| {
+            // Diagnostics init MUST run first, before anything else in
+            // `.setup()` that might log: everything below this line goes
+            // through `diagnostics::diag`, and until the log path is
+            // resolved here, `diag`/`write` calls are stderr-only (see
+            // `diagnostics::write`'s `OnceLock` guard) — which is exactly
+            // the gap this ordering closes.
+            diagnostics::init(app.handle());
+            diagnostics::diag(&format!("app starting v{}", env!("CARGO_PKG_VERSION")));
+
             // Packaged-build data root detection: MUST run before anything
             // below that can trigger a `content::*_dir()` lookup (the
             // config-load-triggered `parse_pob_code` call a few lines down
@@ -717,7 +775,7 @@ fn main() {
                 && resource_dir.join("vendor").join("exile-leveling").is_dir()
                 && let Err(rejected) = content::data_root::set_data_root(resource_dir.clone())
             {
-                eprintln!("data root already set; ignoring {rejected:?}");
+                diagnostics::diag(&format!("data root already set; ignoring {rejected:?}"));
             }
 
             // Config load and initial Pipeline construction happen here
@@ -727,7 +785,7 @@ fn main() {
             // app config dir.
             let cfg = config::load(app.handle());
             let variant = map_variant(&cfg.variant).unwrap_or_else(|e| {
-                eprintln!("config: {e}; falling back to league-start");
+                diagnostics::diag(&format!("config: {e}; falling back to league-start"));
                 Variant::LeagueStart
             });
             let build = cfg
@@ -736,7 +794,7 @@ fn main() {
                 .and_then(|code| match parse_pob_code(code) {
                     Ok(plan) => Some(plan),
                     Err(e) => {
-                        eprintln!("config: failed to parse saved PoB code: {e}");
+                        diagnostics::diag(&format!("config: failed to parse saved PoB code: {e}"));
                         None
                     }
                 });
@@ -753,7 +811,9 @@ fn main() {
                 let lines = journal::load_lines(&journal_path, journal::MAX_JOURNAL_BYTES);
                 if !lines.is_empty() {
                     let fed = journal::replay_into(&mut pipeline, &lines);
-                    eprintln!("journal: restored session progress from {fed} journaled lines");
+                    diagnostics::diag(&format!(
+                        "journal: restored session progress from {fed} journaled lines"
+                    ));
                 }
                 // Compact an over-target journal down to the newest suffix
                 // of what was just replayed, so the append-only file can't
@@ -761,9 +821,9 @@ fn main() {
                 // long-lived configs. Runs before the tailer spawns, so no
                 // concurrent appends can race the rewrite.
                 match journal::compact(&journal_path, &lines, journal::COMPACT_TARGET_BYTES) {
-                    Ok(true) => eprintln!("journal: compacted oversized session journal"),
+                    Ok(true) => diagnostics::diag("journal: compacted oversized session journal"),
                     Ok(false) => {}
-                    Err(e) => eprintln!("journal: {e}"),
+                    Err(e) => diagnostics::diag(&format!("journal: {e}")),
                 }
             }
 
@@ -790,13 +850,13 @@ fn main() {
             // must not abort startup — log it and fall back to the default
             // bindings so the overlay stays controllable.
             if let Err(e) = hotkeys::register_all(app.handle(), &cfg.hotkeys, dispatch_hotkey) {
-                eprintln!("hotkeys: {e}");
+                diagnostics::diag(&format!("hotkeys: {e}"));
                 let defaults = hotkeys::HotkeyConfig::default();
                 if cfg.hotkeys != defaults {
-                    eprintln!("hotkeys: falling back to default bindings");
+                    diagnostics::diag("hotkeys: falling back to default bindings");
                     if let Err(e2) = hotkeys::register_all(app.handle(), &defaults, dispatch_hotkey)
                     {
-                        eprintln!("hotkeys: default bindings also failed: {e2}");
+                        diagnostics::diag(&format!("hotkeys: default bindings also failed: {e2}"));
                     }
                 }
             }
@@ -811,6 +871,8 @@ fn main() {
                 CheckMenuItem::with_id(app, "hide", "Hide overlay", true, false, None::<&str>)?;
             let reset_timer_item =
                 MenuItem::with_id(app, "reset-timer", "Reset run timer", true, None::<&str>)?;
+            let open_logs_item =
+                MenuItem::with_id(app, "open-logs", "Open logs", true, None::<&str>)?;
             let settings_item =
                 MenuItem::with_id(app, "settings", "Settings…", true, None::<&str>)?;
             let quit_item = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
@@ -822,6 +884,7 @@ fn main() {
                     &compact_item,
                     &hide_item,
                     &reset_timer_item,
+                    &open_logs_item,
                     &settings_item,
                     &quit_item,
                 ],
@@ -853,6 +916,9 @@ fn main() {
                     "reset-timer" => {
                         reset_run_timer_impl(app);
                     }
+                    "open-logs" => {
+                        open_logs_impl(app);
+                    }
                     "settings" => {
                         open_settings_window(app);
                     }
@@ -865,7 +931,7 @@ fn main() {
             if let Some(win) = app.get_webview_window("main")
                 && let Err(e) = win.set_ignore_cursor_events(true)
             {
-                eprintln!("setup: failed to set ignore-cursor-events: {e}");
+                diagnostics::diag(&format!("setup: failed to set ignore-cursor-events: {e}"));
             }
 
             // Tailer startup: POE_COPILOT_LOG (dev/demo override) beats the
@@ -884,15 +950,15 @@ fn main() {
                 // No journaling for the dev/demo override: fixture lines
                 // must not contaminate the real persisted session journal.
                 if let Err(e) = spawn_tail(app.handle(), log_path, start_at_end, None) {
-                    eprintln!("tailer: {e}");
+                    diagnostics::diag(&format!("tailer: {e}"));
                 }
             } else if let Some(log_path) = cfg.client_log_path.clone() {
                 let journal_to = journal::journal_path(app.handle());
                 if let Err(e) = spawn_tail(app.handle(), log_path, true, journal_to) {
-                    eprintln!("tailer: {e}");
+                    diagnostics::diag(&format!("tailer: {e}"));
                 }
             } else {
-                eprintln!("no client log configured — overlay will wait for Settings");
+                diagnostics::diag("no client log configured — overlay will wait for Settings");
             }
             Ok(())
         })
