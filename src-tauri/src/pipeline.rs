@@ -3,6 +3,7 @@
 //! fine for development; distribution packaging revisits this path.
 
 use std::collections::HashMap;
+use std::path::{Component, Path};
 
 use base64::Engine as _;
 use composer::{BuildContext, OverlayModel, compose, layouts_by_area};
@@ -129,13 +130,17 @@ impl Pipeline {
         if let Some(hit) = self.encoded.get(file) {
             return hit.clone();
         }
-        let path = layouts_dir().join("assets").join(file);
-        let url = match std::fs::read(&path) {
-            Ok(bytes) => format!(
-                "data:image/png;base64,{}",
-                base64::engine::general_purpose::STANDARD.encode(bytes)
-            ),
-            Err(_) => String::new(),
+        let url = if !is_safe_asset_name(file) {
+            String::new()
+        } else {
+            let path = layouts_dir().join("assets").join(file);
+            match std::fs::read(&path) {
+                Ok(bytes) => format!(
+                    "data:image/png;base64,{}",
+                    base64::engine::general_purpose::STANDARD.encode(bytes)
+                ),
+                Err(_) => String::new(),
+            }
         };
         self.encoded.insert(file.to_string(), url.clone());
         url
@@ -145,6 +150,32 @@ impl Pipeline {
     pub(crate) fn encoded_cache_len(&self) -> usize {
         self.encoded.len()
     }
+}
+
+/// True when `file` is exactly one normal path component — no `..`, no
+/// root/prefix (absolute paths, UNC/`\\host\share`), no separators splitting
+/// it into multiple components, and not empty. Guards `data_url_for` against
+/// a content-pack-supplied `file` value escaping the layouts `assets/`
+/// directory: `PathBuf::join` with an absolute path REPLACES the base
+/// instead of nesting under it, so an unvalidated `file` could otherwise
+/// read arbitrary local files.
+///
+/// The explicit `contains('\\')` check matters beyond what `Component`
+/// parsing alone gives us: `\` is only a path separator on Windows (the
+/// actual shipping target, via the NSIS installer), so on Unix
+/// `Path::new("\\\\host\\share").components()` yields a single
+/// `Normal(..)` component — `Component` parsing alone would treat a UNC-
+/// style string as "safe" on non-Windows build/test hosts. Rejecting any
+/// backslash outright keeps this check's result platform-independent.
+fn is_safe_asset_name(file: &str) -> bool {
+    if file.contains('\\') {
+        return false;
+    }
+    let mut comps = Path::new(file).components();
+    matches!(
+        (comps.next(), comps.next()),
+        (Some(Component::Normal(_)), None)
+    )
 }
 
 /// "Ranger (Deadeye) — 12 milestones", or "Ranger — 12 milestones" when the
@@ -276,5 +307,27 @@ mod tests {
         let mut p = Pipeline::new(Variant::LeagueStart, None).unwrap();
         let m = p.current_model();
         assert_eq!(m.build_summary, None);
+    }
+
+    #[test]
+    fn is_safe_asset_name_rejects_path_traversal_and_absolute_paths() {
+        assert!(!is_safe_asset_name("../../etc/passwd"));
+        assert!(!is_safe_asset_name("/etc/passwd"));
+        assert!(!is_safe_asset_name("a/b.png"));
+        assert!(!is_safe_asset_name("\\\\host\\share"));
+        assert!(!is_safe_asset_name(""));
+    }
+
+    #[test]
+    fn is_safe_asset_name_accepts_a_plain_filename() {
+        assert!(is_safe_asset_name("image10.png"));
+    }
+
+    #[test]
+    fn data_url_for_rejects_traversal_and_yields_empty_string() {
+        let mut p = Pipeline::new(Variant::LeagueStart, None).unwrap();
+        for unsafe_name in ["../../etc/passwd", "/etc/passwd", "a/b.png", ""] {
+            assert_eq!(p.data_url_for(unsafe_name), String::new());
+        }
     }
 }
