@@ -4,6 +4,7 @@ mod config;
 mod hotkeys;
 mod journal;
 mod pipeline;
+mod run_timer;
 
 use std::sync::Mutex;
 
