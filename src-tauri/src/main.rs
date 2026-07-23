@@ -108,8 +108,13 @@ fn apply_settings(app: tauri::AppHandle, cfg: AppConfig) -> Result<(), String> {
         _ => None,
     };
     if let Some(path) = &cfg.client_log_path
-        && !std::path::Path::new(path).exists()
+        && !is_regular_file(path)
     {
+        // Same error as "doesn't exist" — a path that exists but isn't a
+        // regular file (a directory, a FIFO, a device node, ...) is just as
+        // unusable as a missing one: pointing the tailer's poller at a
+        // directory or blocking special file would hang or misbehave the
+        // tailer thread rather than fail cleanly here.
         return Err(format!("log file not found: {path}"));
     }
 
@@ -198,6 +203,20 @@ fn open_settings_window(app: &tauri::AppHandle) {
     if let Err(e) = result {
         eprintln!("open_settings: failed to create settings window: {e}");
     }
+}
+
+/// True only for a path that exists AND is a regular file — rejects a
+/// directory, a FIFO/named pipe, a device node, a socket, etc. A bare
+/// `Path::exists()` check (the previous behavior) is true for all of those
+/// too, which would let `apply_settings` point the Client.txt tailer's
+/// poller at something that isn't a normal append-only text file: a
+/// directory fails to open sensibly, and a FIFO can block the tailer
+/// thread indefinitely waiting for a writer.
+fn is_regular_file(path: &str) -> bool {
+    std::path::Path::new(path)
+        .metadata()
+        .map(|m| m.is_file())
+        .unwrap_or(false)
 }
 
 /// Maps the config's persisted variant string to the compiled route pack
@@ -475,4 +494,36 @@ fn main() {
         })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn is_regular_file_true_for_a_plain_file() {
+        let path = std::env::temp_dir().join(format!(
+            "poe-copilot-is-regular-file-test-{}.txt",
+            std::process::id()
+        ));
+        std::fs::write(&path, "Client.txt content").unwrap();
+        assert!(is_regular_file(path.to_str().unwrap()));
+        std::fs::remove_file(&path).unwrap();
+    }
+
+    #[test]
+    fn is_regular_file_false_for_a_directory() {
+        let path = std::env::temp_dir().join(format!(
+            "poe-copilot-is-regular-file-test-dir-{}",
+            std::process::id()
+        ));
+        std::fs::create_dir_all(&path).unwrap();
+        assert!(!is_regular_file(path.to_str().unwrap()));
+        std::fs::remove_dir(&path).unwrap();
+    }
+
+    #[test]
+    fn is_regular_file_false_for_a_missing_path() {
+        assert!(!is_regular_file("/definitely/does/not/exist/Client.txt"));
+    }
 }

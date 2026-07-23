@@ -2,6 +2,8 @@
 //! an optional Path of Building share code. Loaded once at startup and
 //! rewritten whenever the settings UI calls `apply_settings`.
 
+use std::io::Read as _;
+
 use serde::{Deserialize, Serialize};
 
 pub fn default_variant() -> String {
@@ -9,6 +11,14 @@ pub fn default_variant() -> String {
 }
 
 const KNOWN_VARIANTS: [&str; 2] = ["league-start", "standard"];
+
+/// Hard cap on the config file we'll read. It's a small hand-edited/
+/// machine-written JSON document — a handful of fields — so anything near
+/// this size is corrupt (or hostile) rather than a legitimate config, and
+/// `load()` treats it the same as any other corrupt-file case: degrade to
+/// `AppConfig::default()` rather than reading an unbounded amount of data
+/// into memory.
+const MAX_CONFIG_BYTES: u64 = 1024 * 1024;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct AppConfig {
@@ -74,6 +84,25 @@ pub fn configs_equal(a: &AppConfig, b: &AppConfig) -> bool {
     a.client_log_path == b.client_log_path && a.variant == b.variant && a.pob_code == b.pob_code
 }
 
+/// Reads `path` into a `String`, capped at `limit` bytes. A file over the
+/// cap is reported via `ErrorKind::InvalidData` (rather than actually
+/// reading `limit`-plus-a-byte and then failing) so an oversized config
+/// never gets fully buffered into memory — `load()` treats this error the
+/// same as any other corrupt-file case and degrades to
+/// `AppConfig::default()`.
+fn read_capped_to_string(path: &std::path::Path, limit: u64) -> std::io::Result<String> {
+    let mut file = std::fs::File::open(path)?;
+    if file.metadata()?.len() > limit {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidData,
+            format!("config file exceeds {limit} byte cap"),
+        ));
+    }
+    let mut buf = String::new();
+    file.read_to_string(&mut buf)?;
+    Ok(buf)
+}
+
 fn config_path(app: &tauri::AppHandle) -> tauri::Result<std::path::PathBuf> {
     use tauri::Manager;
     Ok(app.path().app_config_dir()?.join("config.json"))
@@ -90,7 +119,7 @@ pub fn load(app: &tauri::AppHandle) -> AppConfig {
             return AppConfig::default();
         }
     };
-    let json = match std::fs::read_to_string(&path) {
+    let json = match read_capped_to_string(&path, MAX_CONFIG_BYTES) {
         Ok(j) => j,
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => return AppConfig::default(),
         Err(e) => {
@@ -189,6 +218,53 @@ mod tests {
             pob_code: None,
         };
         assert_eq!(normalize_variant(cfg).variant, "standard");
+    }
+
+    #[test]
+    fn read_capped_to_string_rejects_a_file_over_the_limit() {
+        let path = std::env::temp_dir().join(format!(
+            "poe-copilot-config-cap-test-{}-oversized.json",
+            std::process::id()
+        ));
+        std::fs::write(&path, "x".repeat(100)).unwrap();
+        let err = read_capped_to_string(&path, 10).unwrap_err();
+        assert_eq!(err.kind(), std::io::ErrorKind::InvalidData);
+        std::fs::remove_file(&path).unwrap();
+    }
+
+    #[test]
+    fn read_capped_to_string_reads_a_file_under_the_limit_normally() {
+        let path = std::env::temp_dir().join(format!(
+            "poe-copilot-config-cap-test-{}-normal.json",
+            std::process::id()
+        ));
+        std::fs::write(&path, r#"{"variant":"standard"}"#).unwrap();
+        let content = read_capped_to_string(&path, MAX_CONFIG_BYTES).unwrap();
+        assert_eq!(content, r#"{"variant":"standard"}"#);
+        std::fs::remove_file(&path).unwrap();
+    }
+
+    #[test]
+    fn oversized_config_file_degrades_to_default_like_any_corrupt_file() {
+        // load() itself needs a tauri::AppHandle we don't have in a unit
+        // test, so this exercises the same degrade-to-default contract at
+        // the level load() relies on: an oversized file is read-error'd by
+        // read_capped_to_string, and any read error (this test's cap
+        // rejection included) is exactly what load()'s `Err(e) => { ...;
+        // return AppConfig::default() }` arm handles.
+        let path = std::env::temp_dir().join(format!(
+            "poe-copilot-config-cap-test-{}-degrade.json",
+            std::process::id()
+        ));
+        // Larger than MAX_CONFIG_BYTES but still valid JSON, to prove it's
+        // rejected on SIZE, not content.
+        let huge_but_valid = format!(
+            r#"{{"variant":"standard","notes":"{}"}}"#,
+            "a".repeat((MAX_CONFIG_BYTES as usize) + 1)
+        );
+        std::fs::write(&path, &huge_but_valid).unwrap();
+        assert!(read_capped_to_string(&path, MAX_CONFIG_BYTES).is_err());
+        std::fs::remove_file(&path).unwrap();
     }
 
     #[test]
