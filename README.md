@@ -48,7 +48,8 @@ menu (right-click the tray icon).
 | Open Settings | `Alt+Shift+O` |
 | Start / stop the run timer | `Alt+Shift+T` |
 
-The tray menu additionally has **Reset run timer** and **Quit**.
+The tray menu additionally has **Reset run timer**, **Open logs** (see
+Reporting bugs below), and **Quit**.
 
 **Off-route tracking.** If you head into a zone you skipped or one earlier
 than your furthest point, the overlay follows you instead of insisting you
@@ -98,6 +99,22 @@ hints rather than guarantees.
 ![Layout legend: 1 entrance, 2 waypoint, 3 exit and main path, 4 trial and path, 5 optional area and path, E initial of important NPC](docs/images/layout-legend.png)
 
 **→ Full guide to reading the diagrams: [docs/LAYOUTS.md](docs/LAYOUTS.md).**
+
+## Reporting bugs
+
+Found something broken or wrong? Please open an issue at
+[github.com/andrewli8/poe-campaign-copilot/issues](https://github.com/andrewli8/poe-campaign-copilot/issues).
+
+The overlay keeps a small local log of what it's doing and any errors it
+hits, including crashes. Grab it before you file: right-click the tray icon
+and choose **Open logs**, then attach `poe-copilot.log`. It records the app
+version, the zones it detected, and error messages, which makes a bug far
+easier to track down. It stays on your machine and only contains local
+diagnostics, never account or personal data.
+
+When reporting, it helps to include: what you were doing, what you expected
+versus what happened, your Windows version, and whether you run Steam or
+standalone Path of Exile.
 
 ## Building from source & contributing
 
