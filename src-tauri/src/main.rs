@@ -320,19 +320,37 @@ fn open_settings_window(app: &tauri::AppHandle) {
         }
         return;
     }
-    let result = tauri::WebviewWindowBuilder::new(
-        app,
-        "settings",
-        tauri::WebviewUrl::App("index.html?window=settings".into()),
-    )
-    .title("Settings")
-    .inner_size(560.0, 680.0)
-    .decorations(true)
-    .resizable(true)
-    .focused(true)
-    .build();
-    if let Err(e) = result {
-        eprintln!("open_settings: failed to create settings window: {e}");
+    // Build the window on the event loop rather than inline.
+    //
+    // When this is reached from the settings hotkey (alt+shift+o), we are
+    // executing inside the macOS Carbon hot-key callback that
+    // `tauri-plugin-global-shortcut` installs via
+    // `InstallEventHandler(GetApplicationEventTarget(), …)`. That callback
+    // fires re-entrantly, from within the main run loop's own event dispatch,
+    // and creating an NSWindow/WKWebView from there crashes the app. The tray
+    // menu never crashed because its "settings" item is dispatched by tao's
+    // normal event loop, not re-entrantly. `run_on_main_thread` hands the
+    // build back to that same event loop, so every entry point (hotkey, tray
+    // menu, setup) creates the window in the one context that is known-good.
+    let app_for_build = app.clone();
+    let schedule = app.run_on_main_thread(move || {
+        let result = tauri::WebviewWindowBuilder::new(
+            &app_for_build,
+            "settings",
+            tauri::WebviewUrl::App("index.html?window=settings".into()),
+        )
+        .title("Settings")
+        .inner_size(560.0, 680.0)
+        .decorations(true)
+        .resizable(true)
+        .focused(true)
+        .build();
+        if let Err(e) = result {
+            eprintln!("open_settings: failed to create settings window: {e}");
+        }
+    });
+    if let Err(e) = schedule {
+        eprintln!("open_settings: failed to schedule window creation: {e}");
     }
 }
 
