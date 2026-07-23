@@ -21,8 +21,10 @@ struct AppState {
     pipeline: Mutex<Pipeline>,
     setup_mode: Mutex<bool>,
     zoom: Mutex<bool>,
+    hidden: Mutex<bool>,
     setup_item: Mutex<Option<CheckMenuItem<tauri::Wry>>>,
     zoom_item: Mutex<Option<CheckMenuItem<tauri::Wry>>>,
+    hide_item: Mutex<Option<CheckMenuItem<tauri::Wry>>>,
     /// The currently running Client.txt tailer, if any (`None` while
     /// waiting for a log path to be configured). Swapped out by
     /// `apply_settings` whenever the configured path changes.
@@ -50,6 +52,11 @@ fn set_setup_mode(app: tauri::AppHandle, enabled: bool) {
 #[tauri::command]
 fn toggle_zoom(app: tauri::AppHandle) -> bool {
     toggle_zoom_impl(&app)
+}
+
+#[tauri::command]
+fn toggle_hide(app: tauri::AppHandle) -> bool {
+    toggle_hide_impl(&app)
 }
 
 #[tauri::command]
@@ -289,6 +296,50 @@ fn toggle_zoom_impl(app: &tauri::AppHandle) -> bool {
     new_zoom
 }
 
+/// Flips `AppState.hidden` and shows/hides the "main" overlay window to
+/// match, mirroring `toggle_zoom_impl`'s lock-then-drop-before-window-ops
+/// discipline: the `hidden` guard is dropped before touching the window so a
+/// second `toggle_hide_impl` call (rapid tray clicks or the global shortcut
+/// firing twice) can't interleave with the show/hide call and leave the
+/// window's actual visibility out of sync with the flag it's supposed to
+/// reflect.
+fn toggle_hide_impl(app: &tauri::AppHandle) -> bool {
+    let state: State<AppState> = app.state();
+    let mut hidden = state.hidden.lock().unwrap();
+    *hidden = !*hidden;
+    let new_hidden = *hidden;
+    drop(hidden);
+
+    if let Some(win) = app.get_webview_window("main") {
+        if new_hidden {
+            if let Err(e) = win.hide() {
+                eprintln!("toggle_hide: failed to hide window: {e}");
+            }
+        } else {
+            if let Err(e) = win.show() {
+                eprintln!("toggle_hide: failed to show window: {e}");
+            }
+            // The overlay is transparent/always-on-top/click-through by
+            // design. `always_on_top`/`transparent` are static window
+            // attributes from tauri.conf.json that `show()` is expected to
+            // preserve on its own, but click-through is runtime state
+            // (`AppState.setup_mode`) applied via `set_ignore_cursor_events`
+            // — re-assert it defensively here in case a platform's `show()`
+            // doesn't fully preserve window attributes set before a hide.
+            let setup_mode = *state.setup_mode.lock().unwrap();
+            if let Err(e) = win.set_ignore_cursor_events(!setup_mode) {
+                eprintln!("toggle_hide: failed to restore ignore-cursor-events: {e}");
+            }
+        }
+    }
+
+    if let Some(item) = state.hide_item.lock().unwrap().as_ref() {
+        let _ = item.set_checked(new_hidden);
+    }
+    let _ = app.emit("hidden", new_hidden);
+    new_hidden
+}
+
 /// Spawns a background tailer at `path` and stores its handle in
 /// `AppState.tailer`, replacing (but not stopping) whatever was there —
 /// callers that are replacing a live tailer must `take()` and `.stop()`
@@ -352,11 +403,18 @@ fn main() {
         )
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
-                .with_shortcuts(["alt+shift+z"])
+                .with_shortcuts(["alt+shift+z", "alt+shift+h"])
                 .expect("valid shortcut")
-                .with_handler(|app, _shortcut, event| {
-                    if event.state == tauri_plugin_global_shortcut::ShortcutState::Pressed {
+                .with_handler(|app, shortcut, event| {
+                    use tauri_plugin_global_shortcut::{Code, Modifiers};
+                    if event.state != tauri_plugin_global_shortcut::ShortcutState::Pressed {
+                        return;
+                    }
+                    let alt_shift = Modifiers::ALT | Modifiers::SHIFT;
+                    if shortcut.matches(alt_shift, Code::KeyZ) {
                         toggle_zoom_impl(app);
+                    } else if shortcut.matches(alt_shift, Code::KeyH) {
+                        toggle_hide_impl(app);
                     }
                 })
                 .build(),
@@ -366,6 +424,7 @@ fn main() {
             get_model,
             set_setup_mode,
             toggle_zoom,
+            toggle_hide,
             get_config,
             pick_log_file,
             import_pob,
@@ -422,8 +481,10 @@ fn main() {
                 pipeline: Mutex::new(pipeline),
                 setup_mode: Mutex::new(false),
                 zoom: Mutex::new(false),
+                hidden: Mutex::new(false),
                 setup_item: Mutex::new(None),
                 zoom_item: Mutex::new(None),
+                hide_item: Mutex::new(None),
                 tailer: Mutex::new(None),
             });
 
@@ -431,15 +492,26 @@ fn main() {
             let setup_item =
                 CheckMenuItem::with_id(app, "setup", "Setup Mode", true, false, None::<&str>)?;
             let zoom_item = CheckMenuItem::with_id(app, "zoom", "Zoom", true, false, None::<&str>)?;
+            let hide_item =
+                CheckMenuItem::with_id(app, "hide", "Hide overlay", true, false, None::<&str>)?;
             let settings_item =
                 MenuItem::with_id(app, "settings", "Settings…", true, None::<&str>)?;
             let quit_item = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
-            let menu =
-                Menu::with_items(app, &[&setup_item, &zoom_item, &settings_item, &quit_item])?;
+            let menu = Menu::with_items(
+                app,
+                &[
+                    &setup_item,
+                    &zoom_item,
+                    &hide_item,
+                    &settings_item,
+                    &quit_item,
+                ],
+            )?;
 
             let state: State<AppState> = app.state();
             *state.setup_item.lock().unwrap() = Some(setup_item.clone());
             *state.zoom_item.lock().unwrap() = Some(zoom_item.clone());
+            *state.hide_item.lock().unwrap() = Some(hide_item.clone());
             TrayIconBuilder::new()
                 .icon(app.default_window_icon().unwrap().clone())
                 .menu(&menu)
@@ -451,6 +523,9 @@ fn main() {
                     }
                     "zoom" => {
                         toggle_zoom_impl(app);
+                    }
+                    "hide" => {
+                        toggle_hide_impl(app);
                     }
                     "settings" => {
                         open_settings_window(app);
