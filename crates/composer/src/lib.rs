@@ -269,8 +269,8 @@ mod tests {
     #[test]
     fn composes_coast_state_with_real_layout_content() {
         let (mut engine, tasks, layouts, areas) = fixture();
-        engine.on_area_entered("1_1_town");
-        engine.on_area_entered("1_1_2");
+        engine.on_area_entered("1_1_town", true);
+        engine.on_area_entered("1_1_2", true);
 
         let m = compose(&engine, &tasks, &layouts, &areas, None);
         assert_eq!(m.zone_name, "The Coast");
@@ -293,9 +293,10 @@ mod tests {
     #[test]
     fn off_route_zone_is_reported_with_display_name() {
         let (mut engine, tasks, layouts, areas) = fixture();
-        engine.on_area_entered("1_1_town");
-        engine.on_area_entered("1_1_2");
-        engine.on_area_entered("1_1_town"); // off-route
+        engine.on_area_entered("1_1_town", true);
+        engine.on_area_entered("1_1_2", true);
+        // Portal back to town: same instance, not new progress.
+        engine.on_area_entered("1_1_town", false); // off-route
         let m = compose(&engine, &tasks, &layouts, &areas, None);
         assert_eq!(m.off_route_zone.as_deref(), Some("Lioneye's Watch"));
         assert_eq!(m.zone_name, "The Coast"); // progress display unchanged
@@ -322,7 +323,7 @@ mod tests {
         assert!(!m.is_town);
         assert_eq!(m.pending_count, 1);
 
-        engine.on_area_entered("1_1_town");
+        engine.on_area_entered("1_1_town", true);
         let m = compose(&engine, &tasks, &layouts, &areas, None);
         assert!(m.is_town);
         assert_eq!(
@@ -347,7 +348,7 @@ mod tests {
             cs
         };
         for c in &contexts {
-            engine.on_area_entered(c);
+            engine.on_area_entered(c, true);
         }
         assert!(engine.is_complete());
 
@@ -402,7 +403,7 @@ mod tests {
         let m = compose(&engine, &tasks, &layouts, &areas, ctx(5));
         assert!(m.build_reminders.is_empty());
 
-        engine.on_area_entered("1_1_town");
+        engine.on_area_entered("1_1_town", true);
         // Level 5: window is m.level <= 7 && m.level + 5 >= 5.
         // Frostblink (4): 4<=7 && 9>=5 -> shown. Old (2): 2<=7 && 7>=5 -> ALSO
         // shown (not aged out at level 5). Toxic Rain (12): 12<=7 is false ->
@@ -461,7 +462,7 @@ mod tests {
             ],
             reliability: pob_import::Reliability::Structured,
         };
-        engine.on_area_entered("1_1_town");
+        engine.on_area_entered("1_1_town", true);
 
         // Level 7: window is m.level <= 9 && m.level + 5 >= 7, i.e.
         // m.level >= 2 — all 6 milestones (levels 2..7) fall in the window.
@@ -514,7 +515,7 @@ mod tests {
             ],
             reliability: pob_import::Reliability::Structured,
         };
-        engine.on_area_entered("1_1_town");
+        engine.on_area_entered("1_1_town", true);
         let ctx = Some(BuildContext {
             plan: &plan,
             player_level: Some(90),

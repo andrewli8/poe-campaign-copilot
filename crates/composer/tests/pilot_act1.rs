@@ -23,8 +23,13 @@ fn fixture_drives_engines_to_expected_overlay_states() {
     let mut observed = Vec::new();
     for line in text.lines() {
         for ev in tracker.on_raw(&event_parser::parse_line(line)) {
-            if let SessionEvent::AreaEntered { area_id, .. } = &ev {
-                let advance = engine.on_area_entered(area_id);
+            if let SessionEvent::AreaEntered {
+                area_id,
+                new_instance,
+                ..
+            } = &ev
+            {
+                let advance = engine.on_area_entered(area_id, *new_instance);
                 for &i in advance.newly_done.iter().chain(&advance.newly_skipped) {
                     let status = engine.statuses()[i];
                     let step = engine.steps()[i].clone();

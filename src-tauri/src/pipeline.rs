@@ -82,8 +82,13 @@ impl Pipeline {
         let raw = event_parser::parse_line(line);
         let mut area_changed = false;
         for ev in self.tracker.on_raw(&raw) {
-            if let SessionEvent::AreaEntered { area_id, .. } = &ev {
-                let advance = self.engine.on_area_entered(area_id);
+            if let SessionEvent::AreaEntered {
+                area_id,
+                new_instance,
+                ..
+            } = &ev
+            {
+                let advance = self.engine.on_area_entered(area_id, *new_instance);
                 for &i in advance.newly_done.iter().chain(&advance.newly_skipped) {
                     let step = self.engine.steps()[i].clone();
                     let status = self.engine.statuses()[i];
