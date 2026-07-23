@@ -7,6 +7,7 @@ export function useOverlay() {
   const [model, setModel] = useState<UiModel | null>(null);
   const [zoom, setZoom] = useState(false);
   const [setupMode, setSetupMode] = useState(false);
+  const [compact, setCompact] = useState(false);
 
   useEffect(() => {
     let disposed = false;
@@ -42,6 +43,7 @@ export function useOverlay() {
         }),
         registerListener<boolean>("zoom", (z) => setZoom(z)),
         registerListener<boolean>("setup-mode", (s) => setSetupMode(s)),
+        registerListener<boolean>("compact", (c) => setCompact(c)),
       ]);
       await listenersReady;
       if (disposed) return;
@@ -67,5 +69,5 @@ export function useOverlay() {
     };
   }, []);
 
-  return { model, zoom, setupMode };
+  return { model, zoom, setupMode, compact };
 }

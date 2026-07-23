@@ -28,6 +28,38 @@ body,
   border: 1px solid rgba(200, 169, 90, 0.6);
 }
 
+.filmstrip.compact {
+  padding: 4px 8px;
+  gap: 2px;
+}
+
+.compact-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.compact-row .zone-name {
+  flex: 0 0 auto;
+}
+
+.compact-primary {
+  flex: 0 1 auto;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.compact-next {
+  flex: 0 0 auto;
+  color: #8a94a8;
+  font-size: 11px;
+}
+
 .setup-hint {
   font-size: 10px;
   color: #8a94a8;

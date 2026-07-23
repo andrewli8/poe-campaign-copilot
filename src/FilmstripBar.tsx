@@ -5,13 +5,15 @@ export interface FilmstripBarProps {
   model: UiModel;
   zoom: boolean;
   setupMode: boolean;
+  compact: boolean;
 }
 
-export function FilmstripBar({ model, zoom, setupMode }: FilmstripBarProps) {
+export function FilmstripBar({ model, zoom, setupMode, compact }: FilmstripBarProps) {
   const rootClass = [
     "filmstrip",
     zoom && "zoom",
     setupMode && "setup-mode",
+    compact && "compact",
   ]
     .filter(Boolean)
     .join(" ");
@@ -41,12 +43,22 @@ export function FilmstripBar({ model, zoom, setupMode }: FilmstripBarProps) {
         <div className="setup-hint">drag to move &middot; resize edges &middot; toggle via tray</div>
       )}
 
-      {model.build_summary && (
+      {/* Compact only strips the normal-playing layout; the build summary
+          still shows alongside the complete-bar/waiting-pill status lines. */}
+      {(!compact || overlay.route_complete) && model.build_summary && (
         <div className="build-summary">{model.build_summary}</div>
       )}
 
       {overlay.route_complete ? (
         <div className="complete-bar">Campaign complete</div>
+      ) : compact ? (
+        <div className="compact-row">
+          <span className="zone-name">{overlay.zone_name}</span>
+          <span className="compact-primary">{overlay.primary}</span>
+          {overlay.next_zone && (
+            <span className="compact-next">&rarr; {overlay.next_zone}</span>
+          )}
+        </div>
       ) : (
         <>
           <div className="header-row">
