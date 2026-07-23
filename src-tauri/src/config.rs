@@ -148,9 +148,7 @@ fn normalize_opacity(cfg: AppConfig) -> AppConfig {
 /// otherwise reset in-progress route/task state and the player's pinned
 /// level for no reason.
 pub fn configs_equal(a: &AppConfig, b: &AppConfig) -> bool {
-    pipeline_configs_equal(a, b)
-        && a.overlay_opacity == b.overlay_opacity
-        && a.hotkeys == b.hotkeys
+    pipeline_configs_equal(a, b) && a.overlay_opacity == b.overlay_opacity && a.hotkeys == b.hotkeys
 }
 
 /// Equality over ONLY the fields that feed the pipeline/tailer rebuild

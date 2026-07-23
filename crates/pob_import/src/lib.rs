@@ -130,18 +130,16 @@ mod tests {
                 .any(|m| m.level == 13 && m.label.contains("13-32"))
         );
         assert!(
-            plan.milestones
-                .iter()
-                .any(|m| m.label == "Gem available: Frostblink (buy from Nessa, A1)"
-                    && m.level == 4)
+            plan.milestones.iter().any(|m| m.label
+                == "Gem available: Frostblink (buy from Nessa, A1)"
+                && m.level == 4)
         );
         // Toxic Rain is a Ranger act-1 quest reward with the campaign gem's
         // required level 12 (not the level-1 Royale variant's).
         assert!(
-            plan.milestones
-                .iter()
-                .any(|m| m.label == "Gem available: Toxic Rain (quest reward, A1)"
-                    && m.level == 12)
+            plan.milestones.iter().any(|m| m.label
+                == "Gem available: Toxic Rain (quest reward, A1)"
+                && m.level == 12)
         );
         // Support gems excluded from gem milestones.
         assert!(
@@ -166,10 +164,9 @@ mod tests {
         let xml = fixture_xml().replace("className=\"Ranger\"", "className=\"Marauder\"");
         let plan = parse_build(&xml, &gems, &quests, &areas).unwrap();
         assert!(
-            plan.milestones
-                .iter()
-                .any(|m| m.label == "Gem available: Toxic Rain (buy from Siosa, A3)"
-                    && m.level == 23)
+            plan.milestones.iter().any(|m| m.label
+                == "Gem available: Toxic Rain (buy from Siosa, A3)"
+                && m.level == 23)
         );
     }
 

@@ -222,7 +222,8 @@ mod tests {
 
     const GEN_STRAND: &str = r#"2026/07/21 19:00:01 1000 1186a0e0 [DEBUG Client 900] Generating level 1 area "1_1_1" with seed 101"#;
     const ENTER_STRAND: &str = "2026/07/21 19:00:03 3000 f22b6b26 [INFO Client 900] : You have entered The Twilight Strand.";
-    const LEVEL_UP: &str = "2026/07/21 19:02:10 130000 f22b6b26 [INFO Client 900] : Wanderer (Ranger) is now level 2";
+    const LEVEL_UP: &str =
+        "2026/07/21 19:02:10 130000 f22b6b26 [INFO Client 900] : Wanderer (Ranger) is now level 2";
     const GEN_TOWN: &str = r#"2026/07/21 19:03:20 200000 1186a0e0 [DEBUG Client 900] Generating level 1 area "1_1_town" with seed 555"#;
     const ENTER_TOWN: &str =
         "2026/07/21 19:03:22 202000 f22b6b26 [INFO Client 900] : You have entered Lioneye's Watch.";
@@ -293,7 +294,10 @@ mod tests {
 
         let cap = 100; // far smaller than the file
         let lines = load_lines(&path, cap);
-        assert!(!lines.is_empty(), "oversized journal must still load a tail");
+        assert!(
+            !lines.is_empty(),
+            "oversized journal must still load a tail"
+        );
         // Every returned line is a complete original line (no torn line
         // from cutting at an arbitrary byte offset)...
         for l in &lines {
@@ -362,7 +366,10 @@ mod tests {
         // Old history: filler significant-shaped noise (unknown-but-parsed
         // garbage is fine — replay treats it as no-ops) pushing well past
         // the cap, with the real recent session at the very end.
-        let filler = format!("2026/07/20 10:00:00 1 abc [INFO Client 900] old noise {}", "y".repeat(80));
+        let filler = format!(
+            "2026/07/20 10:00:00 1 abc [INFO Client 900] old noise {}",
+            "y".repeat(80)
+        );
         let mut content = String::new();
         for _ in 0..40 {
             content.push_str(&filler);

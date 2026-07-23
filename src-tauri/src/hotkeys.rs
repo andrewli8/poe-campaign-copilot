@@ -211,7 +211,10 @@ mod tests {
     #[test]
     fn parse_rejects_garbage_with_a_clear_message() {
         let err = parse_shortcut("not a combo").unwrap_err();
-        assert!(err.contains("not a combo"), "message names the combo: {err}");
+        assert!(
+            err.contains("not a combo"),
+            "message names the combo: {err}"
+        );
         assert!(parse_shortcut("").is_err());
         assert!(parse_shortcut("alt+shift+bogus").is_err());
     }

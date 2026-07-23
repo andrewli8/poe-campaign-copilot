@@ -218,8 +218,7 @@ fn apply_settings(app: tauri::AppHandle, cfg: AppConfig) -> Result<(), String> {
     if old_cfg.hotkeys != cfg.hotkeys {
         hotkeys::unregister_all(&app, &old_cfg.hotkeys);
         if let Err(e) = hotkeys::register_all(&app, &cfg.hotkeys, dispatch_hotkey) {
-            if let Err(revert_err) =
-                hotkeys::register_all(&app, &old_cfg.hotkeys, dispatch_hotkey)
+            if let Err(revert_err) = hotkeys::register_all(&app, &old_cfg.hotkeys, dispatch_hotkey)
             {
                 eprintln!("hotkeys: failed to restore previous bindings: {revert_err}");
             }
