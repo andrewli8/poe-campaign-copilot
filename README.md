@@ -1,104 +1,129 @@
 # PoE Campaign Copilot
 
-A transparent Windows overlay for Path of Exile 1 campaign leveling
-(Acts 1–10). Shows the current route step, zone layout images, and
-build reminders — passively, from Client.txt only.
+A transparent overlay for Path of Exile 1 campaign leveling (Acts 1 to 10).
+It shows the current route step, zone layout images, and build reminders.
+It works passively: it reads the game's `Client.txt` log and nothing else.
+No game memory, no input simulation, no network during play.
 
-**Status: early development.**
+**Status: early development.** English game clients only for now.
 
-## Content
+## Run it on Windows
 
-- `content/layouts/` — per-zone layout notes and diagram images for all 10
-  acts, keyed by exile-leveling area id, extracted from a community layout
-  compilation (see CREDITS.md). Every entry carries audit metadata
-  (`unaudited` → `verified`/`outdated`/`corrected`) so stale guidance is
-  visible instead of silently wrong.
-- `vendor/exile-leveling/` — pinned route + game data (MIT).
-- `cargo run -p content --bin compile-content` builds the runtime content
-  pack (routes + layouts + assets) into `content-pack/`.
+This is the first thing to know: there is no installer yet. You run it from
+a checkout of this repo in dev mode. That takes three tools and about ten
+minutes, most of which is the first compile.
 
-- Passive-only: reads the game's `Client.txt` log. Never touches game
-  memory, never simulates input, no network during play.
-- English game clients only (for now).
-- Route data based on [exile-leveling](https://github.com/HeartofPhos/exile-leveling) (MIT).
-- Layout images by Engineering Eternity — see [CREDITS.md](CREDITS.md).
+Install these once:
+
+1. **Rust** from [rustup.rs](https://rustup.rs). Accept the default MSVC
+   toolchain. If it asks for Visual Studio C++ Build Tools, let it install
+   them.
+2. **Node.js 20 or newer** from [nodejs.org](https://nodejs.org).
+3. **Git** from [git-scm.com](https://git-scm.com) if you don't have it.
+
+Then, in a terminal (PowerShell is fine):
+
+    git clone https://github.com/andrewli8/poe-campaign-copilot.git
+    cd poe-campaign-copilot
+    npm install
+    npm run tauri dev
+
+The first build compiles a lot of Rust and can take 5 to 10 minutes. When it
+finishes, a small transparent bar appears reading "Waiting for Client.txt".
+
+Now point it at your game log:
+
+1. Right-click the tray icon and choose **Settings**.
+2. Click **Browse** and pick your `Client.txt`. Common locations:
+   - Steam: `C:\Program Files (x86)\Steam\steamapps\common\Path of Exile\logs\Client.txt`
+   - Standalone: `C:\Program Files (x86)\Grinding Gear Games\Path of Exile\logs\Client.txt`
+3. Optionally paste a Path of Building share code (see Settings below).
+4. Click **Save**.
+
+Start Path of Exile in **windowed fullscreen** (overlays cannot draw over
+exclusive fullscreen). The bar reads from the end of the log, so it stays
+on "Waiting" until your first zone change. Enter any area and it comes
+alive.
+
+Useful controls: the tray menu has Setup Mode (makes the bar draggable and
+resizable), Zoom (bigger layout images, also `Alt+Shift+Z`), and Quit.
+
+One honest caveat: you are the first person to run this against the real
+game. It has been developed and tested on macOS with simulated sessions,
+and the Windows build compiles clean in CI, but real-game behavior
+(click-through over the game window, focus handling, log line formats we
+haven't seen) is exactly what needs testing now. If something looks wrong,
+the terminal you launched from usually says why.
 
 ## Settings
 
-The overlay reads its Client.txt path, route variant, and (optional) Path
-of Building build from a small settings window, not from editing files by
-hand:
+The settings window (tray icon, then **Settings**) controls three things:
 
-1. Right-click the tray icon and choose **Settings…**.
-2. **Client.txt log path** — click **Browse…** and pick your Path of
-   Exile `Client.txt` (typically under
-   `.../Path of Exile/logs/Client.txt` on Windows). This is required —
-   the overlay shows a "Waiting for Client.txt…" state until a valid path
-   is configured.
-3. **Route variant** — `league-start` (a fresh character, the default) or
-   `standard` (an existing character skipping early-game quests).
-4. **Path of Building import (optional)** — paste a PoB share code (or
-   raw XML export) to get build-specific reminders (e.g. "Gem available:
-   Frostblink") alongside the route. Click **Preview import** first to
-   see the parsed class/ascendancy, milestone count, and a reliability
-   badge before saving — a `structured` badge means normalized gem/tree
-   data was found; `unsupported` means the build parsed but yields no
-   reminders (the route still works fine without one).
-5. Click **Save**. This validates the settings, rebuilds the route
-   pipeline for the new variant/build, restarts the log tailer at the new
-   path if it changed, and persists everything to the app's config
-   directory (`config.json`) for next launch.
+- **Client.txt log path.** Required. The overlay waits until this is set.
+- **Route variant.** `league-start` is the default and assumes a fresh
+  character. `standard` skips the league-start-only steps.
+- **Path of Building import.** Optional. Paste a PoB share code or raw XML
+  export and click **Preview import** to see the parsed class, ascendancy,
+  milestone count, and a reliability badge before saving. A `structured`
+  badge means the build had parseable leveling data and you'll get
+  reminders like "Gem available: Frostblink" in town. An `unsupported`
+  badge means the build parsed but had nothing to derive timing from; the
+  route still works without it.
 
-Settings persist across restarts. The environment variables described
-below (`POE_COPILOT_LOG`, `POE_COPILOT_LOG_REPLAY`) remain available as
-developer-only overrides for local runs/demos — they take priority over
-the configured path but are never written to `config.json`.
+Save validates everything, rebuilds the route state, and persists to the
+app's config directory, so settings survive restarts. Note that saving
+with changes restarts route tracking from scratch.
+
+The `POE_COPILOT_LOG` and `POE_COPILOT_LOG_REPLAY` environment variables
+are developer overrides for demos. They beat the configured path but are
+never written to the config file.
+
+## Content
+
+- `content/layouts/` has per-zone layout notes and diagram images for all
+  10 acts, keyed by exile-leveling area id, extracted from a community
+  layout compilation (see CREDITS.md). Every note and image carries audit
+  metadata (`unaudited`, `verified`, `outdated`, `corrected`) so stale
+  guidance is visible instead of silently wrong.
+- `vendor/exile-leveling/` holds pinned route and game data (MIT), from
+  [exile-leveling](https://github.com/HeartofPhos/exile-leveling).
+- Layout images are by Engineering Eternity. See [CREDITS.md](CREDITS.md).
+- `cargo run -p content --bin compile-content` builds the runtime content
+  pack (routes, layouts, assets) into `content-pack/`.
 
 ## Development
 
-Rust workspace + Tauri 2. Built on macOS, validated on Windows.
+Rust workspace plus Tauri 2. Built on macOS, validated on Windows.
 
     cargo test --workspace
 
 The pilot test (`cargo test -p composer --test pilot_act1`) drives the full
-pipeline — log fixture → session → route/task engines → composer — and is
-the quickest way to see the whole system's behavior in one place.
+pipeline from log fixture through session, engines, and composer. It is the
+quickest way to see the whole system's behavior in one place.
 
-### Try it: live overlay demo
+### Live overlay demo without the game
 
-Two terminals. The app tails a log file via `POE_COPILOT_LOG`; `fake-play`
-simulates a play session by appending fixture lines to that file on a
-delay, so you can watch the overlay react without the game running.
+Two terminals. The app tails a scratch log file; `fake-play` appends
+fixture lines to it on a delay, so you can watch the overlay react on any
+OS.
 
-By default the tailer starts reading at end-of-file, since a real
-`Client.txt` is a huge append-only history and replaying it all on launch
-would be both slow and wrong. The demo below writes a *new*, empty log
-file and then appends fixture lines to it, so it needs the tailer to
-start reading from byte 0 instead — set `POE_COPILOT_LOG_REPLAY=1` to
-opt into that for local development/demo runs only.
+The tailer normally starts reading at the end of the file, because a real
+`Client.txt` is a huge append-only history and replaying it on launch would
+be slow and wrong. The demo uses a fresh empty file, so it needs
+`POE_COPILOT_LOG_REPLAY=1` to read from the start.
 
-Terminal 1 — start the app pointed at a scratch log file:
+Terminal 1:
 
     rm -f /tmp/fake-client.txt && touch /tmp/fake-client.txt
     POE_COPILOT_LOG=/tmp/fake-client.txt POE_COPILOT_LOG_REPLAY=1 npm run tauri dev
 
-Wait for the Vite + Cargo build to finish; a transparent, always-on-top,
-click-through bar appears reading "Waiting for Client.txt…".
-
-Terminal 2 — replay a session (800ms between lines gives time to watch
-each transition):
+Terminal 2, once the bar appears:
 
     cargo run -p replay --bin fake-play -- crates/replay/fixtures/act1-opening.log /tmp/fake-client.txt 800
 
-Expected: the bar transitions Waiting → Twilight Strand → Lioneye's Watch
-→ The Coast (with layout images) → an off-route banner on the early town
-revisit → Mud Flats.
-
-Toggle Setup Mode (drag/resize) and Zoom from the tray icon menu, or zoom
-with `alt+shift+z`. When done, stop the app (Ctrl-C in terminal 1 or quit
-from the tray) and remove `/tmp/fake-client.txt`.
-
-Point the app's log tailer at `/tmp/fake-client.txt` at any delay to watch
-events flow without the two-terminal choreography above.
+The bar walks through: Waiting, Twilight Strand, Lioneye's Watch, The Coast
+(with layout images), an off-route banner on the early town revisit, then
+Mud Flats. Stop the app with Ctrl-C or the tray's Quit, and delete
+`/tmp/fake-client.txt` when done.
 
 License: MIT (code). See CREDITS.md for third-party content.
