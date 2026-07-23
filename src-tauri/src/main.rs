@@ -412,81 +412,72 @@ fn apply_setup_mode(app: &tauri::AppHandle, enabled: bool) {
     let _ = app.emit("setup-mode", enabled);
 }
 
-/// Window height for the overlay given the current compact/zoom flags.
-/// Compact takes precedence over zoom: a slim compact bar stays slim even
-/// while zoom is also on, so `toggle_zoom_impl` and `toggle_compact_impl`
-/// always agree on the target height instead of fighting each other.
-fn overlay_target_height(compact: bool, zoom: bool) -> f64 {
-    if compact {
-        44.0
-    } else if zoom {
-        420.0
-    } else {
-        150.0
+/// Clamp range for the content-driven overlay height, in logical pixels.
+/// Duplicated in `src/overlayHeight.ts` and as `.filmstrip { max-height }`
+/// in `src/FilmstripBar.css` — keep all three in step.
+const MIN_OVERLAY_HEIGHT: f64 = 36.0;
+const MAX_OVERLAY_HEIGHT: f64 = 600.0;
+
+/// True only for a finite height inside `[MIN_OVERLAY_HEIGHT,
+/// MAX_OVERLAY_HEIGHT]`. `set_overlay_height` is an IPC boundary, so a
+/// NaN/infinite/out-of-range value from the webview is rejected rather
+/// than passed to `set_size`.
+fn overlay_height_in_range(height: f64) -> bool {
+    height.is_finite() && (MIN_OVERLAY_HEIGHT..=MAX_OVERLAY_HEIGHT).contains(&height)
+}
+
+/// Resize the overlay to a content-measured height. Width is read back
+/// from the current window and left unchanged, so only the bottom edge
+/// moves (top-pinned growth). Out-of-range heights are rejected; a missing
+/// window (shutdown race) is a no-op success.
+#[tauri::command]
+fn set_overlay_height(app: tauri::AppHandle, height: f64) -> Result<(), String> {
+    if !overlay_height_in_range(height) {
+        let msg = format!("set_overlay_height: rejected out-of-range height {height}");
+        eprintln!("{msg}");
+        return Err(msg);
     }
+    let Some(win) = app.get_webview_window("main") else {
+        return Ok(());
+    };
+    if let (Ok(scale), Ok(size)) = (win.scale_factor(), win.outer_size()) {
+        let logical = size.to_logical::<f64>(scale);
+        if let Err(e) = win.set_size(tauri::LogicalSize::new(logical.width, height)) {
+            eprintln!("set_overlay_height: failed to resize window: {e}");
+            return Err(e.to_string());
+        }
+    }
+    Ok(())
 }
 
 fn toggle_zoom_impl(app: &tauri::AppHandle) -> bool {
     let state: State<AppState> = app.state();
-    // Snapshot the compact flag BEFORE taking the zoom lock. `toggle_compact_impl`
-    // holds `compact` and reads `zoom`; if we instead held `zoom` and then locked
-    // `compact`, the two functions would acquire the mutexes in opposite order
-    // (zoom→compact here, compact→zoom there) — a classic AB/BA cycle that could
-    // deadlock if a zoom and a compact toggle fire concurrently. Reading the other
-    // flag first means only one lock is ever held at a time.
-    let compact = *state.compact.lock().unwrap();
-    let mut zoom = state.zoom.lock().unwrap();
-    *zoom = !*zoom;
-    let new_zoom = *zoom;
-    // Hold the zoom guard across the resize so a second toggle_zoom call
-    // (e.g. rapid tray clicks or the global shortcut firing twice) can't
-    // interleave with set_size and leave the window size out of sync with
-    // the `zoom` flag it's supposed to reflect.
-    if let Some(win) = app.get_webview_window("main")
-        && let Ok(scale) = win.scale_factor()
-        && let Ok(size) = win.outer_size()
-    {
-        let logical = size.to_logical::<f64>(scale);
-        let height = overlay_target_height(compact, new_zoom);
-        if let Err(e) = win.set_size(tauri::LogicalSize::new(logical.width, height)) {
-            eprintln!("toggle_zoom: failed to resize window: {e}");
-        }
-    }
-    drop(zoom);
+    let new_zoom = {
+        let mut zoom = state.zoom.lock().unwrap();
+        *zoom = !*zoom;
+        *zoom
+    };
     if let Some(item) = state.zoom_item.lock().unwrap().as_ref() {
         let _ = item.set_checked(new_zoom);
     }
+    // The window is not resized here: flipping `zoom` re-renders the
+    // overlay (via the "zoom" event below), its content height changes,
+    // and the frontend's ResizeObserver drives `set_overlay_height`.
     let _ = app.emit("zoom", new_zoom);
     new_zoom
 }
 
-/// Flips `AppState.compact` and resizes the "main" overlay window to match,
-/// mirroring `toggle_zoom_impl`: the `compact` guard is held across the
-/// resize so a second `toggle_compact_impl` call (rapid tray clicks or the
-/// global shortcut firing twice) can't interleave with `set_size` and leave
-/// the window's actual size out of sync with the flag it's supposed to
-/// reflect.
+/// Flips `AppState.compact` and re-renders the overlay. The window height
+/// is not set here — the "compact" event re-renders the bar, and the
+/// frontend's ResizeObserver resizes the window to the new content
+/// (see `set_overlay_height`).
 fn toggle_compact_impl(app: &tauri::AppHandle) -> bool {
     let state: State<AppState> = app.state();
-    // Snapshot the zoom flag BEFORE taking the compact lock, so this function
-    // and `toggle_zoom_impl` never hold both mutexes at once (see the lock-order
-    // note in `toggle_zoom_impl` — reading the other flag first avoids the
-    // zoom↔compact deadlock cycle).
-    let zoom = *state.zoom.lock().unwrap();
-    let mut compact = state.compact.lock().unwrap();
-    *compact = !*compact;
-    let new_compact = *compact;
-    if let Some(win) = app.get_webview_window("main")
-        && let Ok(scale) = win.scale_factor()
-        && let Ok(size) = win.outer_size()
-    {
-        let logical = size.to_logical::<f64>(scale);
-        let height = overlay_target_height(new_compact, zoom);
-        if let Err(e) = win.set_size(tauri::LogicalSize::new(logical.width, height)) {
-            eprintln!("toggle_compact: failed to resize window: {e}");
-        }
-    }
-    drop(compact);
+    let new_compact = {
+        let mut compact = state.compact.lock().unwrap();
+        *compact = !*compact;
+        *compact
+    };
     if let Some(item) = state.compact_item.lock().unwrap().as_ref() {
         let _ = item.set_checked(new_compact);
     }
@@ -702,6 +693,7 @@ fn main() {
             apply_settings,
             open_settings,
             set_overlay_opacity,
+            set_overlay_height,
             get_run_timer
         ])
         .setup(|app| {
@@ -911,6 +903,22 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn overlay_height_in_range_accepts_bounds_and_interior() {
+        assert!(overlay_height_in_range(MIN_OVERLAY_HEIGHT));
+        assert!(overlay_height_in_range(MAX_OVERLAY_HEIGHT));
+        assert!(overlay_height_in_range(150.0));
+    }
+
+    #[test]
+    fn overlay_height_in_range_rejects_out_of_range_and_non_finite() {
+        assert!(!overlay_height_in_range(MIN_OVERLAY_HEIGHT - 0.1));
+        assert!(!overlay_height_in_range(MAX_OVERLAY_HEIGHT + 0.1));
+        assert!(!overlay_height_in_range(f64::NAN));
+        assert!(!overlay_height_in_range(f64::INFINITY));
+        assert!(!overlay_height_in_range(-1.0));
+    }
 
     #[test]
     fn is_regular_file_true_for_a_plain_file() {
