@@ -432,81 +432,34 @@ fn set_overlay_height(app: tauri::AppHandle, height: f64) -> Result<(), String> 
     Ok(())
 }
 
-/// Window height for the overlay given the current compact/zoom flags.
-/// Compact takes precedence over zoom: a slim compact bar stays slim even
-/// while zoom is also on, so `toggle_zoom_impl` and `toggle_compact_impl`
-/// always agree on the target height instead of fighting each other.
-fn overlay_target_height(compact: bool, zoom: bool) -> f64 {
-    if compact {
-        44.0
-    } else if zoom {
-        420.0
-    } else {
-        150.0
-    }
-}
-
 fn toggle_zoom_impl(app: &tauri::AppHandle) -> bool {
     let state: State<AppState> = app.state();
-    // Snapshot the compact flag BEFORE taking the zoom lock. `toggle_compact_impl`
-    // holds `compact` and reads `zoom`; if we instead held `zoom` and then locked
-    // `compact`, the two functions would acquire the mutexes in opposite order
-    // (zoom→compact here, compact→zoom there) — a classic AB/BA cycle that could
-    // deadlock if a zoom and a compact toggle fire concurrently. Reading the other
-    // flag first means only one lock is ever held at a time.
-    let compact = *state.compact.lock().unwrap();
-    let mut zoom = state.zoom.lock().unwrap();
-    *zoom = !*zoom;
-    let new_zoom = *zoom;
-    // Hold the zoom guard across the resize so a second toggle_zoom call
-    // (e.g. rapid tray clicks or the global shortcut firing twice) can't
-    // interleave with set_size and leave the window size out of sync with
-    // the `zoom` flag it's supposed to reflect.
-    if let Some(win) = app.get_webview_window("main")
-        && let Ok(scale) = win.scale_factor()
-        && let Ok(size) = win.outer_size()
-    {
-        let logical = size.to_logical::<f64>(scale);
-        let height = overlay_target_height(compact, new_zoom);
-        if let Err(e) = win.set_size(tauri::LogicalSize::new(logical.width, height)) {
-            eprintln!("toggle_zoom: failed to resize window: {e}");
-        }
-    }
-    drop(zoom);
+    let new_zoom = {
+        let mut zoom = state.zoom.lock().unwrap();
+        *zoom = !*zoom;
+        *zoom
+    };
     if let Some(item) = state.zoom_item.lock().unwrap().as_ref() {
         let _ = item.set_checked(new_zoom);
     }
+    // The window is not resized here: flipping `zoom` re-renders the
+    // overlay (via the "zoom" event below), its content height changes,
+    // and the frontend's ResizeObserver drives `set_overlay_height`.
     let _ = app.emit("zoom", new_zoom);
     new_zoom
 }
 
-/// Flips `AppState.compact` and resizes the "main" overlay window to match,
-/// mirroring `toggle_zoom_impl`: the `compact` guard is held across the
-/// resize so a second `toggle_compact_impl` call (rapid tray clicks or the
-/// global shortcut firing twice) can't interleave with `set_size` and leave
-/// the window's actual size out of sync with the flag it's supposed to
-/// reflect.
+/// Flips `AppState.compact` and re-renders the overlay. The window height
+/// is not set here — the "compact" event re-renders the bar, and the
+/// frontend's ResizeObserver resizes the window to the new content
+/// (see `set_overlay_height`).
 fn toggle_compact_impl(app: &tauri::AppHandle) -> bool {
     let state: State<AppState> = app.state();
-    // Snapshot the zoom flag BEFORE taking the compact lock, so this function
-    // and `toggle_zoom_impl` never hold both mutexes at once (see the lock-order
-    // note in `toggle_zoom_impl` — reading the other flag first avoids the
-    // zoom↔compact deadlock cycle).
-    let zoom = *state.zoom.lock().unwrap();
-    let mut compact = state.compact.lock().unwrap();
-    *compact = !*compact;
-    let new_compact = *compact;
-    if let Some(win) = app.get_webview_window("main")
-        && let Ok(scale) = win.scale_factor()
-        && let Ok(size) = win.outer_size()
-    {
-        let logical = size.to_logical::<f64>(scale);
-        let height = overlay_target_height(new_compact, zoom);
-        if let Err(e) = win.set_size(tauri::LogicalSize::new(logical.width, height)) {
-            eprintln!("toggle_compact: failed to resize window: {e}");
-        }
-    }
-    drop(compact);
+    let new_compact = {
+        let mut compact = state.compact.lock().unwrap();
+        *compact = !*compact;
+        *compact
+    };
     if let Some(item) = state.compact_item.lock().unwrap().as_ref() {
         let _ = item.set_checked(new_compact);
     }
