@@ -62,6 +62,7 @@ export function SettingsPage({
     Math.round(config.overlay_opacity * 100),
   );
   const [hotkeys, setHotkeys] = useState<HotkeyConfig>(config.hotkeys);
+  const [showRunTimer, setShowRunTimer] = useState(config.show_run_timer);
 
   const hotkeyErrors = validateHotkeyConfig(hotkeys);
   const hasHotkeyErrors = Object.keys(hotkeyErrors).length > 0;
@@ -86,7 +87,7 @@ export function SettingsPage({
       pob_code: trimmed === "" ? null : trimmed,
       overlay_opacity: opacityPct / 100,
       hotkeys: normalizeHotkeyConfig(hotkeys),
-      show_run_timer: config.show_run_timer,
+      show_run_timer: showRunTimer,
     });
   }
 
@@ -180,6 +181,19 @@ export function SettingsPage({
           />
           <span className="opacity-value">{opacityPct}%</span>
         </div>
+      </section>
+
+      <section className="settings-row">
+        <span className="settings-label">Run timer</span>
+        <label className="checkbox-row" htmlFor="run-timer-checkbox">
+          <input
+            id="run-timer-checkbox"
+            type="checkbox"
+            checked={showRunTimer}
+            onChange={(e) => setShowRunTimer(e.target.checked)}
+          />
+          Show run timer on overlay
+        </label>
       </section>
 
       <section className="settings-row">

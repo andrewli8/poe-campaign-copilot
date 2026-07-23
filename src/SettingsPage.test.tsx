@@ -398,4 +398,57 @@ describe("SettingsPage", () => {
     );
     expect(screen.getByText(/saved/i)).toBeInTheDocument();
   });
+
+  it("renders the run timer checkbox checked from config", () => {
+    render(
+      <SettingsPage
+        config={config()}
+        onPick={noop}
+        onImportPreview={noop}
+        preview={null}
+        previewError={null}
+        onSave={noop}
+        saving={false}
+        savedAt={null}
+      />,
+    );
+    expect(screen.getByLabelText(/show run timer/i)).toBeChecked();
+  });
+
+  it("round-trips an unchecked run timer through Save", () => {
+    const onSave = vi.fn();
+    render(
+      <SettingsPage
+        config={config()}
+        onPick={noop}
+        onImportPreview={noop}
+        preview={null}
+        previewError={null}
+        onSave={onSave}
+        saving={false}
+        savedAt={null}
+      />,
+    );
+    fireEvent.click(screen.getByLabelText(/show run timer/i));
+    fireEvent.click(screen.getByRole("button", { name: /^save$/i }));
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({ show_run_timer: false }),
+    );
+  });
+
+  it("renders a hotkey input for the run timer", () => {
+    render(
+      <SettingsPage
+        config={config()}
+        onPick={noop}
+        onImportPreview={noop}
+        preview={null}
+        previewError={null}
+        onSave={noop}
+        saving={false}
+        savedAt={null}
+      />,
+    );
+    expect(screen.getByLabelText(/start\/stop run timer/i)).toHaveValue("alt+shift+t");
+  });
 });
