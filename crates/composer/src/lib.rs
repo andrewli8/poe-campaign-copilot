@@ -295,10 +295,13 @@ mod tests {
         let (mut engine, tasks, layouts, areas) = fixture();
         engine.on_area_entered("1_1_town", true);
         engine.on_area_entered("1_1_2", true);
-        // Portal back to town: same instance, not new progress.
-        engine.on_area_entered("1_1_town", false); // off-route
+        // "1_1_town" is now behind the frontier and would resolve to a
+        // behind detour (route_engine's frontier/focus split), not
+        // off-route; use a distant town the route hasn't reached at all
+        // (no behind occurrence) to exercise a genuine off-route case.
+        engine.on_area_entered("1_2_town", false); // off-route
         let m = compose(&engine, &tasks, &layouts, &areas, None);
-        assert_eq!(m.off_route_zone.as_deref(), Some("Lioneye's Watch"));
+        assert_eq!(m.off_route_zone.as_deref(), Some("The Forest Encampment"));
         assert_eq!(m.zone_name, "The Coast"); // progress display unchanged
     }
 

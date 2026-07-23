@@ -57,14 +57,19 @@ fn fixture_drives_engines_to_expected_overlay_states() {
             ("1_1_1", "InPlace", "The Twilight Strand", false),
             ("1_1_town", "Advanced", "Lioneye's Watch", false),
             ("1_1_2", "Advanced", "The Coast", false),
-            // Early town revisit: off-route, progress display stays on Coast.
+            // Early town revisit: under the frontier/focus split this is a
+            // behind detour (the town is already-Done and behind the
+            // frontier), not off-route. Progress display (frontier-based
+            // zone_name) stays on Coast either way.
             (
                 "1_1_town",
-                "OffRoute { area_id: \"1_1_town\" }",
+                "Detour { catching_up: false }",
                 "The Coast",
-                true
+                false
             ),
-            ("1_1_2", "Resumed", "The Coast", false),
+            // Rejoining the frontier's own zone is itself a (no-op)
+            // forward match.
+            ("1_1_2", "Advanced", "The Coast", false),
             ("1_1_3", "Advanced", "The Mud Flats", false),
             // Death + same-instance re-entry: idempotent.
             ("1_1_3", "InPlace", "The Mud Flats", false),
