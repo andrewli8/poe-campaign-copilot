@@ -128,18 +128,21 @@ describe("FilmstripBar", () => {
     expect(container.querySelector(".build-summary")).not.toBeInTheDocument();
   });
 
-  it("marks the whole overlay root as a drag region only in setup mode", () => {
+  // Tauri v2 only starts a window drag when the mousedown TARGET element
+  // itself carries data-tauri-drag-region, so a bare attribute on the root
+  // does not make clicks on child elements draggable. Setup mode instead
+  // renders a dedicated, full-window .drag-layer element that carries the
+  // attribute, so a click anywhere in the bar lands on it and drags.
+  it("renders the drag layer in the normal-playing state only in setup mode", () => {
     const { container, rerender } = renderBar({
       model: model(),
       setupMode: true,
     });
-    // The entire bar is draggable in setup mode, not just the header strip,
-    // so it stays easy to grab after the window has been resized larger.
-    expect(container.firstChild).toHaveAttribute("data-tauri-drag-region");
-    // The inner header row does NOT carry its own region (the root covers it).
-    expect(container.querySelector(".header-row")).not.toHaveAttribute(
-      "data-tauri-drag-region",
-    );
+    const dragLayer = container.querySelector(".drag-layer");
+    expect(dragLayer).toBeInTheDocument();
+    expect(dragLayer).toHaveAttribute("data-tauri-drag-region");
+    // No other element carries the drag attribute — only the dedicated layer.
+    expect(container.querySelector("[data-tauri-drag-region]")).toBe(dragLayer);
 
     rerender(
       <FilmstripBar
@@ -152,15 +155,18 @@ describe("FilmstripBar", () => {
         nowMs={1_000_000}
       />,
     );
-    expect(container.firstChild).not.toHaveAttribute("data-tauri-drag-region");
+    expect(container.querySelector(".drag-layer")).not.toBeInTheDocument();
+    expect(container.querySelector("[data-tauri-drag-region]")).not.toBeInTheDocument();
   });
 
-  it("marks the waiting-state root as a drag region and shows the setup hint in setup mode", () => {
+  it("renders the drag layer in the waiting state only in setup mode, alongside the setup hint", () => {
     const { container, rerender } = renderBar({
       model: model({}, { waiting_for_log: true }),
       setupMode: true,
     });
-    expect(container.firstChild).toHaveAttribute("data-tauri-drag-region");
+    const dragLayer = container.querySelector(".drag-layer");
+    expect(dragLayer).toBeInTheDocument();
+    expect(dragLayer).toHaveAttribute("data-tauri-drag-region");
     expect(screen.getByText(/drag to move/i)).toBeInTheDocument();
 
     rerender(
@@ -174,16 +180,19 @@ describe("FilmstripBar", () => {
         nowMs={1_000_000}
       />,
     );
-    expect(container.firstChild).not.toHaveAttribute("data-tauri-drag-region");
+    expect(container.querySelector(".drag-layer")).not.toBeInTheDocument();
+    expect(container.querySelector("[data-tauri-drag-region]")).not.toBeInTheDocument();
     expect(screen.queryByText(/drag to move/i)).not.toBeInTheDocument();
   });
 
-  it("marks the root as a drag region in the campaign-complete state only in setup mode", () => {
+  it("renders the drag layer in the campaign-complete state only in setup mode", () => {
     const { container, rerender } = renderBar({
       model: model({ route_complete: true }),
       setupMode: true,
     });
-    expect(container.firstChild).toHaveAttribute("data-tauri-drag-region");
+    const dragLayer = container.querySelector(".drag-layer");
+    expect(dragLayer).toBeInTheDocument();
+    expect(dragLayer).toHaveAttribute("data-tauri-drag-region");
 
     rerender(
       <FilmstripBar
@@ -196,7 +205,8 @@ describe("FilmstripBar", () => {
         nowMs={1_000_000}
       />,
     );
-    expect(container.firstChild).not.toHaveAttribute("data-tauri-drag-region");
+    expect(container.querySelector(".drag-layer")).not.toBeInTheDocument();
+    expect(container.querySelector("[data-tauri-drag-region]")).not.toBeInTheDocument();
   });
 
   describe("compact mode", () => {
@@ -245,13 +255,15 @@ describe("FilmstripBar", () => {
       expect(container.firstChild).toHaveClass("compact");
     });
 
-    it("keeps the drag region on the root when compact and setup mode are both on", () => {
+    it("renders the drag layer when compact and setup mode are both on", () => {
       const { container } = renderBar({
         model: model(),
         compact: true,
         setupMode: true,
       });
-      expect(container.firstChild).toHaveAttribute("data-tauri-drag-region");
+      const dragLayer = container.querySelector(".drag-layer");
+      expect(dragLayer).toBeInTheDocument();
+      expect(dragLayer).toHaveAttribute("data-tauri-drag-region");
       expect(container.firstChild).toHaveClass("compact");
     });
 

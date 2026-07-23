@@ -10,6 +10,7 @@ body,
 }
 
 .filmstrip {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -22,6 +23,18 @@ body,
   font-size: 13px;
   -webkit-user-select: none;
   user-select: none;
+}
+
+/* Full-window drag layer, rendered only in setup mode. Tauri v2 only starts
+   a window drag when the mousedown TARGET carries data-tauri-drag-region,
+   so a single attribute on the root does not cover clicks on its children.
+   This transparent layer sits above all bar content and has no interactive
+   elements, so it is safe to cover the whole bar — every click drags. */
+.drag-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  background: transparent;
 }
 
 .filmstrip.setup-mode {

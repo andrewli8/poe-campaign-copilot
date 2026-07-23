@@ -47,11 +47,12 @@ export function FilmstripBar({
 
   if (model.waiting_for_log) {
     return (
-      <div className={rootClass} data-tauri-drag-region={setupMode ? true : undefined}>
+      <div className={rootClass}>
         {setupMode && (
           <div className="setup-hint">drag to move &middot; resize edges &middot; toggle via tray</div>
         )}
         <div className="waiting-pill">Waiting for Client.txt&hellip;</div>
+        {setupMode && <div className="drag-layer" data-tauri-drag-region aria-hidden="true" />}
       </div>
     );
   }
@@ -59,13 +60,17 @@ export function FilmstripBar({
   const { overlay, images } = model;
 
   return (
-    // In setup mode the WHOLE bar is a drag region, not just the header row.
-    // The overlay contains no interactive elements (no buttons/inputs/links),
-    // so Tauri's drag region is never swallowed by a child, and covering the
-    // full bar means you can grab it anywhere to move it — important once the
-    // bar has been resized larger, when a header-only strip is a tiny target.
-    // The OS still owns the few-pixel resize border at the window edges.
-    <div className={rootClass} data-tauri-drag-region={setupMode ? true : undefined}>
+    // Tauri v2 only starts a window drag when the mousedown TARGET element
+    // itself carries data-tauri-drag-region — a click that lands on a child
+    // (zone-name span, image, list item, etc.) does NOT drag, even if that
+    // child is nested under an element with the attribute. Putting the
+    // attribute on the root therefore only made the bare gaps between
+    // children draggable. Instead we render a dedicated, fully transparent
+    // drag-layer as the LAST child, absolutely positioned over the whole
+    // bar (see .drag-layer in FilmstripBar.css). It has no interactive
+    // content, so every click in setup mode lands on it and drags — the bar
+    // is grabbable from anywhere, not just a header strip or empty gaps.
+    <div className={rootClass}>
       {setupMode && (
         <div className="setup-hint">drag to move &middot; resize edges &middot; toggle via tray</div>
       )}
@@ -168,6 +173,8 @@ export function FilmstripBar({
           </div>
         </>
       )}
+
+      {setupMode && <div className="drag-layer" data-tauri-drag-region aria-hidden="true" />}
     </div>
   );
 }
