@@ -709,11 +709,11 @@ fn open_logs_impl(app: &tauri::AppHandle) {
     }
 }
 
-/// GitHub Issues page opened by the tray "Report a bug" item. Pre-fills the
-/// bug-report issue template so the user lands on a filled-out form rather than
-/// a blank one.
+/// GitHub Issues page opened by the tray "Report a bug" item. Targets the
+/// bug-report issue form (`.github/ISSUE_TEMPLATE/bug_report.yml`) so the user
+/// lands on a structured form rather than a blank issue.
 const REPORT_BUG_URL: &str =
-    "https://github.com/andrewli8/poe-campaign-copilot/issues/new?labels=bug";
+    "https://github.com/andrewli8/poe-campaign-copilot/issues/new?template=bug_report.yml";
 
 /// Opens the bug-report page in the user's default browser (tray "Report a
 /// bug" item). Pairs with "Open logs" so a reporter can attach diagnostics.
