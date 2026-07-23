@@ -6,3 +6,4 @@ content-pack/
 .DS_Store
 src-tauri/gen/
 __pycache__/
+.worktrees/
