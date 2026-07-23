@@ -42,10 +42,23 @@ export interface UiModel {
 
 export type RouteVariant = "league-start" | "standard";
 
+// Mirrors src-tauri/src/hotkeys.rs (HotkeyConfig). Values are canonical
+// global-shortcut strings like "alt+shift+s" — see src/hotkeys.ts.
+export interface HotkeyConfig {
+  zoom: string;
+  compact: string;
+  hide: string;
+  setup: string;
+  settings: string;
+}
+
 export interface AppConfig {
   client_log_path: string | null;
   variant: RouteVariant;
   pob_code: string | null;
+  /** Overlay window opacity, 0.2–1.0 (see src/opacity.ts). */
+  overlay_opacity: number;
+  hotkeys: HotkeyConfig;
 }
 
 export type Reliability = "explicit" | "structured" | "inferred" | "unsupported";

@@ -67,6 +67,14 @@ export function SettingsContainer() {
     }
   }
 
+  function handleOpacityPreview(opacity: number) {
+    // Fire-and-forget live preview: the backend clamps and re-emits to the
+    // overlay window. Not persisted until Save.
+    invoke("set_overlay_opacity", { opacity }).catch((e) =>
+      console.error("set_overlay_opacity failed:", e),
+    );
+  }
+
   async function handleSave(cfg: AppConfig) {
     setSaving(true);
     try {
@@ -120,6 +128,7 @@ export function SettingsContainer() {
       onSave={handleSave}
       saving={saving}
       savedAt={savedAt}
+      onOpacityPreview={handleOpacityPreview}
       banner={
         <UpdateBanner
           status={updater.status}

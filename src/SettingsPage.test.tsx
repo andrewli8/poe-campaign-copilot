@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { DEFAULT_HOTKEYS } from "./hotkeys";
 import { SettingsPage } from "./SettingsPage";
 import type { AppConfig, PobSummary } from "./types";
 
@@ -8,6 +9,8 @@ function config(overrides: Partial<AppConfig> = {}): AppConfig {
     client_log_path: "/Users/exile/Documents/My Games/Path of Exile/Client.txt",
     variant: "league-start",
     pob_code: null,
+    overlay_opacity: 1,
+    hotkeys: DEFAULT_HOTKEYS,
     ...overrides,
   };
 }
@@ -204,6 +207,8 @@ describe("SettingsPage", () => {
       client_log_path: "/Users/exile/Documents/My Games/Path of Exile/Client.txt",
       variant: "standard",
       pob_code: "https://pobb.in/abc123",
+      overlay_opacity: 1,
+      hotkeys: DEFAULT_HOTKEYS,
     });
   });
 
@@ -221,6 +226,159 @@ describe("SettingsPage", () => {
       />,
     );
     expect(screen.getByRole("button", { name: /saving/i })).toBeDisabled();
+  });
+
+  it("renders the opacity slider seeded from config and shows the percentage", () => {
+    render(
+      <SettingsPage
+        config={config({ overlay_opacity: 0.6 })}
+        onPick={noop}
+        onImportPreview={noop}
+        preview={null}
+        previewError={null}
+        onSave={noop}
+        saving={false}
+        savedAt={null}
+      />,
+    );
+    expect(screen.getByLabelText(/overlay opacity/i)).toHaveValue("60");
+    expect(screen.getByText("60%")).toBeInTheDocument();
+  });
+
+  it("previews opacity live and includes the edited value in onSave", () => {
+    const onSave = vi.fn();
+    const onOpacityPreview = vi.fn();
+    render(
+      <SettingsPage
+        config={config()}
+        onPick={noop}
+        onImportPreview={noop}
+        preview={null}
+        previewError={null}
+        onSave={onSave}
+        saving={false}
+        savedAt={null}
+        onOpacityPreview={onOpacityPreview}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText(/overlay opacity/i), {
+      target: { value: "45" },
+    });
+    expect(onOpacityPreview).toHaveBeenCalledWith(0.45);
+    fireEvent.click(screen.getByRole("button", { name: /^save$/i }));
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({ overlay_opacity: 0.45 }),
+    );
+  });
+
+  it("cannot represent an opacity below the 20% floor", () => {
+    render(
+      <SettingsPage
+        config={config()}
+        onPick={noop}
+        onImportPreview={noop}
+        preview={null}
+        previewError={null}
+        onSave={noop}
+        saving={false}
+        savedAt={null}
+      />,
+    );
+    expect(screen.getByLabelText(/overlay opacity/i)).toHaveAttribute("min", "20");
+  });
+
+  it("renders one hotkey input per action, seeded from config", () => {
+    render(
+      <SettingsPage
+        config={config({
+          hotkeys: { ...DEFAULT_HOTKEYS, settings: "ctrl+shift+o" },
+        })}
+        onPick={noop}
+        onImportPreview={noop}
+        preview={null}
+        previewError={null}
+        onSave={noop}
+        saving={false}
+        savedAt={null}
+      />,
+    );
+    expect(screen.getByLabelText(/setup mode/i)).toHaveValue("alt+shift+s");
+    expect(screen.getByLabelText(/hide\/show overlay/i)).toHaveValue("alt+shift+h");
+    expect(screen.getByLabelText(/open settings/i)).toHaveValue("ctrl+shift+o");
+    expect(screen.getByLabelText(/compact mode/i)).toHaveValue("alt+shift+c");
+    expect(screen.getByLabelText(/zoom/i)).toHaveValue("alt+shift+z");
+  });
+
+  it("passes edited hotkeys to onSave in normalized form", () => {
+    const onSave = vi.fn();
+    render(
+      <SettingsPage
+        config={config()}
+        onPick={noop}
+        onImportPreview={noop}
+        preview={null}
+        previewError={null}
+        onSave={onSave}
+        saving={false}
+        savedAt={null}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText(/open settings/i), {
+      target: { value: "Ctrl+Shift+P" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /^save$/i }));
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        hotkeys: { ...DEFAULT_HOTKEYS, settings: "ctrl+shift+p" },
+      }),
+    );
+  });
+
+  it("shows a clear error and disables Save for an invalid hotkey", () => {
+    const onSave = vi.fn();
+    render(
+      <SettingsPage
+        config={config()}
+        onPick={noop}
+        onImportPreview={noop}
+        preview={null}
+        previewError={null}
+        onSave={onSave}
+        saving={false}
+        savedAt={null}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText(/setup mode/i), {
+      target: { value: "not a combo" },
+    });
+    expect(screen.getByText(/invalid hotkey/i)).toBeInTheDocument();
+    const save = screen.getByRole("button", { name: /^save$/i });
+    expect(save).toBeDisabled();
+    fireEvent.click(save);
+    expect(onSave).not.toHaveBeenCalled();
+  });
+
+  it("shows conflict errors on both actions and disables Save when two hotkeys collide", () => {
+    const onSave = vi.fn();
+    render(
+      <SettingsPage
+        config={config()}
+        onPick={noop}
+        onImportPreview={noop}
+        preview={null}
+        previewError={null}
+        onSave={onSave}
+        saving={false}
+        savedAt={null}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText(/setup mode/i), {
+      target: { value: "alt+shift+h" },
+    });
+    expect(screen.getAllByText(/conflict/i).length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByRole("button", { name: /^save$/i })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: /^save$/i }));
+    expect(onSave).not.toHaveBeenCalled();
   });
 
   it("shows a saved confirmation once savedAt is set", () => {

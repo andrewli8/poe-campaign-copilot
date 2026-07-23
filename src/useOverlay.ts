@@ -1,17 +1,20 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { useEffect, useState } from "react";
-import type { UiModel } from "./types";
+import { OPACITY_DEFAULT, clampOpacity } from "./opacity";
+import type { AppConfig, UiModel } from "./types";
 
 export function useOverlay() {
   const [model, setModel] = useState<UiModel | null>(null);
   const [zoom, setZoom] = useState(false);
   const [setupMode, setSetupMode] = useState(false);
   const [compact, setCompact] = useState(false);
+  const [overlayOpacity, setOverlayOpacity] = useState(OPACITY_DEFAULT);
 
   useEffect(() => {
     let disposed = false;
     let eventModelArrived = false;
+    let opacityEventArrived = false;
     const unlisteners: UnlistenFn[] = [];
 
     // Registers a listener and makes sure it is always torn down exactly
@@ -44,6 +47,10 @@ export function useOverlay() {
         registerListener<boolean>("zoom", (z) => setZoom(z)),
         registerListener<boolean>("setup-mode", (s) => setSetupMode(s)),
         registerListener<boolean>("compact", (c) => setCompact(c)),
+        registerListener<number>("overlay-opacity", (o) => {
+          opacityEventArrived = true;
+          setOverlayOpacity(clampOpacity(o));
+        }),
       ]);
       await listenersReady;
       if (disposed) return;
@@ -59,6 +66,18 @@ export function useOverlay() {
       } catch (e) {
         console.error("get_model failed:", e);
       }
+
+      // Startup opacity comes from the persisted config; a live
+      // "overlay-opacity" event (settings slider preview / Save) that
+      // arrived while we were fetching always wins over this snapshot.
+      try {
+        const cfg = await invoke<AppConfig>("get_config");
+        if (!disposed && !opacityEventArrived) {
+          setOverlayOpacity(clampOpacity(cfg.overlay_opacity));
+        }
+      } catch (e) {
+        console.error("get_config failed:", e);
+      }
     }
 
     setup();
@@ -69,5 +88,5 @@ export function useOverlay() {
     };
   }, []);
 
-  return { model, zoom, setupMode, compact };
+  return { model, zoom, setupMode, compact, overlayOpacity };
 }

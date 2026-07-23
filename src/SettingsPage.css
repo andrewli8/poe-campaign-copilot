@@ -177,6 +177,69 @@ body,
   font-size: 12px;
 }
 
+.opacity-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.opacity-slider {
+  flex: 1;
+  accent-color: #c8a95a;
+}
+
+.opacity-value {
+  min-width: 42px;
+  text-align: right;
+  font-size: 12px;
+  color: #b8ad9a;
+  font-variant-numeric: tabular-nums;
+}
+
+.hotkey-hint {
+  margin: 0 0 6px;
+  font-size: 11px;
+  color: #8a8072;
+}
+
+.hotkey-row {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  align-items: center;
+  gap: 4px 10px;
+  margin-bottom: 6px;
+}
+
+.hotkey-label {
+  font-size: 12px;
+  color: #b8ad9a;
+}
+
+.hotkey-input {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(200, 169, 90, 0.25);
+  border-radius: 4px;
+  color: #f0e6d2;
+  font-size: 12px;
+  padding: 6px 8px;
+  font-family: inherit;
+}
+
+.hotkey-input:focus {
+  outline: none;
+  border-color: #c8a95a;
+}
+
+.hotkey-input-invalid {
+  border-color: rgba(224, 120, 90, 0.6);
+}
+
+.hotkey-error {
+  grid-column: 2;
+  font-size: 11px;
+  color: #e0785a;
+}
+
 .settings-actions {
   display: flex;
   align-items: center;
