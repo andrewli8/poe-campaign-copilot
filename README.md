@@ -60,9 +60,9 @@ alive.
 
 Useful controls: the tray menu has Setup Mode (makes the bar draggable and
 resizable, in every state including the initial "Waiting" screen), Zoom
-(bigger layout images, also `Alt+Shift+Z`), Hide overlay (tucks the bar away
-without quitting; toggle it back from the tray or with `Alt+Shift+H`), and
-Quit.
+(bigger layout images, also `Alt+Shift+Z`), Compact mode (a slimmer bar,
+also `Alt+Shift+C`), Hide overlay (tucks the bar away without quitting;
+toggle it back from the tray or with `Alt+Shift+H`), and Quit.
 
 One honest caveat: you are the first person to run this against the real
 game. It has been developed and tested on macOS with simulated sessions,
@@ -110,6 +110,56 @@ One caveat about the first install: the updater lives inside the app, so a
 version that predates it (0.1.0 and 0.1.1) cannot update itself. Install
 0.1.2 by hand once from the releases page, and every version after that
 updates in place from the Settings window.
+
+## Reading the layout images
+
+When you enter a zone, the overlay's filmstrip shows one or more small
+diagrams for that zone. They are not screenshots or minimaps: each is a
+hand-drawn cheat-sheet sketch in the style of the community "PoE layouts"
+compilation, with images by
+[Engineering Eternity](https://www.youtube.com/@EngineeringEternity)
+(see [CREDITS.md](CREDITS.md)). Each sketch abstracts one way the zone can
+spawn into a plain gray rectangle plus a suggested path, so you can match
+it against your in-game map at a glance.
+
+The drawings use a small, consistent vocabulary:
+
+| Mark | Meaning |
+| --- | --- |
+| Gray rectangle | The zone's rough footprint. |
+| White dot | Where you enter the zone. |
+| Green line | The suggested path to run. |
+| Green dot | Where the path ends: usually the exit to the next zone, sometimes a boss or quest objective. |
+| Blue dot | A waypoint. |
+| Gray dot (often on a short gray spur off the path) | An off-route point of interest, such as an optional side area entrance. |
+| Green ring | An area circled for the notes, e.g. where quest items are grouped. |
+| Gray ring | A landmark area the notes refer to, e.g. the center of Chamber of Sins. |
+| Numbers or letters | Ordered stops (1, 2, 3...) or a named spawn (a "V" marks a Voll spawn in The Dried Lake). |
+
+Zone instances are randomly generated, so the sketches show typical cases,
+not exact maps. Three patterns cover most zones:
+
+- **Fixed shapes.** Some zones always roll the same overall shape: The
+  Tidal Island is always a circle, The Submerged Passage is always linear,
+  most roads and forests are "follow the road/wall" linear runs.
+- **Orientation tells.** Some layouts are fixed but their direction is
+  revealed by a landmark. In The Submerged Passage, small totems stand on
+  one side of the waypoint and the exit is always on that side. In The
+  Riverways, the Wetlands entrance is always on the opposite side of the
+  road from the waypoint.
+- **A few known variants.** When a zone shows several images, they are the
+  common spawn variants (The Dried Lake ships three, one per Voll spawn).
+  Pick whichever matches what you see in game.
+
+Two concrete examples: in The Mud Flats, the green ring marks where the
+three quest glands are grouped, connected by little rivers, and the lone
+gray dot is the optional Fetid Pool off the route. In The Coast, the gray
+spur off the path near the waypoint is the entrance to The Tidal Island
+side area.
+
+The step text next to the images carries the matching zone notes. Both
+notes and images come from an older patch and carry audit metadata (see
+Content below), so treat them as strong hints rather than guarantees.
 
 ## Content
 
