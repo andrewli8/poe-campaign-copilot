@@ -7,7 +7,7 @@ input simulation, no network while you play.
 
 **Early development · English game clients only for now.**
 
-![The overlay running over Act 1's The Lower Prison: current route steps and quest objectives with zone layout diagrams down the right edge, drawn over the game](docs/images/overlay-screenshot.png)
+<img width="1384" height="582" alt="poedemostatic" src="https://github.com/user-attachments/assets/ecfb6b14-2281-4d38-8461-3bee54ed4a5f" />
 
 ## Install (Windows)
 
