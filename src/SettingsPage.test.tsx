@@ -11,6 +11,7 @@ function config(overrides: Partial<AppConfig> = {}): AppConfig {
     pob_code: null,
     overlay_opacity: 1,
     hotkeys: DEFAULT_HOTKEYS,
+    show_run_timer: true,
     ...overrides,
   };
 }
@@ -209,6 +210,7 @@ describe("SettingsPage", () => {
       pob_code: "https://pobb.in/abc123",
       overlay_opacity: 1,
       hotkeys: DEFAULT_HOTKEYS,
+      show_run_timer: true,
     });
   });
 
@@ -395,5 +397,58 @@ describe("SettingsPage", () => {
       />,
     );
     expect(screen.getByText(/saved/i)).toBeInTheDocument();
+  });
+
+  it("renders the run timer checkbox checked from config", () => {
+    render(
+      <SettingsPage
+        config={config()}
+        onPick={noop}
+        onImportPreview={noop}
+        preview={null}
+        previewError={null}
+        onSave={noop}
+        saving={false}
+        savedAt={null}
+      />,
+    );
+    expect(screen.getByLabelText(/show run timer/i)).toBeChecked();
+  });
+
+  it("round-trips an unchecked run timer through Save", () => {
+    const onSave = vi.fn();
+    render(
+      <SettingsPage
+        config={config()}
+        onPick={noop}
+        onImportPreview={noop}
+        preview={null}
+        previewError={null}
+        onSave={onSave}
+        saving={false}
+        savedAt={null}
+      />,
+    );
+    fireEvent.click(screen.getByLabelText(/show run timer/i));
+    fireEvent.click(screen.getByRole("button", { name: /^save$/i }));
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({ show_run_timer: false }),
+    );
+  });
+
+  it("renders a hotkey input for the run timer", () => {
+    render(
+      <SettingsPage
+        config={config()}
+        onPick={noop}
+        onImportPreview={noop}
+        preview={null}
+        previewError={null}
+        onSave={noop}
+        saving={false}
+        savedAt={null}
+      />,
+    );
+    expect(screen.getByLabelText(/start\/stop run timer/i)).toHaveValue("alt+shift+t");
   });
 });

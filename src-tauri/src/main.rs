@@ -4,6 +4,7 @@ mod config;
 mod hotkeys;
 mod journal;
 mod pipeline;
+mod run_timer;
 
 use std::sync::Mutex;
 
@@ -33,6 +34,9 @@ struct AppState {
     /// waiting for a log path to be configured). Swapped out by
     /// `apply_settings` whenever the configured path changes.
     tailer: Mutex<Option<TailerHandle>>,
+    /// Pausable campaign run timer; every transition is persisted to
+    /// run_timer.json and broadcast on the "run-timer" event.
+    run_timer: Mutex<run_timer::RunTimerState>,
 }
 
 #[derive(Debug, Serialize)]
@@ -71,6 +75,11 @@ fn toggle_hide(app: tauri::AppHandle) -> bool {
 #[tauri::command]
 fn get_config(app: tauri::AppHandle) -> AppConfig {
     config::load(&app)
+}
+
+#[tauri::command]
+fn get_run_timer(state: State<AppState>) -> run_timer::RunTimerState {
+    *state.run_timer.lock().unwrap()
 }
 
 /// Blocks the invoking thread until the user picks a file or closes the
@@ -199,6 +208,10 @@ fn apply_settings(app: tauri::AppHandle, cfg: AppConfig) -> Result<(), String> {
             eprintln!("journal: {e}");
         }
 
+        // (d3) A new log path/route/build is a new run: reset the run
+        // timer along with the session journal. Same non-fatal contract.
+        reset_run_timer_impl(&app);
+
         // (e) Spawn the new tailer at the configured path. A failure here
         // (e.g. the configured path was removed between validation above and
         // now) propagates as an error rather than being swallowed: the caller
@@ -234,6 +247,11 @@ fn apply_settings(app: tauri::AppHandle, cfg: AppConfig) -> Result<(), String> {
     // what was actually saved.
     if let Err(e) = app.emit("overlay-opacity", cfg.overlay_opacity) {
         eprintln!("apply_settings: failed to emit overlay-opacity: {e}");
+    }
+
+    // (f3) Push the persisted run-timer visibility to the overlay window.
+    if let Err(e) = app.emit("show-run-timer", cfg.show_run_timer) {
+        eprintln!("apply_settings: failed to emit show-run-timer: {e}");
     }
 
     // (g) Emit a fresh model with no lock held.
@@ -288,6 +306,9 @@ fn dispatch_hotkey(app: &tauri::AppHandle, action: hotkeys::HotkeyAction) {
         }
         hotkeys::HotkeyAction::Settings => {
             open_settings_window(app);
+        }
+        hotkeys::HotkeyAction::Timer => {
+            toggle_run_timer_impl(app);
         }
     }
 }
@@ -497,6 +518,61 @@ fn toggle_hide_impl(app: &tauri::AppHandle) -> bool {
     new_hidden
 }
 
+/// Applies a pure run-timer transition under the state lock, then (only
+/// if the state actually changed) persists and broadcasts it. The lock is
+/// held across store() so two rapid transitions can't interleave their
+/// writes and leave run_timer.json stale.
+fn apply_run_timer_transition(
+    app: &tauri::AppHandle,
+    transition: impl Fn(run_timer::RunTimerState, u64) -> run_timer::RunTimerState,
+) {
+    let state: State<AppState> = app.state();
+    let mut timer = state.run_timer.lock().unwrap();
+    let new_state = transition(*timer, run_timer::now_ms());
+    if new_state == *timer {
+        return;
+    }
+    *timer = new_state;
+    if let Some(path) = run_timer::path(app) {
+        run_timer::store(&path, &new_state);
+    }
+    drop(timer);
+    let _ = app.emit("run-timer", new_state);
+}
+
+fn toggle_run_timer_impl(app: &tauri::AppHandle) {
+    apply_run_timer_transition(app, run_timer::toggle);
+}
+
+/// Zone-entry auto-start: only fires from the pristine never-started
+/// state, so a manually paused timer stays paused across zone changes.
+fn auto_start_run_timer(app: &tauri::AppHandle) {
+    apply_run_timer_transition(app, |state, now| {
+        if run_timer::is_never_started(&state) {
+            run_timer::start(state, now)
+        } else {
+            state
+        }
+    });
+}
+
+/// Tray reset: back to never-started; the next zone entry (or the hotkey)
+/// starts a new run. clear() (not store(default)) so a fresh install and
+/// a reset look identical on disk.
+fn reset_run_timer_impl(app: &tauri::AppHandle) {
+    let state: State<AppState> = app.state();
+    let mut timer = state.run_timer.lock().unwrap();
+    if run_timer::is_never_started(&timer) {
+        return;
+    }
+    *timer = run_timer::RunTimerState::default();
+    if let Some(path) = run_timer::path(app) {
+        run_timer::clear(&path);
+    }
+    drop(timer);
+    let _ = app.emit("run-timer", run_timer::RunTimerState::default());
+}
+
 /// Spawns a background tailer at `path` and stores its handle in
 /// `AppState.tailer`, replacing (but not stopping) whatever was there —
 /// callers that are replacing a live tailer must `take()` and `.stop()`
@@ -557,6 +633,13 @@ fn spawn_tail(
             {
                 eprintln!("journal: {e}");
             }
+            // Auto-start the run timer on the first zone entry of a run.
+            // Costs one extra parse_line per tailed line (the pipeline
+            // parses again below); gating on the parse means non-entry
+            // lines never touch the run-timer lock.
+            if run_timer::is_area_entered(&line) {
+                auto_start_run_timer(&app_handle);
+            }
             let state: State<AppState> = app_handle.state();
             let model = state.pipeline.lock().unwrap().on_line(&line);
             if let Some(model) = model {
@@ -600,7 +683,8 @@ fn main() {
             import_pob,
             apply_settings,
             open_settings,
-            set_overlay_opacity
+            set_overlay_opacity,
+            get_run_timer
         ])
         .setup(|app| {
             // Packaged-build data root detection: MUST run before anything
@@ -684,6 +768,11 @@ fn main() {
                 compact_item: Mutex::new(None),
                 hide_item: Mutex::new(None),
                 tailer: Mutex::new(None),
+                run_timer: Mutex::new(
+                    run_timer::path(app.handle())
+                        .map(|p| run_timer::load(&p))
+                        .unwrap_or_default(),
+                ),
             });
 
             // Global hotkeys from config. A failure here (combo grabbed by
@@ -710,6 +799,8 @@ fn main() {
                 CheckMenuItem::with_id(app, "compact", "Compact mode", true, false, None::<&str>)?;
             let hide_item =
                 CheckMenuItem::with_id(app, "hide", "Hide overlay", true, false, None::<&str>)?;
+            let reset_timer_item =
+                MenuItem::with_id(app, "reset-timer", "Reset run timer", true, None::<&str>)?;
             let settings_item =
                 MenuItem::with_id(app, "settings", "Settings…", true, None::<&str>)?;
             let quit_item = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
@@ -720,6 +811,7 @@ fn main() {
                     &zoom_item,
                     &compact_item,
                     &hide_item,
+                    &reset_timer_item,
                     &settings_item,
                     &quit_item,
                 ],
@@ -747,6 +839,9 @@ fn main() {
                     }
                     "hide" => {
                         toggle_hide_impl(app);
+                    }
+                    "reset-timer" => {
+                        reset_run_timer_impl(app);
                     }
                     "settings" => {
                         open_settings_window(app);

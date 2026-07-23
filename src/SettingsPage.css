@@ -252,3 +252,12 @@ body,
   color: #6fbf73;
   font-weight: 600;
 }
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #b8ad9a;
+  cursor: pointer;
+}

@@ -1,4 +1,10 @@
 import "./FilmstripBar.css";
+import {
+  elapsedMs,
+  formatElapsed,
+  isRunning,
+  type RunTimerState,
+} from "./runTimer";
 import type { UiModel } from "./types";
 
 export interface FilmstripBarProps {
@@ -6,9 +12,20 @@ export interface FilmstripBarProps {
   zoom: boolean;
   setupMode: boolean;
   compact: boolean;
+  runTimer: RunTimerState;
+  showRunTimer: boolean;
+  nowMs: number;
 }
 
-export function FilmstripBar({ model, zoom, setupMode, compact }: FilmstripBarProps) {
+export function FilmstripBar({
+  model,
+  zoom,
+  setupMode,
+  compact,
+  runTimer,
+  showRunTimer,
+  nowMs,
+}: FilmstripBarProps) {
   const rootClass = [
     "filmstrip",
     zoom && "zoom",
@@ -17,6 +34,16 @@ export function FilmstripBar({ model, zoom, setupMode, compact }: FilmstripBarPr
   ]
     .filter(Boolean)
     .join(" ");
+
+  // Paused means "has run, currently stopped" — never-started renders
+  // without the pause cue (0:00:00, waiting for its first zone entry).
+  const timerPaused = !isRunning(runTimer) && runTimer.accumulated_ms > 0;
+  const timerChip = showRunTimer ? (
+    <span className={["run-timer", timerPaused && "paused"].filter(Boolean).join(" ")}>
+      {timerPaused && <span className="run-timer-pause-icon">⏸</span>}
+      {formatElapsed(elapsedMs(runTimer, nowMs))}
+    </span>
+  ) : null;
 
   if (model.waiting_for_log) {
     return (
@@ -58,6 +85,7 @@ export function FilmstripBar({ model, zoom, setupMode, compact }: FilmstripBarPr
           {overlay.next_zone && (
             <span className="compact-next">&rarr; {overlay.next_zone}</span>
           )}
+          {timerChip}
         </div>
       ) : (
         <>
@@ -72,6 +100,7 @@ export function FilmstripBar({ model, zoom, setupMode, compact }: FilmstripBarPr
               <span className="pending-badge">&#9675; {overlay.pending_count} pending</span>
             )}
             {overlay.is_town && <span className="town-chip">TOWN</span>}
+            {timerChip}
           </div>
 
           {overlay.off_route_zone && (

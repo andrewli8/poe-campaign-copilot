@@ -25,6 +25,9 @@ pub fn default_setup_hotkey() -> String {
 pub fn default_settings_hotkey() -> String {
     "alt+shift+o".to_string()
 }
+pub fn default_timer_hotkey() -> String {
+    "alt+shift+t".to_string()
+}
 
 /// Per-field serde defaults so an old (or partially hand-edited)
 /// config.json that omits any of these keys still loads with the
@@ -41,6 +44,8 @@ pub struct HotkeyConfig {
     pub setup: String,
     #[serde(default = "default_settings_hotkey")]
     pub settings: String,
+    #[serde(default = "default_timer_hotkey")]
+    pub timer: String,
 }
 
 impl Default for HotkeyConfig {
@@ -51,6 +56,7 @@ impl Default for HotkeyConfig {
             hide: default_hide_hotkey(),
             setup: default_setup_hotkey(),
             settings: default_settings_hotkey(),
+            timer: default_timer_hotkey(),
         }
     }
 }
@@ -65,6 +71,7 @@ pub enum HotkeyAction {
     Hide,
     Setup,
     Settings,
+    Timer,
 }
 
 impl HotkeyAction {
@@ -75,18 +82,20 @@ impl HotkeyAction {
             HotkeyAction::Hide => "hide/show overlay",
             HotkeyAction::Setup => "toggle setup mode",
             HotkeyAction::Settings => "open settings",
+            HotkeyAction::Timer => "start/stop run timer",
         }
     }
 }
 
 /// Every (action, combo) pair in a fixed order.
-pub fn bindings(cfg: &HotkeyConfig) -> [(HotkeyAction, &str); 5] {
+pub fn bindings(cfg: &HotkeyConfig) -> [(HotkeyAction, &str); 6] {
     [
         (HotkeyAction::Zoom, cfg.zoom.as_str()),
         (HotkeyAction::Compact, cfg.compact.as_str()),
         (HotkeyAction::Hide, cfg.hide.as_str()),
         (HotkeyAction::Setup, cfg.setup.as_str()),
         (HotkeyAction::Settings, cfg.settings.as_str()),
+        (HotkeyAction::Timer, cfg.timer.as_str()),
     ]
 }
 
@@ -187,6 +196,7 @@ mod tests {
         assert_eq!(cfg.hide, "alt+shift+h");
         assert_eq!(cfg.setup, "alt+shift+s");
         assert_eq!(cfg.settings, "alt+shift+o");
+        assert_eq!(cfg.timer, "alt+shift+t");
     }
 
     #[test]
@@ -283,8 +293,16 @@ mod tests {
                 "alt+shift+c",
                 "alt+shift+h",
                 "alt+shift+s",
-                "alt+shift+o"
+                "alt+shift+o",
+                "alt+shift+t"
             ]
         );
+    }
+
+    #[test]
+    fn missing_timer_field_deserializes_to_default() {
+        // Configs written before the run-timer feature omit the key.
+        let cfg: HotkeyConfig = serde_json::from_str(r#"{"settings":"ctrl+shift+o"}"#).unwrap();
+        assert_eq!(cfg.timer, "alt+shift+t");
     }
 }

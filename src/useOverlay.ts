@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { useEffect, useState } from "react";
 import { OPACITY_DEFAULT, clampOpacity } from "./opacity";
+import { IDLE_RUN_TIMER, isRunning, type RunTimerState } from "./runTimer";
 import type { AppConfig, UiModel } from "./types";
 
 export function useOverlay() {
@@ -10,11 +11,16 @@ export function useOverlay() {
   const [setupMode, setSetupMode] = useState(false);
   const [compact, setCompact] = useState(false);
   const [overlayOpacity, setOverlayOpacity] = useState(OPACITY_DEFAULT);
+  const [runTimer, setRunTimer] = useState<RunTimerState>(IDLE_RUN_TIMER);
+  const [showRunTimer, setShowRunTimer] = useState(true);
+  const [nowMs, setNowMs] = useState(() => Date.now());
 
   useEffect(() => {
     let disposed = false;
     let eventModelArrived = false;
     let opacityEventArrived = false;
+    let runTimerEventArrived = false;
+    let showRunTimerEventArrived = false;
     const unlisteners: UnlistenFn[] = [];
 
     // Registers a listener and makes sure it is always torn down exactly
@@ -51,6 +57,14 @@ export function useOverlay() {
           opacityEventArrived = true;
           setOverlayOpacity(clampOpacity(o));
         }),
+        registerListener<RunTimerState>("run-timer", (t) => {
+          runTimerEventArrived = true;
+          setRunTimer(t);
+        }),
+        registerListener<boolean>("show-run-timer", (s) => {
+          showRunTimerEventArrived = true;
+          setShowRunTimer(s);
+        }),
       ]);
       await listenersReady;
       if (disposed) return;
@@ -75,8 +89,20 @@ export function useOverlay() {
         if (!disposed && !opacityEventArrived) {
           setOverlayOpacity(clampOpacity(cfg.overlay_opacity));
         }
+        if (!disposed && !showRunTimerEventArrived) {
+          setShowRunTimer(cfg.show_run_timer);
+        }
       } catch (e) {
         console.error("get_config failed:", e);
+      }
+
+      try {
+        const timer = await invoke<RunTimerState>("get_run_timer");
+        if (!disposed && !runTimerEventArrived) {
+          setRunTimer(timer);
+        }
+      } catch (e) {
+        console.error("get_run_timer failed:", e);
       }
     }
 
@@ -88,5 +114,12 @@ export function useOverlay() {
     };
   }, []);
 
-  return { model, zoom, setupMode, compact, overlayOpacity };
+  useEffect(() => {
+    if (!showRunTimer || !isRunning(runTimer)) return;
+    setNowMs(Date.now());
+    const interval = setInterval(() => setNowMs(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, [showRunTimer, runTimer]);
+
+  return { model, zoom, setupMode, compact, overlayOpacity, runTimer, showRunTimer, nowMs };
 }

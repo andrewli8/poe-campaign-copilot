@@ -14,6 +14,7 @@ export const DEFAULT_HOTKEYS: HotkeyConfig = {
   hide: "alt+shift+h",
   setup: "alt+shift+s",
   settings: "alt+shift+o",
+  timer: "alt+shift+t",
 };
 
 export type HotkeyAction = keyof HotkeyConfig;
@@ -24,6 +25,7 @@ export const HOTKEY_ACTIONS: { key: HotkeyAction; label: string }[] = [
   { key: "settings", label: "Open settings" },
   { key: "compact", label: "Toggle compact mode" },
   { key: "zoom", label: "Toggle zoom" },
+  { key: "timer", label: "Start/stop run timer" },
 ];
 
 // Canonical modifier order for the normalized string. Aliases cover the

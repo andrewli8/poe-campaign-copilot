@@ -166,7 +166,7 @@ pub fn configs_equal(a: &AppConfig, b: &AppConfig) -> bool {
 /// Equality over ONLY the fields that feed the pipeline/tailer rebuild
 /// (log path, route variant, PoB build). `apply_settings` uses this to
 /// skip the rebuild — which resets in-progress route/task state — when a
-/// Save only changed cosmetic settings (opacity, hotkeys).
+/// Save only changed cosmetic settings (opacity, hotkeys, run-timer visibility).
 pub fn pipeline_configs_equal(a: &AppConfig, b: &AppConfig) -> bool {
     a.client_log_path == b.client_log_path && a.variant == b.variant && a.pob_code == b.pob_code
 }
