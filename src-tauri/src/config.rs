@@ -20,12 +20,32 @@ const KNOWN_VARIANTS: [&str; 2] = ["league-start", "standard"];
 /// into memory.
 const MAX_CONFIG_BYTES: u64 = 1024 * 1024;
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppConfig {
     pub client_log_path: Option<String>,
     #[serde(default = "default_variant")]
     pub variant: String,
     pub pob_code: Option<String>,
+}
+
+// Hand-written so `variant` defaults to a real route variant rather than the
+// empty string a derived `Default` would produce. `load()` returns
+// `AppConfig::default()` directly on the missing-file (first-run) and
+// unreadable-file paths WITHOUT going through `normalize_variant`, so an
+// empty default here reaches the settings form, whose route-variant <select>
+// can't represent "" and silently submits it on Save — which `map_variant`
+// then rejects as "unknown route variant". Defaulting to a valid variant
+// closes that at the source. (The `#[serde(default = "default_variant")]`
+// above only covers deserialization of a file that omits the key, not this
+// `Default` impl.)
+impl Default for AppConfig {
+    fn default() -> Self {
+        Self {
+            client_log_path: None,
+            variant: default_variant(),
+            pob_code: None,
+        }
+    }
 }
 
 /// Pure parse: any JSON that doesn't deserialize into `AppConfig` (missing
@@ -164,7 +184,21 @@ mod tests {
         let cfg = parse_config("not json at all");
         assert_eq!(cfg.client_log_path, None);
         assert_eq!(cfg.pob_code, None);
-        assert_eq!(cfg.variant, String::default());
+        // Must degrade to a USABLE variant, not the empty string: an empty
+        // variant reaches the settings form and gets submitted on Save,
+        // which map_variant rejects as "unknown route variant".
+        assert_eq!(cfg.variant, "league-start");
+    }
+
+    #[test]
+    fn default_config_has_a_valid_route_variant() {
+        // Regression: a derived Default gave variant == "", which the
+        // first-run (missing config file) path returned straight to the
+        // settings form, producing an "unknown route variant" error on the
+        // very first Save.
+        let cfg = AppConfig::default();
+        assert_eq!(cfg.variant, "league-start");
+        assert!(KNOWN_VARIANTS.contains(&cfg.variant.as_str()));
     }
 
     #[test]
