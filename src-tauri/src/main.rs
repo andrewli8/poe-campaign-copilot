@@ -21,9 +21,11 @@ struct AppState {
     pipeline: Mutex<Pipeline>,
     setup_mode: Mutex<bool>,
     zoom: Mutex<bool>,
+    compact: Mutex<bool>,
     hidden: Mutex<bool>,
     setup_item: Mutex<Option<CheckMenuItem<tauri::Wry>>>,
     zoom_item: Mutex<Option<CheckMenuItem<tauri::Wry>>>,
+    compact_item: Mutex<Option<CheckMenuItem<tauri::Wry>>>,
     hide_item: Mutex<Option<CheckMenuItem<tauri::Wry>>>,
     /// The currently running Client.txt tailer, if any (`None` while
     /// waiting for a log path to be configured). Swapped out by
@@ -52,6 +54,11 @@ fn set_setup_mode(app: tauri::AppHandle, enabled: bool) {
 #[tauri::command]
 fn toggle_zoom(app: tauri::AppHandle) -> bool {
     toggle_zoom_impl(&app)
+}
+
+#[tauri::command]
+fn toggle_compact(app: tauri::AppHandle) -> bool {
+    toggle_compact_impl(&app)
 }
 
 #[tauri::command]
@@ -269,6 +276,20 @@ fn apply_setup_mode(app: &tauri::AppHandle, enabled: bool) {
     let _ = app.emit("setup-mode", enabled);
 }
 
+/// Window height for the overlay given the current compact/zoom flags.
+/// Compact takes precedence over zoom: a slim compact bar stays slim even
+/// while zoom is also on, so `toggle_zoom_impl` and `toggle_compact_impl`
+/// always agree on the target height instead of fighting each other.
+fn overlay_target_height(compact: bool, zoom: bool) -> f64 {
+    if compact {
+        44.0
+    } else if zoom {
+        420.0
+    } else {
+        150.0
+    }
+}
+
 fn toggle_zoom_impl(app: &tauri::AppHandle) -> bool {
     let state: State<AppState> = app.state();
     let mut zoom = state.zoom.lock().unwrap();
@@ -283,7 +304,8 @@ fn toggle_zoom_impl(app: &tauri::AppHandle) -> bool {
         && let Ok(size) = win.outer_size()
     {
         let logical = size.to_logical::<f64>(scale);
-        let height = if new_zoom { 420.0 } else { 150.0 };
+        let compact = *state.compact.lock().unwrap();
+        let height = overlay_target_height(compact, new_zoom);
         if let Err(e) = win.set_size(tauri::LogicalSize::new(logical.width, height)) {
             eprintln!("toggle_zoom: failed to resize window: {e}");
         }
@@ -294,6 +316,36 @@ fn toggle_zoom_impl(app: &tauri::AppHandle) -> bool {
     }
     let _ = app.emit("zoom", new_zoom);
     new_zoom
+}
+
+/// Flips `AppState.compact` and resizes the "main" overlay window to match,
+/// mirroring `toggle_zoom_impl`: the `compact` guard is held across the
+/// resize so a second `toggle_compact_impl` call (rapid tray clicks or the
+/// global shortcut firing twice) can't interleave with `set_size` and leave
+/// the window's actual size out of sync with the flag it's supposed to
+/// reflect.
+fn toggle_compact_impl(app: &tauri::AppHandle) -> bool {
+    let state: State<AppState> = app.state();
+    let mut compact = state.compact.lock().unwrap();
+    *compact = !*compact;
+    let new_compact = *compact;
+    if let Some(win) = app.get_webview_window("main")
+        && let Ok(scale) = win.scale_factor()
+        && let Ok(size) = win.outer_size()
+    {
+        let logical = size.to_logical::<f64>(scale);
+        let zoom = *state.zoom.lock().unwrap();
+        let height = overlay_target_height(new_compact, zoom);
+        if let Err(e) = win.set_size(tauri::LogicalSize::new(logical.width, height)) {
+            eprintln!("toggle_compact: failed to resize window: {e}");
+        }
+    }
+    drop(compact);
+    if let Some(item) = state.compact_item.lock().unwrap().as_ref() {
+        let _ = item.set_checked(new_compact);
+    }
+    let _ = app.emit("compact", new_compact);
+    new_compact
 }
 
 /// Flips `AppState.hidden` and shows/hides the "main" overlay window to
@@ -401,7 +453,7 @@ fn main() {
         )
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
-                .with_shortcuts(["alt+shift+z", "alt+shift+h"])
+                .with_shortcuts(["alt+shift+z", "alt+shift+c", "alt+shift+h"])
                 .expect("valid shortcut")
                 .with_handler(|app, shortcut, event| {
                     use tauri_plugin_global_shortcut::{Code, Modifiers};
@@ -411,6 +463,8 @@ fn main() {
                     let alt_shift = Modifiers::ALT | Modifiers::SHIFT;
                     if shortcut.matches(alt_shift, Code::KeyZ) {
                         toggle_zoom_impl(app);
+                    } else if shortcut.matches(alt_shift, Code::KeyC) {
+                        toggle_compact_impl(app);
                     } else if shortcut.matches(alt_shift, Code::KeyH) {
                         toggle_hide_impl(app);
                     }
@@ -424,6 +478,7 @@ fn main() {
             get_model,
             set_setup_mode,
             toggle_zoom,
+            toggle_compact,
             toggle_hide,
             get_config,
             pick_log_file,
@@ -481,9 +536,11 @@ fn main() {
                 pipeline: Mutex::new(pipeline),
                 setup_mode: Mutex::new(false),
                 zoom: Mutex::new(false),
+                compact: Mutex::new(false),
                 hidden: Mutex::new(false),
                 setup_item: Mutex::new(None),
                 zoom_item: Mutex::new(None),
+                compact_item: Mutex::new(None),
                 hide_item: Mutex::new(None),
                 tailer: Mutex::new(None),
             });
@@ -492,6 +549,8 @@ fn main() {
             let setup_item =
                 CheckMenuItem::with_id(app, "setup", "Setup Mode", true, false, None::<&str>)?;
             let zoom_item = CheckMenuItem::with_id(app, "zoom", "Zoom", true, false, None::<&str>)?;
+            let compact_item =
+                CheckMenuItem::with_id(app, "compact", "Compact mode", true, false, None::<&str>)?;
             let hide_item =
                 CheckMenuItem::with_id(app, "hide", "Hide overlay", true, false, None::<&str>)?;
             let settings_item =
@@ -502,6 +561,7 @@ fn main() {
                 &[
                     &setup_item,
                     &zoom_item,
+                    &compact_item,
                     &hide_item,
                     &settings_item,
                     &quit_item,
@@ -511,6 +571,7 @@ fn main() {
             let state: State<AppState> = app.state();
             *state.setup_item.lock().unwrap() = Some(setup_item.clone());
             *state.zoom_item.lock().unwrap() = Some(zoom_item.clone());
+            *state.compact_item.lock().unwrap() = Some(compact_item.clone());
             *state.hide_item.lock().unwrap() = Some(hide_item.clone());
             TrayIconBuilder::new()
                 .icon(app.default_window_icon().unwrap().clone())
@@ -523,6 +584,9 @@ fn main() {
                     }
                     "zoom" => {
                         toggle_zoom_impl(app);
+                    }
+                    "compact" => {
+                        toggle_compact_impl(app);
                     }
                     "hide" => {
                         toggle_hide_impl(app);
