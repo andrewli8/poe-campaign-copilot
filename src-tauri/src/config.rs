@@ -30,6 +30,10 @@ pub fn default_overlay_opacity() -> f64 {
     OVERLAY_OPACITY_MAX
 }
 
+pub fn default_show_run_timer() -> bool {
+    true
+}
+
 /// Clamps an opacity into [`OVERLAY_OPACITY_MIN`, `OVERLAY_OPACITY_MAX`].
 /// Non-finite input (NaN/inf from a corrupt or hand-edited config)
 /// degrades to the default rather than the floor — garbage carries no
@@ -56,6 +60,10 @@ pub struct AppConfig {
     /// inside `HotkeyConfig` keep old configs loading unchanged.
     #[serde(default)]
     pub hotkeys: crate::hotkeys::HotkeyConfig,
+    /// Whether the campaign run timer chip is shown on the overlay.
+    /// Cosmetic only — see `pipeline_configs_equal`.
+    #[serde(default = "default_show_run_timer")]
+    pub show_run_timer: bool,
 }
 
 // Hand-written so `variant` defaults to a real route variant rather than the
@@ -76,6 +84,7 @@ impl Default for AppConfig {
             pob_code: None,
             overlay_opacity: default_overlay_opacity(),
             hotkeys: crate::hotkeys::HotkeyConfig::default(),
+            show_run_timer: default_show_run_timer(),
         }
     }
 }
@@ -148,7 +157,10 @@ fn normalize_opacity(cfg: AppConfig) -> AppConfig {
 /// otherwise reset in-progress route/task state and the player's pinned
 /// level for no reason.
 pub fn configs_equal(a: &AppConfig, b: &AppConfig) -> bool {
-    pipeline_configs_equal(a, b) && a.overlay_opacity == b.overlay_opacity && a.hotkeys == b.hotkeys
+    pipeline_configs_equal(a, b)
+        && a.overlay_opacity == b.overlay_opacity
+        && a.hotkeys == b.hotkeys
+        && a.show_run_timer == b.show_run_timer
 }
 
 /// Equality over ONLY the fields that feed the pipeline/tailer rebuild
@@ -274,6 +286,7 @@ mod tests {
                 settings: "ctrl+shift+o".into(),
                 ..Default::default()
             },
+            show_run_timer: true,
         };
         let json = config_json(&cfg);
         let parsed = parse_config(&json);
@@ -282,6 +295,7 @@ mod tests {
         assert_eq!(parsed.pob_code, cfg.pob_code);
         assert_eq!(parsed.overlay_opacity, cfg.overlay_opacity);
         assert_eq!(parsed.hotkeys, cfg.hotkeys);
+        assert_eq!(parsed.show_run_timer, cfg.show_run_timer);
     }
 
     #[test]
@@ -484,5 +498,27 @@ mod tests {
             ..a.clone()
         };
         assert!(!configs_equal(&a, &different_code));
+    }
+
+    #[test]
+    fn show_run_timer_defaults_to_true() {
+        assert!(AppConfig::default().show_run_timer);
+        // Pre-run-timer config.json files must keep loading with the timer on.
+        let cfg = parse_config(
+            r#"{"client_log_path":"/tmp/Client.txt","variant":"standard","pob_code":null}"#,
+        );
+        assert!(cfg.show_run_timer);
+    }
+
+    #[test]
+    fn configs_equal_compares_show_run_timer() {
+        let a = AppConfig::default();
+        let hidden_timer = AppConfig {
+            show_run_timer: false,
+            ..a.clone()
+        };
+        assert!(!configs_equal(&a, &hidden_timer));
+        // ...but it's cosmetic: no pipeline/tailer rebuild.
+        assert!(pipeline_configs_equal(&a, &hidden_timer));
     }
 }
