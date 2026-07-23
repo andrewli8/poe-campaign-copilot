@@ -59,7 +59,10 @@ on "Waiting" until your first zone change. Enter any area and it comes
 alive.
 
 Useful controls: the tray menu has Setup Mode (makes the bar draggable and
-resizable), Zoom (bigger layout images, also `Alt+Shift+Z`), and Quit.
+resizable, in every state including the initial "Waiting" screen), Zoom
+(bigger layout images, also `Alt+Shift+Z`), Hide overlay (tucks the bar away
+without quitting; toggle it back from the tray or with `Alt+Shift+H`), and
+Quit.
 
 One honest caveat: you are the first person to run this against the real
 game. It has been developed and tested on macOS with simulated sessions,
