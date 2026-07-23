@@ -27,6 +27,16 @@ pub struct Area {
 pub struct Quest {
     pub id: String,
     pub name: String,
+    /// Reward offers keyed by offer id (one per rewarding NPC), as vendored
+    /// from exile-leveling's quests.json.
+    #[serde(default)]
+    pub reward_offers: BTreeMap<String, RewardOffer>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct RewardOffer {
+    #[serde(default)]
+    pub quest_npc: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
