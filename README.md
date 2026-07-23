@@ -115,23 +115,24 @@ updates in place from the Settings window.
 
 When you enter a zone, the overlay's filmstrip shows one or more small
 diagrams for that zone. They are not screenshots or minimaps: each is a
-hand-drawn cheat-sheet sketch in the style of the community "PoE layouts"
-compilation, with images by
+hand-drawn cheat-sheet sketch from the community
+["Cheat sheets based on Engineering Eternity" compilation](https://docs.google.com/document/d/1sExA-AnTbroJ-HN2neZiij5G4X9u2ENlC7m_zf1tqP8/edit),
+with images by
 [Engineering Eternity](https://www.youtube.com/@EngineeringEternity)
 (see [CREDITS.md](CREDITS.md)). Each sketch abstracts one way the zone can
 spawn into a plain gray rectangle plus a suggested path, so you can match
 it against your in-game map at a glance.
 
-The drawings use a small, consistent vocabulary:
+This is the compilation's own legend:
+
+![Layout legend: 1 entrance, 2 waypoint, 3 exit and main path, 4 trial and path, 5 optional area and path, E initial of important NPC](docs/images/layout-legend.png)
+
+The drawings also use a few marks beyond the legend:
 
 | Mark | Meaning |
 | --- | --- |
 | Gray rectangle | The zone's rough footprint. |
-| White dot | Where you enter the zone. |
-| Green line | The suggested path to run. |
 | Green dot | Where the path ends: usually the exit to the next zone, sometimes a boss or quest objective. |
-| Blue dot | A waypoint. |
-| Gray dot (often on a short gray spur off the path) | An off-route point of interest, such as an optional side area entrance. |
 | Green ring | An area circled for the notes, e.g. where quest items are grouped. |
 | Gray ring | A landmark area the notes refer to, e.g. the center of Chamber of Sins. |
 | Numbers or letters | Ordered stops (1, 2, 3...) or a named spawn (a "V" marks a Voll spawn in The Dried Lake). |
