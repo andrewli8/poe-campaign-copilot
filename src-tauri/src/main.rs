@@ -297,18 +297,15 @@ fn toggle_zoom_impl(app: &tauri::AppHandle) -> bool {
 }
 
 /// Flips `AppState.hidden` and shows/hides the "main" overlay window to
-/// match, mirroring `toggle_zoom_impl`'s lock-then-drop-before-window-ops
-/// discipline: the `hidden` guard is dropped before touching the window so a
-/// second `toggle_hide_impl` call (rapid tray clicks or the global shortcut
-/// firing twice) can't interleave with the show/hide call and leave the
-/// window's actual visibility out of sync with the flag it's supposed to
-/// reflect.
+/// match, mirroring `toggle_zoom_impl`: the `hidden` guard is held across the
+/// show/hide call so a second `toggle_hide_impl` (rapid tray clicks or the
+/// global shortcut firing twice) can't interleave with it and leave the
+/// window's actual visibility out of sync with the flag it reflects.
 fn toggle_hide_impl(app: &tauri::AppHandle) -> bool {
     let state: State<AppState> = app.state();
     let mut hidden = state.hidden.lock().unwrap();
     *hidden = !*hidden;
     let new_hidden = *hidden;
-    drop(hidden);
 
     if let Some(win) = app.get_webview_window("main") {
         if new_hidden {
@@ -332,6 +329,7 @@ fn toggle_hide_impl(app: &tauri::AppHandle) -> bool {
             }
         }
     }
+    drop(hidden);
 
     if let Some(item) = state.hide_item.lock().unwrap().as_ref() {
         let _ = item.set_checked(new_hidden);
