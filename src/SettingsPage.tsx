@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { useState } from "react";
 import "./SettingsPage.css";
 import type { AppConfig, PobSummary, RouteVariant } from "./types";
@@ -11,6 +12,11 @@ export interface SettingsPageProps {
   onSave: (cfg: AppConfig) => void;
   saving: boolean;
   savedAt: number | null;
+  // Optional slot rendered above the title, inside the styled settings
+  // container — used by SettingsContainer to place <UpdateBanner/> so it
+  // picks up the dark/gold settings background rather than sitting outside
+  // it. Left undefined in existing callers/tests, which render nothing here.
+  banner?: ReactNode;
 }
 
 const VARIANTS: { value: RouteVariant; label: string }[] = [
@@ -34,6 +40,7 @@ export function SettingsPage({
   onSave,
   saving,
   savedAt,
+  banner,
 }: SettingsPageProps) {
   const [variant, setVariant] = useState<RouteVariant>(config.variant);
   const [pobText, setPobText] = useState(config.pob_code ?? "");
@@ -49,6 +56,7 @@ export function SettingsPage({
 
   return (
     <div className="settings-page">
+      {banner}
       <h1 className="settings-title">Settings</h1>
 
       <section className="settings-row">

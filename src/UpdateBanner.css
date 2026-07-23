@@ -1,0 +1,28 @@
+.update-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  margin-bottom: 18px;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.update-banner-available,
+.update-banner-downloading {
+  background: rgba(200, 169, 90, 0.1);
+  border: 1px solid rgba(200, 169, 90, 0.3);
+  color: #f0e6d2;
+}
+
+.update-banner-message {
+  flex: 1;
+}
+
+.update-banner-error {
+  padding: 6px 0;
+  margin-bottom: 14px;
+  color: #e0785a;
+  font-size: 12px;
+}
