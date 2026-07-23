@@ -289,6 +289,9 @@ fn dispatch_hotkey(app: &tauri::AppHandle, action: hotkeys::HotkeyAction) {
         hotkeys::HotkeyAction::Settings => {
             open_settings_window(app);
         }
+        hotkeys::HotkeyAction::Timer => {
+            // Wired to the run-timer toggle in the run-timer wiring change.
+        }
     }
 }
 
