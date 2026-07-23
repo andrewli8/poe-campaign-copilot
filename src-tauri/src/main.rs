@@ -354,6 +354,29 @@ fn main() {
             open_settings
         ])
         .setup(|app| {
+            // Packaged-build data root detection: MUST run before anything
+            // below that can trigger a `content::*_dir()` lookup (the
+            // config-load-triggered `parse_pob_code` call a few lines down
+            // loads vendored gem data; `Pipeline::new` further down loads
+            // the full vendored game data and layouts). `data_root::
+            // set_data_root` is a set-once `OnceLock` — once any lookup
+            // has happened, later calls can't relocate data mid-run — so
+            // this has to be the first thing `.setup()` does.
+            //
+            // A bundled install ships `vendor/` and `content/layouts/` as
+            // Tauri resources (see `tauri.conf.json`'s `bundle.resources`),
+            // copied next to the resolved resource dir. Detecting
+            // `resource_dir/vendor/exile-leveling` is how we tell a
+            // packaged run (resources present) apart from `tauri dev`
+            // (resource dir has no `vendor/`) — the latter falls through
+            // to `content::data_root`'s repo-root default untouched.
+            if let Ok(resource_dir) = app.path().resource_dir()
+                && resource_dir.join("vendor").join("exile-leveling").is_dir()
+                && let Err(rejected) = content::data_root::set_data_root(resource_dir.clone())
+            {
+                eprintln!("data root already set; ignoring {rejected:?}");
+            }
+
             // Config load and initial Pipeline construction happen here
             // (rather than before the Builder chain) because building the
             // real pipeline needs the resolved variant/build from the
