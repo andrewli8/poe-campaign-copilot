@@ -3,7 +3,7 @@
 # Bump REF to resync after a new league; then run this script and commit.
 set -euo pipefail
 
-REF="1961ef839235e831ee61413de331cce42eb78f24"
+REF="e9a248c4a452f58da6e0f30751b20072ad3276cd"
 BASE="https://raw.githubusercontent.com/HeartofPhos/exile-leveling/${REF}"
 DEST="$(cd "$(dirname "$0")/.." && pwd)/vendor/exile-leveling"
 

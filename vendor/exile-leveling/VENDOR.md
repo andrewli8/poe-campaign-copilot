@@ -1,3 +1,3 @@
 Vendored from https://github.com/HeartofPhos/exile-leveling
-commit: 1961ef839235e831ee61413de331cce42eb78f24
-synced: 2026-07-21T23:56:12Z
+commit: e9a248c4a452f58da6e0f30751b20072ad3276cd
+synced: 2026-07-23T14:04:40Z

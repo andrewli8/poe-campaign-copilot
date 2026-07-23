@@ -11,7 +11,7 @@ use crate::route_dsl::{ParseError, parse_route_file};
 use crate::vendor::read_act_route;
 use crate::walk::{CompiledStep, WalkError, WalkState, walk_act};
 
-pub const EXILE_LEVELING_REF: &str = "1961ef839235e831ee61413de331cce42eb78f24";
+pub const EXILE_LEVELING_REF: &str = "e9a248c4a452f58da6e0f30751b20072ad3276cd";
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Variant {
