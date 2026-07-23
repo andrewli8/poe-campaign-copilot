@@ -1,80 +1,18 @@
 name: Bug report
-description: Something in the overlay is broken, wrong, or behaving unexpectedly.
-title: "[Bug]: "
+description: Something in the overlay is broken or wrong.
 labels: ["bug"]
 body:
-  - type: markdown
-    attributes:
-      value: |
-        Thanks for taking the time to report a bug. The more detail you give, the faster it can be tracked down.
-
-        Before you start: please attach your log. Right-click the tray icon, choose **Open logs**, and drag `poe-copilot.log` into the "Log output" box below. It records the app version and the zones the overlay saw, and it stays local (no account or personal data).
   - type: textarea
     id: what-happened
     attributes:
-      label: What happened?
-      description: Describe the problem. What did the overlay do?
-      placeholder: The overlay showed the wrong zone after I entered The Coast.
+      label: What went wrong?
+      description: What happened, and what did you expect instead? A sentence or two is fine.
     validations:
       required: true
   - type: textarea
-    id: expected
+    id: details
     attributes:
-      label: What did you expect instead?
-      placeholder: It should have shown The Coast layout and the next route step.
-    validations:
-      required: true
-  - type: textarea
-    id: steps
-    attributes:
-      label: Steps to reproduce
-      description: List the steps that lead to the problem, if you can.
-      placeholder: |
-        1. Launch the overlay and open Settings
-        2. Enter The Twilight Strand, then The Coast
-        3. Notice the overlay still shows The Twilight Strand
-    validations:
-      required: true
-  - type: input
-    id: version
-    attributes:
-      label: App version
-      description: Shown in the installer filename and the log. For example 0.1.8.
-      placeholder: 0.1.8
-    validations:
-      required: true
-  - type: dropdown
-    id: install-type
-    attributes:
-      label: How do you run Path of Exile?
-      options:
-        - Steam
-        - Standalone (Grinding Gear Games client)
-        - Not sure
-    validations:
-      required: true
-  - type: input
-    id: windows-version
-    attributes:
-      label: Windows version
-      description: For example Windows 11 23H2. Optional but helpful.
-      placeholder: Windows 11
+      label: Anything else? (optional)
+      description: Steps to reproduce, your app version, or your log. For the log, right-click the tray icon, choose Open logs, and drag the file in here.
     validations:
       required: false
-  - type: textarea
-    id: logs
-    attributes:
-      label: Log output
-      description: Drag `poe-copilot.log` here (tray icon then Open logs), or paste the relevant lines. This gets formatted automatically, no backticks needed.
-      render: shell
-    validations:
-      required: false
-  - type: checkboxes
-    id: checks
-    attributes:
-      label: Before submitting
-      options:
-        - label: I searched existing issues and this is not a duplicate.
-          required: true
-        - label: I am running an English game client (the only one supported for now).
-          required: true
