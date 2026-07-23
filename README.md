@@ -94,6 +94,23 @@ The `POE_COPILOT_LOG` and `POE_COPILOT_LOG_REPLAY` environment variables
 are developer overrides for demos. They beat the configured path but are
 never written to the config file.
 
+## Updating
+
+From version 0.1.2 on, the app checks for a newer release each time you open
+the Settings window. If one is available, a banner appears at the top of
+Settings with an "Update and restart" button. Click it and the app
+downloads the new version, installs it, and relaunches on its own.
+
+The check only runs when you open Settings, never while the overlay is
+tracking a session, so it does not touch the "no network during play" rule.
+Every update is cryptographically signed, so the app only installs a build
+that genuinely came from this project's release pipeline.
+
+One caveat about the first install: the updater lives inside the app, so a
+version that predates it (0.1.0 and 0.1.1) cannot update itself. Install
+0.1.2 by hand once from the releases page, and every version after that
+updates in place from the Settings window.
+
 ## Content
 
 - `content/layouts/` has per-zone layout notes and diagram images for all
