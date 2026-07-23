@@ -70,7 +70,13 @@ pub enum PobError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use content::game_data::load_vendored_gems;
+    use content::game_data::{AreaMap, GemMap, QuestMap, load_vendored, load_vendored_gems};
+
+    fn vendored() -> (GemMap, QuestMap, AreaMap) {
+        let gems = load_vendored_gems().unwrap();
+        let (areas, quests) = load_vendored().unwrap();
+        (gems, quests, areas)
+    }
 
     fn fixture_xml() -> String {
         std::fs::read_to_string(
@@ -103,8 +109,8 @@ mod tests {
 
     #[test]
     fn parses_fixture_into_plan() {
-        let gems = load_vendored_gems().unwrap();
-        let plan = parse_build(&fixture_xml(), &gems).unwrap();
+        let (gems, quests, areas) = vendored();
+        let plan = parse_build(&fixture_xml(), &gems, &quests, &areas).unwrap();
         assert_eq!(plan.class_name, "Ranger");
         assert_eq!(plan.ascend_name.as_deref(), Some("Deadeye"));
         assert_eq!(plan.skill_sets.len(), 2);
@@ -114,8 +120,10 @@ mod tests {
         assert!(plan.notes.as_deref().unwrap().contains("Toxic Rain"));
         assert_eq!(plan.reliability, Reliability::Structured);
 
-        // Milestones: set switch at 13, plus gem availabilities (e.g.
-        // Frostblink at its vendored required_level 4).
+        // Milestones: set switch at 13, plus gem availabilities. A Ranger
+        // can't take Frostblink as a quest reward but can buy it from Nessa
+        // in act 1 once "Breaking Some Eggs" is done, so it appears at its
+        // required level 4 labeled with that source.
         assert!(
             plan.milestones
                 .iter()
@@ -124,7 +132,16 @@ mod tests {
         assert!(
             plan.milestones
                 .iter()
-                .any(|m| m.label == "Gem available: Frostblink" && m.level == 4)
+                .any(|m| m.label == "Gem available: Frostblink (buy from Nessa, A1)"
+                    && m.level == 4)
+        );
+        // Toxic Rain is a Ranger act-1 quest reward with the campaign gem's
+        // required level 12 (not the level-1 Royale variant's).
+        assert!(
+            plan.milestones
+                .iter()
+                .any(|m| m.label == "Gem available: Toxic Rain (quest reward, A1)"
+                    && m.level == 12)
         );
         // Support gems excluded from gem milestones.
         assert!(
@@ -141,9 +158,25 @@ mod tests {
     }
 
     #[test]
+    fn gem_availability_depends_on_class() {
+        let (gems, quests, areas) = vendored();
+        // Same build piloted by a Marauder: Toxic Rain is neither a quest
+        // reward nor a vendor offer for Marauder until Siosa's unrestricted
+        // shop in act 3, so the milestone moves to act 3's entry level.
+        let xml = fixture_xml().replace("className=\"Ranger\"", "className=\"Marauder\"");
+        let plan = parse_build(&xml, &gems, &quests, &areas).unwrap();
+        assert!(
+            plan.milestones
+                .iter()
+                .any(|m| m.label == "Gem available: Toxic Rain (buy from Siosa, A3)"
+                    && m.level == 23)
+        );
+    }
+
+    #[test]
     fn support_gem_without_suffix_resolves_via_fallback() {
-        let gems = load_vendored_gems().unwrap();
-        let plan = parse_build(&fixture_xml(), &gems).unwrap();
+        let (gems, quests, areas) = vendored();
+        let plan = parse_build(&fixture_xml(), &gems, &quests, &areas).unwrap();
 
         // Real-export shape: nameSpec="Pierce" (no " Support" suffix) still
         // enriches via the "{name} Support" fallback.
@@ -163,10 +196,12 @@ mod tests {
 
     #[test]
     fn unparseable_build_is_unsupported_not_error() {
-        let gems = load_vendored_gems().unwrap();
+        let (gems, quests, areas) = vendored();
         let plan = parse_build(
             "<PathOfBuilding><Build className=\"Witch\"/></PathOfBuilding>",
             &gems,
+            &quests,
+            &areas,
         )
         .unwrap();
         assert_eq!(plan.reliability, Reliability::Unsupported);
