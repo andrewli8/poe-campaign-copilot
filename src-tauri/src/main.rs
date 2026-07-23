@@ -634,10 +634,9 @@ fn spawn_tail(
                 eprintln!("journal: {e}");
             }
             // Auto-start the run timer on the first zone entry of a run.
-            // Cheap in steady state: parses only until the timer has
-            // started once... except it doesn't know without locking, so
-            // gate on the (cheaper) line parse first — non-entry lines
-            // skip the lock entirely.
+            // Costs one extra parse_line per tailed line (the pipeline
+            // parses again below); gating on the parse means non-entry
+            // lines never touch the run-timer lock.
             if run_timer::is_area_entered(&line) {
                 auto_start_run_timer(&app_handle);
             }
