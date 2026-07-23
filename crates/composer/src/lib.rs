@@ -6,7 +6,7 @@ use std::collections::BTreeMap;
 
 use content::game_data::AreaMap;
 use content::layouts::{AuditStatus, LayoutEntry};
-use route_engine::RouteEngine;
+use route_engine::{LocationStatus, RouteEngine};
 use serde::Serialize;
 use task_engine::TaskEngine;
 
@@ -59,6 +59,15 @@ pub struct OverlayModel {
     /// complete).
     pub is_town: bool,
     pub route_complete: bool,
+    /// `focus`'s status relative to the route's monotonic progress
+    /// (`frontier`): `"on_track"` in normal forward play, `"catching_up"`
+    /// on a first behind-detour into a group the route only ever skipped
+    /// past, `"revisiting"` on any later behind-detour. Mirrors
+    /// `route_engine::LocationStatus`.
+    pub location_status: String,
+    /// Number of route groups strictly between the displayed (focus) zone
+    /// and the frontier; 0 whenever `location_status` is `"on_track"`.
+    pub groups_behind: u32,
 }
 
 /// Index layout entries by area id for `compose` lookups.
@@ -113,13 +122,13 @@ pub fn compose(
     build: Option<BuildContext<'_>>,
 ) -> OverlayModel {
     let route_complete = engine.is_complete();
-    let active_area_id = engine.active_area();
+    let focus_area_id = engine.focus_area();
 
-    let area_id = active_area_id.unwrap_or("").to_string();
+    let area_id = focus_area_id.unwrap_or("").to_string();
     let act = if route_complete {
         0
     } else {
-        engine.act().unwrap_or(0)
+        engine.focus_act().unwrap_or(0)
     };
     let zone_name = if route_complete {
         "Campaign complete".to_string()
@@ -148,14 +157,14 @@ pub fn compose(
     let layout_notes = layout_entry.map(note_views).unwrap_or_default();
 
     let steps_in_zone: Vec<String> = engine
-        .active_steps()
+        .focus_steps()
         .iter()
         .map(|s| render::render_fragments(&s.fragments, areas))
         .filter(|s| !s.is_empty())
         .collect();
 
     let sub_hints: Vec<String> = engine
-        .active_steps()
+        .focus_steps()
         .iter()
         .flat_map(|s| s.sub_steps.iter())
         .map(|frags| render::render_fragments(frags, areas))
@@ -189,6 +198,14 @@ pub fn compose(
 
     let build_reminders = build_reminders_for(is_town, build.as_ref());
 
+    let location_status = match engine.location_status() {
+        LocationStatus::OnTrack => "on_track",
+        LocationStatus::CatchingUp => "catching_up",
+        LocationStatus::Revisiting => "revisiting",
+    }
+    .to_string();
+    let groups_behind = engine.groups_behind() as u32;
+
     OverlayModel {
         zone_name,
         area_id,
@@ -205,6 +222,8 @@ pub fn compose(
         build_reminders,
         is_town,
         route_complete,
+        location_status,
+        groups_behind,
     }
 }
 
@@ -250,7 +269,7 @@ mod tests {
     use content::compile::{Variant, compile_route_pack};
     use content::game_data::load_vendored;
     use content::layouts::load_all_layouts;
-    use route_engine::RouteEngine;
+    use route_engine::{AdvanceKind, RouteEngine};
     use task_engine::TaskEngine;
 
     fn fixture() -> (
@@ -288,6 +307,78 @@ mod tests {
         assert_eq!(m.primary, m.steps_in_zone[0]);
         assert!(m.next_zone.is_some());
         assert!(m.town_reminders.is_empty(), "not in town");
+        assert_eq!(m.location_status, "on_track");
+        assert_eq!(m.groups_behind, 0);
+    }
+
+    /// Drives the engine into a behind detour (forward jump that skips a
+    /// group, then a same-instance re-entry into the skipped group) and
+    /// asserts the composer displays THAT zone -- name, area id, and layout
+    /// content -- not the frontier's, with `location_status`/`groups_behind`
+    /// tracking the detour. A second behind-entry into the same zone flips
+    /// the status from "catching_up" to "revisiting"; rejoining the
+    /// frontier in between returns to "on_track" / 0.
+    #[test]
+    fn detour_into_a_skipped_group_shows_its_own_zone_and_status() {
+        let (mut engine, tasks, layouts, areas) = fixture();
+        engine.on_area_entered("1_1_town", true);
+        engine.on_area_entered("1_1_2", true);
+
+        // Normal forward play so far: on track, nothing behind.
+        let m = compose(&engine, &tasks, &layouts, &areas, None);
+        assert_eq!(m.location_status, "on_track");
+        assert_eq!(m.groups_behind, 0);
+
+        // Jump far ahead, skipping at least one intervening group.
+        let jump = engine.on_area_entered("1_1_5", true);
+        assert_eq!(jump.kind, AdvanceKind::Advanced);
+        let skipped_idx = *jump
+            .newly_skipped
+            .first()
+            .expect("jump should skip at least one group");
+        let skipped_ctx = engine.steps()[skipped_idx].area_context.clone();
+
+        // First behind-entry into the skipped group: CatchingUp, and the
+        // composed overlay shows THAT zone (not The Ledge, the frontier).
+        let a = engine.on_area_entered(&skipped_ctx, false);
+        assert_eq!(a.kind, AdvanceKind::Detour { catching_up: true });
+        let m = compose(&engine, &tasks, &layouts, &areas, None);
+        assert_eq!(m.area_id, skipped_ctx);
+        assert_eq!(m.zone_name, display_name(&areas, &skipped_ctx));
+        assert_eq!(m.location_status, "catching_up");
+        assert!(m.groups_behind > 0);
+        // Layout content also follows focus: it matches what a fresh
+        // compose of an engine standing directly in that zone would show,
+        // not the frontier's (The Ledge's) layout.
+        let expected_images: Vec<ImageView> = layouts
+            .get(&skipped_ctx)
+            .map(|e| {
+                e.images
+                    .iter()
+                    .map(|i| ImageView {
+                        file: i.file.clone(),
+                        stale: i.audit.status == AuditStatus::Outdated,
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
+        assert_eq!(m.layout_images, expected_images);
+
+        // Rejoin the frontier: back to on-track, nothing behind.
+        let rejoin = engine.on_area_entered("1_1_5", false);
+        assert_eq!(rejoin.kind, AdvanceKind::Advanced);
+        let m = compose(&engine, &tasks, &layouts, &areas, None);
+        assert_eq!(m.area_id, "1_1_5");
+        assert_eq!(m.location_status, "on_track");
+        assert_eq!(m.groups_behind, 0);
+
+        // Re-entering the same behind zone now reads Revisiting.
+        let a2 = engine.on_area_entered(&skipped_ctx, false);
+        assert_eq!(a2.kind, AdvanceKind::Detour { catching_up: false });
+        let m = compose(&engine, &tasks, &layouts, &areas, None);
+        assert_eq!(m.area_id, skipped_ctx);
+        assert_eq!(m.location_status, "revisiting");
+        assert!(m.groups_behind > 0);
     }
 
     #[test]
@@ -295,10 +386,13 @@ mod tests {
         let (mut engine, tasks, layouts, areas) = fixture();
         engine.on_area_entered("1_1_town", true);
         engine.on_area_entered("1_1_2", true);
-        // Portal back to town: same instance, not new progress.
-        engine.on_area_entered("1_1_town", false); // off-route
+        // "1_1_town" is now behind the frontier and would resolve to a
+        // behind detour (route_engine's frontier/focus split), not
+        // off-route; use a distant town the route hasn't reached at all
+        // (no behind occurrence) to exercise a genuine off-route case.
+        engine.on_area_entered("1_2_town", false); // off-route
         let m = compose(&engine, &tasks, &layouts, &areas, None);
-        assert_eq!(m.off_route_zone.as_deref(), Some("Lioneye's Watch"));
+        assert_eq!(m.off_route_zone.as_deref(), Some("The Forest Encampment"));
         assert_eq!(m.zone_name, "The Coast"); // progress display unchanged
     }
 
@@ -362,6 +456,8 @@ mod tests {
         assert!(!m.is_town);
         assert!(m.layout_images.is_empty());
         assert!(m.steps_in_zone.is_empty());
+        assert_eq!(m.location_status, "on_track");
+        assert_eq!(m.groups_behind, 0);
     }
 
     #[test]

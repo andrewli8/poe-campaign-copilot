@@ -25,6 +25,8 @@ function model(overrides: Partial<UiModel["overlay"]> = {}, extra: Partial<UiMod
       build_reminders: [],
       is_town: false,
       route_complete: false,
+      location_status: "on_track",
+      groups_behind: 0,
       ...overrides,
     },
     images: [{ file: "a.png", stale: false, data_url: PIXEL }],
