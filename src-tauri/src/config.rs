@@ -20,12 +20,42 @@ const KNOWN_VARIANTS: [&str; 2] = ["league-start", "standard"];
 /// into memory.
 const MAX_CONFIG_BYTES: u64 = 1024 * 1024;
 
+/// Overlay opacity bounds — mirrored in src/opacity.ts. The floor keeps a
+/// user (or a hand-edited config) from fading the overlay into an
+/// invisible-but-running state they can't find again.
+pub const OVERLAY_OPACITY_MIN: f64 = 0.2;
+pub const OVERLAY_OPACITY_MAX: f64 = 1.0;
+
+pub fn default_overlay_opacity() -> f64 {
+    OVERLAY_OPACITY_MAX
+}
+
+/// Clamps an opacity into [`OVERLAY_OPACITY_MIN`, `OVERLAY_OPACITY_MAX`].
+/// Non-finite input (NaN/inf from a corrupt or hand-edited config)
+/// degrades to the default rather than the floor — garbage carries no
+/// signal that the user wanted a dim overlay.
+pub fn clamp_opacity(value: f64) -> f64 {
+    if !value.is_finite() {
+        return default_overlay_opacity();
+    }
+    value.clamp(OVERLAY_OPACITY_MIN, OVERLAY_OPACITY_MAX)
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppConfig {
     pub client_log_path: Option<String>,
     #[serde(default = "default_variant")]
     pub variant: String,
     pub pob_code: Option<String>,
+    /// Overlay content opacity, 0.2–1.0. Serde default (rather than a
+    /// required key) so configs written before this field existed still
+    /// load.
+    #[serde(default = "default_overlay_opacity")]
+    pub overlay_opacity: f64,
+    /// Global hotkey bindings; `#[serde(default)]` plus per-field defaults
+    /// inside `HotkeyConfig` keep old configs loading unchanged.
+    #[serde(default)]
+    pub hotkeys: crate::hotkeys::HotkeyConfig,
 }
 
 // Hand-written so `variant` defaults to a real route variant rather than the
@@ -44,6 +74,8 @@ impl Default for AppConfig {
             client_log_path: None,
             variant: default_variant(),
             pob_code: None,
+            overlay_opacity: default_overlay_opacity(),
+            hotkeys: crate::hotkeys::HotkeyConfig::default(),
         }
     }
 }
@@ -94,6 +126,21 @@ fn normalize_variant(cfg: AppConfig) -> AppConfig {
     }
 }
 
+/// Returns a copy of `cfg` with `overlay_opacity` clamped into range —
+/// used by `load()` so a hand-edited config with a wild value degrades to
+/// the nearest usable one instead of an invisible (or over-unity) overlay.
+fn normalize_opacity(cfg: AppConfig) -> AppConfig {
+    let clamped = clamp_opacity(cfg.overlay_opacity);
+    if clamped == cfg.overlay_opacity {
+        cfg
+    } else {
+        AppConfig {
+            overlay_opacity: clamped,
+            ..cfg
+        }
+    }
+}
+
 /// True when every persisted field of `a` and `b` matches. Used by
 /// `apply_settings` to detect a no-op Save (e.g. re-opening Settings and
 /// clicking Save without changing anything) so it can skip the
@@ -101,6 +148,16 @@ fn normalize_variant(cfg: AppConfig) -> AppConfig {
 /// otherwise reset in-progress route/task state and the player's pinned
 /// level for no reason.
 pub fn configs_equal(a: &AppConfig, b: &AppConfig) -> bool {
+    pipeline_configs_equal(a, b)
+        && a.overlay_opacity == b.overlay_opacity
+        && a.hotkeys == b.hotkeys
+}
+
+/// Equality over ONLY the fields that feed the pipeline/tailer rebuild
+/// (log path, route variant, PoB build). `apply_settings` uses this to
+/// skip the rebuild — which resets in-progress route/task state — when a
+/// Save only changed cosmetic settings (opacity, hotkeys).
+pub fn pipeline_configs_equal(a: &AppConfig, b: &AppConfig) -> bool {
     a.client_log_path == b.client_log_path && a.variant == b.variant && a.pob_code == b.pob_code
 }
 
@@ -163,7 +220,7 @@ pub fn load(app: &tauri::AppHandle) -> AppConfig {
             default_variant()
         );
     }
-    normalize_variant(cfg)
+    normalize_opacity(normalize_variant(cfg))
 }
 
 /// Saves the config file, creating the app config directory if needed.
@@ -214,12 +271,68 @@ mod tests {
             client_log_path: Some("/tmp/Client.txt".into()),
             variant: "standard".into(),
             pob_code: Some("code".into()),
+            overlay_opacity: 0.55,
+            hotkeys: crate::hotkeys::HotkeyConfig {
+                settings: "ctrl+shift+o".into(),
+                ..Default::default()
+            },
         };
         let json = config_json(&cfg);
         let parsed = parse_config(&json);
         assert_eq!(parsed.client_log_path, cfg.client_log_path);
         assert_eq!(parsed.variant, cfg.variant);
         assert_eq!(parsed.pob_code, cfg.pob_code);
+        assert_eq!(parsed.overlay_opacity, cfg.overlay_opacity);
+        assert_eq!(parsed.hotkeys, cfg.hotkeys);
+    }
+
+    #[test]
+    fn old_configs_without_new_fields_still_load() {
+        // A pre-opacity/pre-hotkeys config.json must keep loading, with the
+        // new fields filled by serde defaults.
+        let cfg = parse_config(
+            r#"{"client_log_path":"/tmp/Client.txt","variant":"standard","pob_code":null}"#,
+        );
+        assert_eq!(cfg.variant, "standard");
+        assert_eq!(cfg.overlay_opacity, default_overlay_opacity());
+        assert_eq!(cfg.hotkeys, crate::hotkeys::HotkeyConfig::default());
+    }
+
+    #[test]
+    fn default_overlay_opacity_is_fully_opaque() {
+        assert_eq!(default_overlay_opacity(), 1.0);
+        assert_eq!(AppConfig::default().overlay_opacity, 1.0);
+    }
+
+    #[test]
+    fn clamp_opacity_floors_below_the_minimum() {
+        // The floor is what keeps a user from fading the overlay into
+        // unfindability via a hand-edited config.
+        assert_eq!(clamp_opacity(0.0), OVERLAY_OPACITY_MIN);
+        assert_eq!(clamp_opacity(-1.0), OVERLAY_OPACITY_MIN);
+    }
+
+    #[test]
+    fn clamp_opacity_caps_above_the_maximum_and_passes_valid_values() {
+        assert_eq!(clamp_opacity(1.5), OVERLAY_OPACITY_MAX);
+        assert_eq!(clamp_opacity(0.5), 0.5);
+        assert_eq!(clamp_opacity(OVERLAY_OPACITY_MIN), OVERLAY_OPACITY_MIN);
+    }
+
+    #[test]
+    fn clamp_opacity_degrades_non_finite_input_to_the_default() {
+        assert_eq!(clamp_opacity(f64::NAN), default_overlay_opacity());
+        assert_eq!(clamp_opacity(f64::INFINITY), default_overlay_opacity());
+    }
+
+    #[test]
+    fn normalize_opacity_clamps_out_of_range_values_from_a_config() {
+        let cfg = AppConfig {
+            overlay_opacity: 0.01,
+            ..AppConfig::default()
+        };
+        let normalized = normalize_opacity(cfg);
+        assert_eq!(normalized.overlay_opacity, OVERLAY_OPACITY_MIN);
     }
 
     #[test]
@@ -234,6 +347,7 @@ mod tests {
             client_log_path: Some("/tmp/Client.txt".into()),
             variant: "hardcore-solo-self-found".into(),
             pob_code: None,
+            ..AppConfig::default()
         };
         let normalized = normalize_variant(cfg);
         assert_eq!(normalized.variant, "league-start");
@@ -250,6 +364,7 @@ mod tests {
             client_log_path: None,
             variant: "standard".into(),
             pob_code: None,
+            ..AppConfig::default()
         };
         assert_eq!(normalize_variant(cfg).variant, "standard");
     }
@@ -302,11 +417,54 @@ mod tests {
     }
 
     #[test]
+    fn configs_equal_compares_the_new_fields_too() {
+        let a = AppConfig::default();
+        let different_opacity = AppConfig {
+            overlay_opacity: 0.4,
+            ..a.clone()
+        };
+        assert!(!configs_equal(&a, &different_opacity));
+
+        let different_hotkeys = AppConfig {
+            hotkeys: crate::hotkeys::HotkeyConfig {
+                settings: "ctrl+shift+o".into(),
+                ..Default::default()
+            },
+            ..a.clone()
+        };
+        assert!(!configs_equal(&a, &different_hotkeys));
+    }
+
+    #[test]
+    fn pipeline_configs_equal_ignores_opacity_and_hotkeys() {
+        // Changing only opacity/hotkeys must not force a pipeline/tailer
+        // rebuild (which would reset route progress mid-run).
+        let a = AppConfig::default();
+        let cosmetic_change = AppConfig {
+            overlay_opacity: 0.4,
+            hotkeys: crate::hotkeys::HotkeyConfig {
+                setup: "ctrl+shift+s".into(),
+                ..Default::default()
+            },
+            ..a.clone()
+        };
+        assert!(pipeline_configs_equal(&a, &cosmetic_change));
+        assert!(!configs_equal(&a, &cosmetic_change));
+
+        let route_change = AppConfig {
+            variant: "standard".into(),
+            ..a.clone()
+        };
+        assert!(!pipeline_configs_equal(&a, &route_change));
+    }
+
+    #[test]
     fn configs_equal_compares_all_three_fields() {
         let a = AppConfig {
             client_log_path: Some("/tmp/Client.txt".into()),
             variant: "standard".into(),
             pob_code: Some("code".into()),
+            ..AppConfig::default()
         };
         let same = a.clone();
         assert!(configs_equal(&a, &same));

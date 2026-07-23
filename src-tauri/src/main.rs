@@ -1,6 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod config;
+mod hotkeys;
 mod journal;
 mod pipeline;
 
@@ -104,6 +105,15 @@ fn import_pob(code: String) -> Result<PobSummary, String> {
 
 #[tauri::command]
 fn apply_settings(app: tauri::AppHandle, cfg: AppConfig) -> Result<(), String> {
+    let old_cfg = config::load(&app);
+
+    // Clamp the opacity up front so the no-op guard, the persisted file,
+    // and the emitted event all agree on the value that actually applies.
+    let cfg = AppConfig {
+        overlay_opacity: config::clamp_opacity(cfg.overlay_opacity),
+        ..cfg
+    };
+
     // (0) No-op guard: if the incoming config is byte-for-byte identical to
     // what's already persisted, skip the rebuild entirely and report
     // success. Settings can be reopened and Saved without changing
@@ -111,101 +121,176 @@ fn apply_settings(app: tauri::AppHandle, cfg: AppConfig) -> Result<(), String> {
     // pipeline/tailer on every Save — even a no-op one — would tear down
     // and recreate route-engine/task-engine state mid-run, resetting route
     // progress and un-pinning the player's level for no reason.
-    if config::configs_equal(&config::load(&app), &cfg) {
+    if config::configs_equal(&old_cfg, &cfg) {
         return Ok(());
     }
 
     // (a) Validate first: nothing below should mutate shared state or the
     // config file on disk if the submitted settings don't even parse.
     let variant = map_variant(&cfg.variant)?;
-    let build = match cfg.pob_code.as_deref().map(str::trim) {
-        Some(code) if !code.is_empty() => Some(parse_pob_code(code)?),
-        _ => None,
-    };
-    if let Some(path) = &cfg.client_log_path
-        && !is_regular_file(path)
-    {
-        // Same error as "doesn't exist" — a path that exists but isn't a
-        // regular file (a directory, a FIFO, a device node, ...) is just as
-        // unusable as a missing one: pointing the tailer's poller at a
-        // directory or blocking special file would hang or misbehave the
-        // tailer thread rather than fail cleanly here.
-        return Err(format!("log file not found: {path}"));
+    hotkeys::validate(&cfg.hotkeys)?;
+
+    // Pipeline/tailer rebuild only when a field that FEEDS it changed —
+    // an opacity/hotkey-only Save must not reset in-progress route state.
+    let pipeline_changed = !config::pipeline_configs_equal(&old_cfg, &cfg);
+    if pipeline_changed {
+        let build = match cfg.pob_code.as_deref().map(str::trim) {
+            Some(code) if !code.is_empty() => Some(parse_pob_code(code)?),
+            _ => None,
+        };
+        if let Some(path) = &cfg.client_log_path
+            && !is_regular_file(path)
+        {
+            // Same error as "doesn't exist" — a path that exists but isn't a
+            // regular file (a directory, a FIFO, a device node, ...) is just as
+            // unusable as a missing one: pointing the tailer's poller at a
+            // directory or blocking special file would hang or misbehave the
+            // tailer thread rather than fail cleanly here.
+            return Err(format!("log file not found: {path}"));
+        }
+
+        // (b) Build the new Pipeline before touching any shared state or the
+        // config file. If content data fails to load here, `apply_settings`
+        // returns before the tailer is touched or the config is saved, so a
+        // bad settings submission can't leave the live app (or the next
+        // launch, which re-`Pipeline::new`s from the saved config and
+        // `.expect()`s success) in a broken state.
+        let new_pipeline = Pipeline::new(variant, build).map_err(|e| e.to_string())?;
+
+        // (c) Stop the OLD tailer's producer thread BEFORE swapping the
+        // pipeline into state.pipeline. This ordering matters: the tailer's
+        // consumer thread (the `for line in rx` loop spawned in `spawn_tail`)
+        // re-fetches `state.pipeline` fresh on every line rather than holding
+        // a reference to a specific Pipeline instance, so if the pipeline swap
+        // (d) happened first, any Client.txt lines still arriving from the OLD
+        // log file would get fed into the NEW pipeline — wrong route/variant/
+        // build context — for as long as the old tailer kept running (up to
+        // its 250ms poll interval, or indefinitely on an idle log). Stopping
+        // first closes that window: `TailerHandle::stop()` blocks until the
+        // producer thread has exited and dropped its `Sender`, which in turn
+        // ends the consumer thread's `for line in rx` loop once it drains
+        // whatever was already buffered. See the consumer-thread trace note
+        // below `spawn_tail` for the (much narrower, and accepted) residual
+        // race this doesn't fully close.
+        let old_tailer = {
+            let state: State<AppState> = app.state();
+            state.tailer.lock().unwrap().take()
+        };
+        if let Some(tailer) = old_tailer {
+            tailer.stop();
+        }
+
+        // (d) Now it's safe to swap the pipeline: the old producer is gone.
+        {
+            let state: State<AppState> = app.state();
+            *state.pipeline.lock().unwrap() = new_pipeline;
+        }
+
+        // (d2) The new pipeline starts with fresh route/session state, so the
+        // session journal from the old configuration must go with it — leaving
+        // it behind would resurrect the discarded progress (possibly from a
+        // different log file, route variant, or build) on the next launch.
+        // Only runs on a pipeline-feeding change: an opacity/hotkey-only Save
+        // keeps both the live progress and its journal. Non-fatal on failure:
+        // the Save itself still succeeded.
+        if let Some(journal_path) = journal::journal_path(&app)
+            && let Err(e) = journal::clear(&journal_path)
+        {
+            eprintln!("journal: {e}");
+        }
+
+        // (e) Spawn the new tailer at the configured path. A failure here
+        // (e.g. the configured path was removed between validation above and
+        // now) propagates as an error rather than being swallowed: the caller
+        // ordering below means config::save (f) never runs in that case, so a
+        // Save that can't actually start tailing doesn't get persisted as if
+        // it had succeeded.
+        if let Some(path) = cfg.client_log_path.clone() {
+            spawn_tail(&app, path, true, journal::journal_path(&app))?;
+        }
     }
 
-    // (b) Build the new Pipeline before touching any shared state or the
-    // config file. If content data fails to load here, `apply_settings`
-    // returns before the tailer is touched or the config is saved, so a
-    // bad settings submission can't leave the live app (or the next
-    // launch, which re-`Pipeline::new`s from the saved config and
-    // `.expect()`s success) in a broken state.
-    let new_pipeline = Pipeline::new(variant, build).map_err(|e| e.to_string())?;
-
-    // (c) Stop the OLD tailer's producer thread BEFORE swapping the
-    // pipeline into state.pipeline. This ordering matters: the tailer's
-    // consumer thread (the `for line in rx` loop spawned in `spawn_tail`)
-    // re-fetches `state.pipeline` fresh on every line rather than holding
-    // a reference to a specific Pipeline instance, so if the pipeline swap
-    // (d) happened first, any Client.txt lines still arriving from the OLD
-    // log file would get fed into the NEW pipeline — wrong route/variant/
-    // build context — for as long as the old tailer kept running (up to
-    // its 250ms poll interval, or indefinitely on an idle log). Stopping
-    // first closes that window: `TailerHandle::stop()` blocks until the
-    // producer thread has exited and dropped its `Sender`, which in turn
-    // ends the consumer thread's `for line in rx` loop once it drains
-    // whatever was already buffered. See the consumer-thread trace note
-    // below `spawn_tail` for the (much narrower, and accepted) residual
-    // race this doesn't fully close.
-    let old_tailer = {
-        let state: State<AppState> = app.state();
-        state.tailer.lock().unwrap().take()
-    };
-    if let Some(tailer) = old_tailer {
-        tailer.stop();
-    }
-
-    // (d) Now it's safe to swap the pipeline: the old producer is gone.
-    {
-        let state: State<AppState> = app.state();
-        *state.pipeline.lock().unwrap() = new_pipeline;
-    }
-
-    // (d2) The new pipeline starts with fresh route/session state, so the
-    // session journal from the old configuration must go with it — leaving
-    // it behind would resurrect the discarded progress (possibly from a
-    // different log file, route variant, or build) on the next launch.
-    // Non-fatal on failure: the Save itself still succeeded.
-    if let Some(journal_path) = journal::journal_path(&app)
-        && let Err(e) = journal::clear(&journal_path)
-    {
-        eprintln!("journal: {e}");
-    }
-
-    // (e) Spawn the new tailer at the configured path. A failure here
-    // (e.g. the configured path was removed between validation above and
-    // now) propagates as an error rather than being swallowed: the caller
-    // ordering below means config::save (f) never runs in that case, so a
-    // Save that can't actually start tailing doesn't get persisted as if
-    // it had succeeded.
-    if let Some(path) = cfg.client_log_path.clone() {
-        spawn_tail(&app, path, true, journal::journal_path(&app))?;
+    // (e2) Re-register global shortcuts if the bindings changed. Old ones
+    // are unregistered first; if registering the NEW set fails (a combo
+    // grabbed by the OS or another app — something `validate` can't see),
+    // the old bindings are restored and the error propagates, so config
+    // save below never records bindings that aren't actually active.
+    if old_cfg.hotkeys != cfg.hotkeys {
+        hotkeys::unregister_all(&app, &old_cfg.hotkeys);
+        if let Err(e) = hotkeys::register_all(&app, &cfg.hotkeys, dispatch_hotkey) {
+            if let Err(revert_err) =
+                hotkeys::register_all(&app, &old_cfg.hotkeys, dispatch_hotkey)
+            {
+                eprintln!("hotkeys: failed to restore previous bindings: {revert_err}");
+            }
+            return Err(e);
+        }
     }
 
     // (f) Persist only after the rebuild above fully succeeded.
     config::save(&app, &cfg)?;
 
+    // (f2) Push the (possibly unchanged) persisted opacity to the overlay
+    // window — this also snaps any un-saved slider preview value back to
+    // what was actually saved.
+    if let Err(e) = app.emit("overlay-opacity", cfg.overlay_opacity) {
+        eprintln!("apply_settings: failed to emit overlay-opacity: {e}");
+    }
+
     // (g) Emit a fresh model with no lock held.
-    let model = {
-        let state: State<AppState> = app.state();
-        state.pipeline.lock().unwrap().current_model()
-    };
-    let _ = app.emit("overlay-model", &model);
+    if pipeline_changed {
+        let model = {
+            let state: State<AppState> = app.state();
+            state.pipeline.lock().unwrap().current_model()
+        };
+        let _ = app.emit("overlay-model", &model);
+    }
     Ok(())
 }
 
 #[tauri::command]
 fn open_settings(app: tauri::AppHandle) {
     open_settings_window(&app);
+}
+
+/// Live opacity preview from the settings slider: clamps and broadcasts
+/// the value (the overlay window listens for "overlay-opacity") WITHOUT
+/// persisting it — persistence happens on Save via `apply_settings`.
+/// Returns the clamped value so the caller can reflect what was applied.
+#[tauri::command]
+fn set_overlay_opacity(app: tauri::AppHandle, opacity: f64) -> f64 {
+    let clamped = config::clamp_opacity(opacity);
+    if let Err(e) = app.emit("overlay-opacity", clamped) {
+        eprintln!("set_overlay_opacity: failed to emit: {e}");
+    }
+    clamped
+}
+
+/// Routes a fired global hotkey to its action. Lives here (not in the
+/// hotkeys module) because the toggle implementations are main.rs-private.
+fn dispatch_hotkey(app: &tauri::AppHandle, action: hotkeys::HotkeyAction) {
+    match action {
+        hotkeys::HotkeyAction::Zoom => {
+            toggle_zoom_impl(app);
+        }
+        hotkeys::HotkeyAction::Compact => {
+            toggle_compact_impl(app);
+        }
+        hotkeys::HotkeyAction::Hide => {
+            toggle_hide_impl(app);
+        }
+        hotkeys::HotkeyAction::Setup => {
+            let enabled = {
+                let state: State<AppState> = app.state();
+                let current = *state.setup_mode.lock().unwrap();
+                !current
+            };
+            apply_setup_mode(app, enabled);
+        }
+        hotkeys::HotkeyAction::Settings => {
+            open_settings_window(app);
+        }
+    }
 }
 
 fn open_settings_window(app: &tauri::AppHandle) {
@@ -495,26 +580,12 @@ fn main() {
                 .with_state_flags(StateFlags::POSITION)
                 .build(),
         )
-        .plugin(
-            tauri_plugin_global_shortcut::Builder::new()
-                .with_shortcuts(["alt+shift+z", "alt+shift+c", "alt+shift+h"])
-                .expect("valid shortcut")
-                .with_handler(|app, shortcut, event| {
-                    use tauri_plugin_global_shortcut::{Code, Modifiers};
-                    if event.state != tauri_plugin_global_shortcut::ShortcutState::Pressed {
-                        return;
-                    }
-                    let alt_shift = Modifiers::ALT | Modifiers::SHIFT;
-                    if shortcut.matches(alt_shift, Code::KeyZ) {
-                        toggle_zoom_impl(app);
-                    } else if shortcut.matches(alt_shift, Code::KeyC) {
-                        toggle_compact_impl(app);
-                    } else if shortcut.matches(alt_shift, Code::KeyH) {
-                        toggle_hide_impl(app);
-                    }
-                })
-                .build(),
-        )
+        // Shortcuts are no longer registered at builder time: they come
+        // from config (user-rebindable), so `.setup()` registers them via
+        // `hotkeys::register_all` and `apply_settings` re-registers live
+        // on rebind. Each registration carries its own per-shortcut
+        // handler (`on_shortcut`), so no builder-level handler either.
+        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
@@ -528,7 +599,8 @@ fn main() {
             pick_log_file,
             import_pob,
             apply_settings,
-            open_settings
+            open_settings,
+            set_overlay_opacity
         ])
         .setup(|app| {
             // Packaged-build data root detection: MUST run before anything
@@ -613,6 +685,22 @@ fn main() {
                 hide_item: Mutex::new(None),
                 tailer: Mutex::new(None),
             });
+
+            // Global hotkeys from config. A failure here (combo grabbed by
+            // another app, or an invalid combo hand-edited into config.json)
+            // must not abort startup — log it and fall back to the default
+            // bindings so the overlay stays controllable.
+            if let Err(e) = hotkeys::register_all(app.handle(), &cfg.hotkeys, dispatch_hotkey) {
+                eprintln!("hotkeys: {e}");
+                let defaults = hotkeys::HotkeyConfig::default();
+                if cfg.hotkeys != defaults {
+                    eprintln!("hotkeys: falling back to default bindings");
+                    if let Err(e2) = hotkeys::register_all(app.handle(), &defaults, dispatch_hotkey)
+                    {
+                        eprintln!("hotkeys: default bindings also failed: {e2}");
+                    }
+                }
+            }
 
             // Tray menu
             let setup_item =
