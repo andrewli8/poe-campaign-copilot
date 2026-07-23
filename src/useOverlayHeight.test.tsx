@@ -1,5 +1,4 @@
 import { render } from "@testing-library/react";
-import { useRef } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MAX_OVERLAY_HEIGHT, MIN_OVERLAY_HEIGHT } from "./overlayHeight";
 import { useOverlayHeight } from "./useOverlayHeight";
@@ -32,9 +31,15 @@ function fireResize(height: number) {
 }
 
 function Harness({ send }: { send: (h: number) => void }) {
-  const ref = useRef<HTMLDivElement>(null);
-  useOverlayHeight(ref, { send, debounceMs: 80 });
-  return <div ref={ref} />;
+  const setRoot = useOverlayHeight({ send, debounceMs: 80 });
+  return <div ref={setRoot} />;
+}
+
+// Mirrors App: renders null first (model not loaded), mounts the observed
+// node on a later render.
+function LateHarness({ show, send }: { show: boolean; send: (h: number) => void }) {
+  const setRoot = useOverlayHeight({ send, debounceMs: 80 });
+  return show ? <div ref={setRoot} /> : null;
 }
 
 beforeEach(() => {
@@ -82,6 +87,19 @@ describe("useOverlayHeight", () => {
     fireResize(200);
     vi.advanceTimersByTime(80);
     expect(send).toHaveBeenCalledTimes(1);
+  });
+
+  it("attaches when the observed node mounts on a later render", () => {
+    const send = vi.fn();
+    const { rerender } = render(<LateHarness show={false} send={send} />);
+    // Nothing to observe yet — mirrors App returning null while model loads.
+    expect(observerCb).toBeNull();
+    rerender(<LateHarness show={true} send={send} />);
+    // The node mounted; the callback ref must have attached the observer.
+    expect(observerCb).not.toBeNull();
+    fireResize(200);
+    vi.advanceTimersByTime(80);
+    expect(send).toHaveBeenCalledWith(200);
   });
 
   it("disconnects the observer and clears the timer on unmount", () => {
