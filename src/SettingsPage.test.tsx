@@ -11,6 +11,7 @@ function config(overrides: Partial<AppConfig> = {}): AppConfig {
     pob_code: null,
     overlay_opacity: 1,
     hotkeys: DEFAULT_HOTKEYS,
+    show_run_timer: true,
     ...overrides,
   };
 }
@@ -209,6 +210,7 @@ describe("SettingsPage", () => {
       pob_code: "https://pobb.in/abc123",
       overlay_opacity: 1,
       hotkeys: DEFAULT_HOTKEYS,
+      show_run_timer: true,
     });
   });
 

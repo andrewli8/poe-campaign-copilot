@@ -50,6 +50,7 @@ export interface HotkeyConfig {
   hide: string;
   setup: string;
   settings: string;
+  timer: string;
 }
 
 export interface AppConfig {
@@ -59,6 +60,8 @@ export interface AppConfig {
   /** Overlay window opacity, 0.2–1.0 (see src/opacity.ts). */
   overlay_opacity: number;
   hotkeys: HotkeyConfig;
+  /** Whether the campaign run timer chip is shown on the overlay. */
+  show_run_timer: boolean;
 }
 
 export type Reliability = "explicit" | "structured" | "inferred" | "unsupported";

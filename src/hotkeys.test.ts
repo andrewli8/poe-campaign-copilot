@@ -24,7 +24,24 @@ describe("DEFAULT_HOTKEYS", () => {
 
   it("covers every action exactly once", () => {
     const keys = HOTKEY_ACTIONS.map((a) => a.key).sort();
-    expect(keys).toEqual(["compact", "hide", "settings", "setup", "zoom"]);
+    expect(keys).toEqual(["compact", "hide", "settings", "setup", "timer", "zoom"]);
+  });
+});
+
+describe("timer hotkey", () => {
+  it("has a default binding that is valid and conflict-free", () => {
+    expect(DEFAULT_HOTKEYS.timer).toBe("alt+shift+t");
+    expect(validateHotkeyConfig(DEFAULT_HOTKEYS)).toEqual({});
+  });
+
+  it("appears in HOTKEY_ACTIONS so the settings UI renders it", () => {
+    expect(HOTKEY_ACTIONS.map((a) => a.key)).toContain("timer");
+  });
+
+  it("participates in conflict detection", () => {
+    const errors = validateHotkeyConfig({ ...DEFAULT_HOTKEYS, timer: "alt+shift+z" });
+    expect(errors.timer).toMatch(/conflict/i);
+    expect(errors.zoom).toMatch(/conflict/i);
   });
 });
 

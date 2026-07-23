@@ -86,6 +86,7 @@ export function SettingsPage({
       pob_code: trimmed === "" ? null : trimmed,
       overlay_opacity: opacityPct / 100,
       hotkeys: normalizeHotkeyConfig(hotkeys),
+      show_run_timer: config.show_run_timer,
     });
   }
 
