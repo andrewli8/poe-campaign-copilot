@@ -7,13 +7,21 @@
 
 use std::collections::BTreeSet;
 
-use content::game_data::{GemMap, gems_by_name};
+use content::game_data::{AreaMap, GemMap, QuestMap, gems_by_name};
+use content::gem_availability::{
+    AvailabilitySource, GemAvailability, act_entry_levels, availability_for_class,
+};
 use quick_xml::events::{BytesStart, Event};
 use quick_xml::reader::Reader;
 
 use crate::{GemPlan, LevelingBuildPlan, Milestone, PobError, Reliability, SkillSetPlan};
 
-pub fn parse_build(xml: &str, gems: &GemMap) -> Result<LevelingBuildPlan, PobError> {
+pub fn parse_build(
+    xml: &str,
+    gems: &GemMap,
+    quests: &QuestMap,
+    areas: &AreaMap,
+) -> Result<LevelingBuildPlan, PobError> {
     let by_name = gems_by_name(gems);
     let mut state = ParseState::default();
 
@@ -40,7 +48,19 @@ pub fn parse_build(xml: &str, gems: &GemMap) -> Result<LevelingBuildPlan, PobErr
         }
     }
 
-    Ok(state.into_plan())
+    let milestone_ctx = MilestoneCtx {
+        by_name: &by_name,
+        availability: availability_for_class(quests, &state.class_name),
+        act_entry: act_entry_levels(areas),
+    };
+    Ok(state.into_plan(&milestone_ctx))
+}
+
+/// Class-aware game data used to place and label gem milestones.
+struct MilestoneCtx<'a> {
+    by_name: &'a std::collections::BTreeMap<String, content::game_data::Gem>,
+    availability: std::collections::BTreeMap<String, GemAvailability>,
+    act_entry: std::collections::BTreeMap<u8, u16>,
 }
 
 fn xml_err(e: impl std::fmt::Display) -> PobError {
@@ -180,8 +200,8 @@ impl ParseState {
         }
     }
 
-    fn into_plan(self) -> LevelingBuildPlan {
-        let milestones = build_milestones(&self.skill_sets);
+    fn into_plan(self, ctx: &MilestoneCtx) -> LevelingBuildPlan {
+        let milestones = build_milestones(&self.skill_sets, ctx);
         let reliability = if milestones.is_empty() {
             Reliability::Unsupported
         } else {
@@ -263,10 +283,12 @@ fn trailing_digits(s: &str) -> Option<u16> {
 }
 
 /// (a) each set with a parsed range start >= 2 gets a "switch" milestone;
-/// (b) each unique enabled non-support gem with a known required_level >= 2
-/// gets a "gem available" milestone. Deduped by name, sorted by
-/// (level, label).
-fn build_milestones(skill_sets: &[SkillSetPlan]) -> Vec<Milestone> {
+/// (b) each unique enabled non-support gem with a known required_level gets
+/// a "gem available" milestone at the later of its required level and the
+/// entry level of the act where the class can first obtain it, labeled with
+/// the earliest source (quest reward or vendor). Milestones below level 2
+/// are dropped. Deduped by name, sorted by (level, label).
+fn build_milestones(skill_sets: &[SkillSetPlan], ctx: &MilestoneCtx) -> Vec<Milestone> {
     let mut milestones: Vec<Milestone> = skill_sets
         .iter()
         .filter_map(|set| {
@@ -284,21 +306,46 @@ fn build_milestones(skill_sets: &[SkillSetPlan]) -> Vec<Milestone> {
         if !gem.enabled || gem.is_support == Some(true) {
             continue;
         }
-        let Some(level) = gem.required_level else {
+        let Some(required_level) = gem.required_level else {
             continue;
         };
-        if level < 2 || !seen_gems.insert(gem.name.clone()) {
+        if !seen_gems.insert(gem.name.clone()) {
+            continue;
+        }
+        let (level, label) = gem_milestone(&gem.name, u16::from(required_level), ctx);
+        if level < 2 {
             continue;
         }
         milestones.push(Milestone {
-            level: u16::from(level),
-            label: format!("Gem available: {}", gem.name),
+            level,
+            label,
             reliability: Reliability::Structured,
         });
     }
 
     milestones.sort_by(|a, b| a.level.cmp(&b.level).then_with(|| a.label.cmp(&b.label)));
     milestones
+}
+
+/// Milestone level and label for one gem: the required level alone when the
+/// class's earliest source is unknown (e.g. drop-only or Vaal gems), else
+/// the later of required level and act entry, labeled with the source.
+fn gem_milestone(name: &str, required_level: u16, ctx: &MilestoneCtx) -> (u16, String) {
+    let availability = ctx
+        .by_name
+        .get(name)
+        .and_then(|g| ctx.availability.get(&g.id));
+    let Some(av) = availability else {
+        return (required_level, format!("Gem available: {name}"));
+    };
+    let act_entry = ctx.act_entry.get(&av.act).copied().unwrap_or(1);
+    let level = required_level.max(act_entry);
+    let source = match (&av.source, &av.npc) {
+        (AvailabilitySource::QuestReward, _) => format!("quest reward, A{}", av.act),
+        (AvailabilitySource::Vendor, Some(npc)) => format!("buy from {npc}, A{}", av.act),
+        (AvailabilitySource::Vendor, None) => format!("vendor, A{}", av.act),
+    };
+    (level, format!("Gem available: {name} ({source})"))
 }
 
 #[cfg(test)]

@@ -250,8 +250,9 @@ fn reliability_str(r: pob_import::Reliability) -> String {
 
 fn parse_pob_code(code: &str) -> Result<LevelingBuildPlan, String> {
     let gems = content::game_data::load_vendored_gems().map_err(|e| e.to_string())?;
+    let (areas, quests) = content::game_data::load_vendored().map_err(|e| e.to_string())?;
     let xml = pob_import::decode_share_code(code).map_err(|e| e.to_string())?;
-    pob_import::parse_build(&xml, &gems).map_err(|e| e.to_string())
+    pob_import::parse_build(&xml, &gems, &quests, &areas).map_err(|e| e.to_string())
 }
 
 fn apply_setup_mode(app: &tauri::AppHandle, enabled: bool) {
