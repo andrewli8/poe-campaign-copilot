@@ -18,11 +18,22 @@ use crate::PobError;
 /// headroom over any real build while still bounding the worst case.
 const MAX_INFLATED_BYTES: u64 = 64 * 1024 * 1024;
 
+/// Hard cap on the raw pasted input itself (share code OR raw XML), checked
+/// before any decoding work happens. `MAX_INFLATED_BYTES` only bounds the
+/// zlib-inflate path's *output*; a giant raw-XML paste (the `starts_with('<')`
+/// passthrough below) or a giant base64 blob would otherwise be processed in
+/// full before any size check ever runs. 2 MiB is generous headroom over any
+/// real PoB export (a few hundred KB of XML at most).
+const MAX_INPUT_BYTES: usize = 2 * 1024 * 1024;
+
 pub fn decode_share_code(code: &str) -> Result<String, PobError> {
     let trimmed = code.trim();
 
     if trimmed.is_empty() {
         return Err(PobError::NotACode);
+    }
+    if trimmed.len() > MAX_INPUT_BYTES {
+        return Err(PobError::Decode("input too large".to_string()));
     }
     if trimmed.starts_with("http") {
         return Err(PobError::UrlNotSupported);
@@ -137,5 +148,40 @@ mod tests {
         let data = vec![7u8; 11];
         let err = read_capped(std::io::Cursor::new(data), 10).unwrap_err();
         assert!(matches!(err, PobError::Decode(msg) if msg.contains("too large")));
+    }
+
+    #[test]
+    fn decode_share_code_rejects_input_over_the_size_cap_before_any_decoding() {
+        // 3 MiB of plausible-looking base64 characters, well over
+        // MAX_INPUT_BYTES (2 MiB) and also well over MAX_INFLATED_BYTES
+        // would be if this ever reached the inflate path — proving the cap
+        // is enforced up front, not merely inherited from the inflate cap.
+        let huge = "A".repeat(3 * 1024 * 1024);
+        let err = decode_share_code(&huge).unwrap_err();
+        assert!(matches!(err, PobError::Decode(msg) if msg.contains("too large")));
+    }
+
+    #[test]
+    fn decode_share_code_rejects_oversized_raw_xml_passthrough_too() {
+        // The raw-XML passthrough branch (starts_with('<')) must also be
+        // bounded by the same up-front cap, not just the base64/inflate
+        // path.
+        let huge_xml = format!("<{}", "a".repeat(3 * 1024 * 1024));
+        let err = decode_share_code(&huge_xml).unwrap_err();
+        assert!(matches!(err, PobError::Decode(msg) if msg.contains("too large")));
+    }
+
+    #[test]
+    fn decode_share_code_still_works_for_a_normal_sized_code() {
+        use base64::Engine as _;
+        use flate2::{Compression, write::ZlibEncoder};
+        use std::io::Write as _;
+
+        let xml = "<PathOfBuilding><Build className=\"Witch\"/></PathOfBuilding>";
+        let mut e = ZlibEncoder::new(Vec::new(), Compression::default());
+        e.write_all(xml.as_bytes()).unwrap();
+        let code = base64::engine::general_purpose::URL_SAFE.encode(e.finish().unwrap());
+
+        assert_eq!(decode_share_code(&code).unwrap(), xml);
     }
 }

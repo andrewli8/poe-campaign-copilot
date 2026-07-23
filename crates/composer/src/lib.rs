@@ -235,7 +235,9 @@ fn build_reminders_for(is_town: bool, build: Option<&BuildContext<'_>>) -> Vec<S
         .plan
         .milestones
         .iter()
-        .filter(|m| m.level <= player_level + 2 && m.level + 5 >= player_level)
+        .filter(|m| {
+            m.level <= player_level.saturating_add(2) && m.level.saturating_add(5) >= player_level
+        })
         .collect();
     due.sort_by_key(|m| m.level);
     let keep_from = due.len().saturating_sub(4);
@@ -479,6 +481,51 @@ mod tests {
                 "E".to_string(),
                 "F".to_string()
             ]
+        );
+    }
+
+    /// A crafted PoB (e.g. a skill-set title like "65531-65535") could
+    /// produce a milestone level near `u16::MAX`. Plain `m.level + 5` on a
+    /// milestone at 65535 would overflow and panic in a debug build; this
+    /// proves the `saturating_add` fix in `build_reminders_for` holds even
+    /// under debug overflow checks, and that the result stays sensible
+    /// (the far-future milestone simply doesn't show for a level-90
+    /// player).
+    #[test]
+    fn build_reminders_for_does_not_panic_on_near_u16_max_milestone_level() {
+        let (mut engine, tasks, layouts, areas) = fixture();
+        let plan = pob_import::LevelingBuildPlan {
+            class_name: "Ranger".into(),
+            ascend_name: None,
+            skill_sets: vec![],
+            passive_spec_titles: vec![],
+            notes: None,
+            milestones: vec![
+                pob_import::Milestone {
+                    level: 65535,
+                    label: "Overflow bait".into(),
+                    reliability: pob_import::Reliability::Structured,
+                },
+                pob_import::Milestone {
+                    level: 90,
+                    label: "Gem available: Barrage".into(),
+                    reliability: pob_import::Reliability::Structured,
+                },
+            ],
+            reliability: pob_import::Reliability::Structured,
+        };
+        engine.on_area_entered("1_1_town");
+        let ctx = Some(BuildContext {
+            plan: &plan,
+            player_level: Some(90),
+        });
+        let m = compose(&engine, &tasks, &layouts, &areas, ctx);
+        // The near-u16::MAX milestone is nowhere near level 90 and must not
+        // appear (and, above all, must not have panicked getting here); the
+        // in-window milestone still shows.
+        assert_eq!(
+            m.build_reminders,
+            vec!["Gem available: Barrage".to_string()]
         );
     }
 }

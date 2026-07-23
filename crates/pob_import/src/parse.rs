@@ -206,10 +206,22 @@ fn get_attr(e: &BytesStart, name: &str) -> Result<Option<String>, PobError> {
     }
 }
 
+/// PoE's level cap. A skill-set title is free-text set by whoever authored
+/// the PoB build/pastebin, so a crafted title (e.g. "65531-65535") could
+/// otherwise smuggle a near-`u16::MAX` value into a milestone's `level` —
+/// nonsense for gameplay purposes and a source of `u16` overflow downstream
+/// (see `composer::build_reminders_for`). Clamping at the source means every
+/// consumer of `SkillSetPlan::level_range` / `Milestone::level` gets a
+/// value that's always a plausible player level.
+const MAX_PLAYER_LEVEL: u16 = 100;
+
 /// First `A-B`/`A–B` numeric pair anywhere in the title, else a leading
-/// bare number `A` (→ `(A, A)`), else `None`.
+/// bare number `A` (→ `(A, A)`), else `None`. Both endpoints are clamped to
+/// `MAX_PLAYER_LEVEL`.
 fn parse_level_range(title: &str) -> Option<(u16, u16)> {
-    find_dash_pair(title).or_else(|| leading_digits(title).map(|a| (a, a)))
+    find_dash_pair(title)
+        .or_else(|| leading_digits(title).map(|a| (a, a)))
+        .map(|(a, b)| (a.min(MAX_PLAYER_LEVEL), b.min(MAX_PLAYER_LEVEL)))
 }
 
 fn find_dash_pair(title: &str) -> Option<(u16, u16)> {
@@ -287,4 +299,30 @@ fn build_milestones(skill_sets: &[SkillSetPlan]) -> Vec<Milestone> {
 
     milestones.sort_by(|a, b| a.level.cmp(&b.level).then_with(|| a.label.cmp(&b.label)));
     milestones
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_level_range_clamps_a_crafted_huge_range_to_the_level_cap() {
+        assert_eq!(parse_level_range("65531-65535"), Some((100, 100)));
+    }
+
+    #[test]
+    fn parse_level_range_clamps_only_the_endpoint_that_exceeds_the_cap() {
+        assert_eq!(parse_level_range("40-65535"), Some((40, 100)));
+    }
+
+    #[test]
+    fn parse_level_range_leaves_in_range_values_untouched() {
+        assert_eq!(parse_level_range("1-12"), Some((1, 12)));
+        assert_eq!(parse_level_range("13-32"), Some((13, 32)));
+    }
+
+    #[test]
+    fn parse_level_range_clamps_a_bare_leading_number() {
+        assert_eq!(parse_level_range("65535"), Some((100, 100)));
+    }
 }
