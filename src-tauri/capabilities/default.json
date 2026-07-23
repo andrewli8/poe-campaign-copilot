@@ -13,6 +13,8 @@
     "dialog:allow-open",
     "updater:default",
     "process:allow-restart",
-    "opener:allow-open-path"
+    "opener:allow-open-path",
+    "opener:allow-open-url",
+    "opener:allow-default-urls"
   ]
 }

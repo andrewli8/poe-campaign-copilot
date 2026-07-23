@@ -48,8 +48,8 @@ menu (right-click the tray icon).
 | Open Settings | `Alt+Shift+O` |
 | Start / stop the run timer | `Alt+Shift+T` |
 
-The tray menu additionally has **Reset run timer**, **Open logs** (see
-Reporting bugs below), and **Quit**.
+The tray menu additionally has **Reset run timer**, **Open logs** and
+**Report a bug** (see Reporting bugs below), and **Quit**.
 
 **Off-route tracking.** If you head into a zone you skipped or one earlier
 than your furthest point, the overlay follows you instead of insisting you
@@ -102,7 +102,8 @@ hints rather than guarantees.
 
 ## Reporting bugs
 
-Found something broken or wrong? Please open an issue at
+Found something broken or wrong? Right-click the tray icon and choose
+**Report a bug** to jump straight to the issue form, or open one yourself at
 [github.com/andrewli8/poe-campaign-copilot/issues](https://github.com/andrewli8/poe-campaign-copilot/issues).
 
 The overlay keeps a small local log of what it's doing and any errors it

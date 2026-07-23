@@ -709,6 +709,20 @@ fn open_logs_impl(app: &tauri::AppHandle) {
     }
 }
 
+/// GitHub Issues page opened by the tray "Report a bug" item. Pre-fills the
+/// bug-report issue template so the user lands on a filled-out form rather than
+/// a blank one.
+const REPORT_BUG_URL: &str =
+    "https://github.com/andrewli8/poe-campaign-copilot/issues/new?labels=bug";
+
+/// Opens the bug-report page in the user's default browser (tray "Report a
+/// bug" item). Pairs with "Open logs" so a reporter can attach diagnostics.
+fn report_bug_impl(app: &tauri::AppHandle) {
+    if let Err(e) = app.opener().open_url(REPORT_BUG_URL, None::<&str>) {
+        diagnostics::diag(&format!("report-bug: failed to open {REPORT_BUG_URL}: {e}"));
+    }
+}
+
 fn main() {
     diagnostics::install_panic_hook();
     tauri::Builder::default()
@@ -873,6 +887,8 @@ fn main() {
                 MenuItem::with_id(app, "reset-timer", "Reset run timer", true, None::<&str>)?;
             let open_logs_item =
                 MenuItem::with_id(app, "open-logs", "Open logs", true, None::<&str>)?;
+            let report_bug_item =
+                MenuItem::with_id(app, "report-bug", "Report a bug…", true, None::<&str>)?;
             let settings_item =
                 MenuItem::with_id(app, "settings", "Settings…", true, None::<&str>)?;
             let quit_item = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
@@ -885,6 +901,7 @@ fn main() {
                     &hide_item,
                     &reset_timer_item,
                     &open_logs_item,
+                    &report_bug_item,
                     &settings_item,
                     &quit_item,
                 ],
@@ -916,6 +933,7 @@ fn main() {
                     "reset-timer" => {
                         reset_run_timer_impl(app);
                     }
+                    "report-bug" => report_bug_impl(app),
                     "open-logs" => {
                         open_logs_impl(app);
                     }
