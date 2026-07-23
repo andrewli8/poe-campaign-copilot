@@ -69,18 +69,53 @@ pub fn walk_act(
                 }
             }
 
+            let fragments = step
+                .fragments
+                .iter()
+                .map(|f| expand_quest_offers(f, quests))
+                .collect();
+            let sub_steps = step
+                .sub_steps
+                .iter()
+                .map(|sub| sub.iter().map(|f| expand_quest_offers(f, quests)).collect())
+                .collect();
+
             compiled.push(CompiledStep {
                 id: step_id,
                 act,
                 section: section.name.clone(),
                 area_context,
-                fragments: step.fragments.clone(),
-                sub_steps: step.sub_steps.clone(),
+                fragments,
+                sub_steps,
             });
         }
     }
 
     Ok(compiled)
+}
+
+/// Mirrors exile-leveling's EvaluateQuest (fragment/index.ts): a quest
+/// hand-in written without explicit reward offer ids means "collect every
+/// reward offer of this quest", so the compiled fragment carries all offer
+/// ids from quests.json. Explicit ids are preserved verbatim. Returns a new
+/// fragment; never mutates the parsed source.
+fn expand_quest_offers(fragment: &Fragment, quests: &QuestMap) -> Fragment {
+    match fragment {
+        Fragment::Quest {
+            quest_id,
+            reward_offer_ids,
+        } if reward_offer_ids.is_empty() => {
+            let expanded = quests
+                .get(quest_id)
+                .map(|q| q.reward_offers.keys().cloned().collect())
+                .unwrap_or_default();
+            Fragment::Quest {
+                quest_id: quest_id.clone(),
+                reward_offer_ids: expanded,
+            }
+        }
+        other => other.clone(),
+    }
 }
 
 fn transition(state: &mut WalkState, areas: &AreaMap, area_id: &str) {
@@ -230,6 +265,47 @@ mod tests {
 
         assert_eq!(steps[0].id, "a1-s001");
         assert_eq!(steps[0].act, 1);
+    }
+
+    /// Mirrors exile-leveling's EvaluateQuest (fragment/index.ts): a
+    /// `{quest|id}` hand-in with no explicit reward offer ids means "collect
+    /// every reward offer of that quest now", so the compiled step must carry
+    /// all offer ids from quests.json. Explicit ids stay as written.
+    #[test]
+    fn quest_without_explicit_offers_expands_to_all_reward_offers() {
+        let (areas, quests) = load_vendored().unwrap();
+        let defines: BTreeSet<String> = ["LEAGUE_START".to_string()].into_iter().collect();
+        let sections = parse_route_file(&read_act_route(1).unwrap(), &defines).unwrap();
+
+        let mut state = WalkState::campaign_start();
+        let steps = walk_act(1, &sections, &areas, &quests, &mut state).unwrap();
+
+        let offers_for = |quest_id: &str| -> Vec<Vec<String>> {
+            steps
+                .iter()
+                .flat_map(|s| &s.fragments)
+                .filter_map(|f| match f {
+                    Fragment::Quest {
+                        quest_id: id,
+                        reward_offer_ids,
+                    } if id == quest_id => Some(reward_offer_ids.clone()),
+                    _ => None,
+                })
+                .collect()
+        };
+
+        // a1q4 (Breaking Some Eggs) is handed in without explicit offers;
+        // quests.json lists two reward offers (a1q4, a1q4b).
+        for offers in offers_for("a1q4") {
+            assert_eq!(offers, vec!["a1q4".to_string(), "a1q4b".to_string()]);
+        }
+        assert!(!offers_for("a1q4").is_empty());
+
+        // a1q2 (The Caged Brute) hand-ins name explicit offers; they must be
+        // preserved verbatim, not expanded.
+        let a1q2 = offers_for("a1q2");
+        assert!(a1q2.iter().all(|o| o.len() == 1));
+        assert!(a1q2.contains(&vec!["a1q2b".to_string()]));
     }
 
     #[test]
