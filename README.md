@@ -7,9 +7,22 @@ No game memory, no input simulation, no network during play.
 
 **Status: early development.** English game clients only for now.
 
-## Run it on Windows
+## Install on Windows (easiest)
 
-This is the first thing to know: there is no installer yet. You run it from
+The easiest way to get started is to download the pre-built Windows installer.
+
+1. Download the latest `poe-campaign-copilot-*-setup.exe` from the
+   [releases page](https://github.com/andrewli8/poe-campaign-copilot/releases).
+2. Run the installer. It installs per-user with no admin prompt.
+3. If Windows SmartScreen warns that the app is unsigned, click **More info**
+   then **Run anyway**. Code signing is future work.
+4. Launch "PoE Campaign Copilot" from the Start menu.
+5. Right-click the tray icon and follow the Settings steps below to configure
+   your game log path.
+
+## Run from source (developers)
+
+This path is for developers who want to build from source. You run it from
 a checkout of this repo in dev mode. That takes three tools and about ten
 minutes, most of which is the first compile.
 
