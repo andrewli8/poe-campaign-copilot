@@ -394,6 +394,44 @@ fn apply_setup_mode(app: &tauri::AppHandle, enabled: bool) {
     let _ = app.emit("setup-mode", enabled);
 }
 
+/// Clamp range for the content-driven overlay height, in logical pixels.
+/// Duplicated in `src/overlayHeight.ts` and as `.filmstrip { max-height }`
+/// in `src/FilmstripBar.css` — keep all three in step.
+const MIN_OVERLAY_HEIGHT: f64 = 36.0;
+const MAX_OVERLAY_HEIGHT: f64 = 600.0;
+
+/// True only for a finite height inside `[MIN_OVERLAY_HEIGHT,
+/// MAX_OVERLAY_HEIGHT]`. `set_overlay_height` is an IPC boundary, so a
+/// NaN/infinite/out-of-range value from the webview is rejected rather
+/// than passed to `set_size`.
+fn overlay_height_in_range(height: f64) -> bool {
+    height.is_finite() && (MIN_OVERLAY_HEIGHT..=MAX_OVERLAY_HEIGHT).contains(&height)
+}
+
+/// Resize the overlay to a content-measured height. Width is read back
+/// from the current window and left unchanged, so only the bottom edge
+/// moves (top-pinned growth). Out-of-range heights are rejected; a missing
+/// window (shutdown race) is a no-op success.
+#[tauri::command]
+fn set_overlay_height(app: tauri::AppHandle, height: f64) -> Result<(), String> {
+    if !overlay_height_in_range(height) {
+        let msg = format!("set_overlay_height: rejected out-of-range height {height}");
+        eprintln!("{msg}");
+        return Err(msg);
+    }
+    let Some(win) = app.get_webview_window("main") else {
+        return Ok(());
+    };
+    if let (Ok(scale), Ok(size)) = (win.scale_factor(), win.outer_size()) {
+        let logical = size.to_logical::<f64>(scale);
+        if let Err(e) = win.set_size(tauri::LogicalSize::new(logical.width, height)) {
+            eprintln!("set_overlay_height: failed to resize window: {e}");
+            return Err(e.to_string());
+        }
+    }
+    Ok(())
+}
+
 /// Window height for the overlay given the current compact/zoom flags.
 /// Compact takes precedence over zoom: a slim compact bar stays slim even
 /// while zoom is also on, so `toggle_zoom_impl` and `toggle_compact_impl`
@@ -684,6 +722,7 @@ fn main() {
             apply_settings,
             open_settings,
             set_overlay_opacity,
+            set_overlay_height,
             get_run_timer
         ])
         .setup(|app| {
@@ -893,6 +932,22 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn overlay_height_in_range_accepts_bounds_and_interior() {
+        assert!(overlay_height_in_range(MIN_OVERLAY_HEIGHT));
+        assert!(overlay_height_in_range(MAX_OVERLAY_HEIGHT));
+        assert!(overlay_height_in_range(150.0));
+    }
+
+    #[test]
+    fn overlay_height_in_range_rejects_out_of_range_and_non_finite() {
+        assert!(!overlay_height_in_range(MIN_OVERLAY_HEIGHT - 0.1));
+        assert!(!overlay_height_in_range(MAX_OVERLAY_HEIGHT + 0.1));
+        assert!(!overlay_height_in_range(f64::NAN));
+        assert!(!overlay_height_in_range(f64::INFINITY));
+        assert!(!overlay_height_in_range(-1.0));
+    }
 
     #[test]
     fn is_regular_file_true_for_a_plain_file() {
