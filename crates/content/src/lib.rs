@@ -2,6 +2,7 @@
 //! compilation for PoE Campaign Copilot.
 
 pub mod compile;
+pub mod data_root;
 pub mod game_data;
 pub mod layouts;
 pub mod route_dsl;

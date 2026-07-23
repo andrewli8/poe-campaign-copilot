@@ -2,12 +2,10 @@
 
 use std::path::PathBuf;
 
+use crate::data_root::data_root;
+
 pub fn vendor_dir() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("..")
-        .join("..")
-        .join("vendor")
-        .join("exile-leveling")
+    data_root().join("vendor").join("exile-leveling")
 }
 
 pub fn read_act_route(act: u8) -> std::io::Result<String> {

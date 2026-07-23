@@ -86,9 +86,7 @@ pub enum LayoutError {
 }
 
 pub fn layouts_dir() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("..")
-        .join("..")
+    crate::data_root::data_root()
         .join("content")
         .join("layouts")
 }
