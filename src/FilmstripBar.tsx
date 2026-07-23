@@ -30,7 +30,13 @@ export function FilmstripBar({ model, zoom, setupMode }: FilmstripBarProps) {
   const { overlay, images } = model;
 
   return (
-    <div className={rootClass}>
+    // In setup mode the WHOLE bar is a drag region, not just the header row.
+    // The overlay contains no interactive elements (no buttons/inputs/links),
+    // so Tauri's drag region is never swallowed by a child, and covering the
+    // full bar means you can grab it anywhere to move it — important once the
+    // bar has been resized larger, when a header-only strip is a tiny target.
+    // The OS still owns the few-pixel resize border at the window edges.
+    <div className={rootClass} data-tauri-drag-region={setupMode ? true : undefined}>
       {setupMode && (
         <div className="setup-hint">drag to move &middot; resize edges &middot; toggle via tray</div>
       )}
@@ -40,23 +46,10 @@ export function FilmstripBar({ model, zoom, setupMode }: FilmstripBarProps) {
       )}
 
       {overlay.route_complete ? (
-        <div
-          className="complete-bar"
-          data-tauri-drag-region={setupMode ? true : undefined}
-        >
-          Campaign complete
-        </div>
+        <div className="complete-bar">Campaign complete</div>
       ) : (
         <>
-          {/* data-tauri-drag-region lives on the header row, not the
-              filmstrip root: Tauri's drag region only activates when the
-              pointer is directly over the tagged element, and the root
-              contains interactive children (image cells, lists) that
-              would otherwise swallow the drag. */}
-          <div
-            className="header-row"
-            data-tauri-drag-region={setupMode ? true : undefined}
-          >
+          <div className="header-row">
             <span className="zone-name">{overlay.zone_name}</span>
             <span className="act-badge">ACT {overlay.act}</span>
             {/* Intentionally overlay.layout_images.length, not images.length below —

@@ -133,17 +133,20 @@ describe("FilmstripBar", () => {
     expect(container.querySelector(".build-summary")).not.toBeInTheDocument();
   });
 
-  it("marks the header row as a drag region only in setup mode", () => {
+  it("marks the whole overlay root as a drag region only in setup mode", () => {
     const { container, rerender } = render(
       <FilmstripBar model={model()} zoom={false} setupMode={true} />,
     );
-    const headerRow = container.querySelector(".header-row");
-    expect(headerRow).toHaveAttribute("data-tauri-drag-region");
-
-    rerender(<FilmstripBar model={model()} zoom={false} setupMode={false} />);
+    // The entire bar is draggable in setup mode, not just the header strip,
+    // so it stays easy to grab after the window has been resized larger.
+    expect(container.firstChild).toHaveAttribute("data-tauri-drag-region");
+    // The inner header row does NOT carry its own region (the root covers it).
     expect(container.querySelector(".header-row")).not.toHaveAttribute(
       "data-tauri-drag-region",
     );
+
+    rerender(<FilmstripBar model={model()} zoom={false} setupMode={false} />);
+    expect(container.firstChild).not.toHaveAttribute("data-tauri-drag-region");
   });
 
   it("marks the waiting-state root as a drag region and shows the setup hint in setup mode", () => {
@@ -168,7 +171,7 @@ describe("FilmstripBar", () => {
     expect(screen.queryByText(/drag to move/i)).not.toBeInTheDocument();
   });
 
-  it("marks the complete-bar as a drag region only in setup mode", () => {
+  it("marks the root as a drag region in the campaign-complete state only in setup mode", () => {
     const { container, rerender } = render(
       <FilmstripBar
         model={model({ route_complete: true })}
@@ -176,8 +179,7 @@ describe("FilmstripBar", () => {
         setupMode={true}
       />,
     );
-    const completeBar = container.querySelector(".complete-bar");
-    expect(completeBar).toHaveAttribute("data-tauri-drag-region");
+    expect(container.firstChild).toHaveAttribute("data-tauri-drag-region");
 
     rerender(
       <FilmstripBar
@@ -186,8 +188,6 @@ describe("FilmstripBar", () => {
         setupMode={false}
       />,
     );
-    expect(container.querySelector(".complete-bar")).not.toHaveAttribute(
-      "data-tauri-drag-region",
-    );
+    expect(container.firstChild).not.toHaveAttribute("data-tauri-drag-region");
   });
 });
