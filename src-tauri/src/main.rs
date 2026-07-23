@@ -292,6 +292,13 @@ fn overlay_target_height(compact: bool, zoom: bool) -> f64 {
 
 fn toggle_zoom_impl(app: &tauri::AppHandle) -> bool {
     let state: State<AppState> = app.state();
+    // Snapshot the compact flag BEFORE taking the zoom lock. `toggle_compact_impl`
+    // holds `compact` and reads `zoom`; if we instead held `zoom` and then locked
+    // `compact`, the two functions would acquire the mutexes in opposite order
+    // (zoom→compact here, compact→zoom there) — a classic AB/BA cycle that could
+    // deadlock if a zoom and a compact toggle fire concurrently. Reading the other
+    // flag first means only one lock is ever held at a time.
+    let compact = *state.compact.lock().unwrap();
     let mut zoom = state.zoom.lock().unwrap();
     *zoom = !*zoom;
     let new_zoom = *zoom;
@@ -304,7 +311,6 @@ fn toggle_zoom_impl(app: &tauri::AppHandle) -> bool {
         && let Ok(size) = win.outer_size()
     {
         let logical = size.to_logical::<f64>(scale);
-        let compact = *state.compact.lock().unwrap();
         let height = overlay_target_height(compact, new_zoom);
         if let Err(e) = win.set_size(tauri::LogicalSize::new(logical.width, height)) {
             eprintln!("toggle_zoom: failed to resize window: {e}");
@@ -326,6 +332,11 @@ fn toggle_zoom_impl(app: &tauri::AppHandle) -> bool {
 /// reflect.
 fn toggle_compact_impl(app: &tauri::AppHandle) -> bool {
     let state: State<AppState> = app.state();
+    // Snapshot the zoom flag BEFORE taking the compact lock, so this function
+    // and `toggle_zoom_impl` never hold both mutexes at once (see the lock-order
+    // note in `toggle_zoom_impl` — reading the other flag first avoids the
+    // zoom↔compact deadlock cycle).
+    let zoom = *state.zoom.lock().unwrap();
     let mut compact = state.compact.lock().unwrap();
     *compact = !*compact;
     let new_compact = *compact;
@@ -334,7 +345,6 @@ fn toggle_compact_impl(app: &tauri::AppHandle) -> bool {
         && let Ok(size) = win.outer_size()
     {
         let logical = size.to_logical::<f64>(scale);
-        let zoom = *state.zoom.lock().unwrap();
         let height = overlay_target_height(new_compact, zoom);
         if let Err(e) = win.set_size(tauri::LogicalSize::new(logical.width, height)) {
             eprintln!("toggle_compact: failed to resize window: {e}");
