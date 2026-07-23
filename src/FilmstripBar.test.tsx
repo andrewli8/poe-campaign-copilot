@@ -145,4 +145,49 @@ describe("FilmstripBar", () => {
       "data-tauri-drag-region",
     );
   });
+
+  it("marks the waiting-state root as a drag region and shows the setup hint in setup mode", () => {
+    const { container, rerender } = render(
+      <FilmstripBar
+        model={model({}, { waiting_for_log: true })}
+        zoom={false}
+        setupMode={true}
+      />,
+    );
+    expect(container.firstChild).toHaveAttribute("data-tauri-drag-region");
+    expect(screen.getByText(/drag to move/i)).toBeInTheDocument();
+
+    rerender(
+      <FilmstripBar
+        model={model({}, { waiting_for_log: true })}
+        zoom={false}
+        setupMode={false}
+      />,
+    );
+    expect(container.firstChild).not.toHaveAttribute("data-tauri-drag-region");
+    expect(screen.queryByText(/drag to move/i)).not.toBeInTheDocument();
+  });
+
+  it("marks the complete-bar as a drag region only in setup mode", () => {
+    const { container, rerender } = render(
+      <FilmstripBar
+        model={model({ route_complete: true })}
+        zoom={false}
+        setupMode={true}
+      />,
+    );
+    const completeBar = container.querySelector(".complete-bar");
+    expect(completeBar).toHaveAttribute("data-tauri-drag-region");
+
+    rerender(
+      <FilmstripBar
+        model={model({ route_complete: true })}
+        zoom={false}
+        setupMode={false}
+      />,
+    );
+    expect(container.querySelector(".complete-bar")).not.toHaveAttribute(
+      "data-tauri-drag-region",
+    );
+  });
 });

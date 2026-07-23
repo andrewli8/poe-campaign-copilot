@@ -18,7 +18,10 @@ export function FilmstripBar({ model, zoom, setupMode }: FilmstripBarProps) {
 
   if (model.waiting_for_log) {
     return (
-      <div className={rootClass}>
+      <div className={rootClass} data-tauri-drag-region={setupMode ? true : undefined}>
+        {setupMode && (
+          <div className="setup-hint">drag to move &middot; resize edges &middot; toggle via tray</div>
+        )}
         <div className="waiting-pill">Waiting for Client.txt&hellip;</div>
       </div>
     );
@@ -37,7 +40,12 @@ export function FilmstripBar({ model, zoom, setupMode }: FilmstripBarProps) {
       )}
 
       {overlay.route_complete ? (
-        <div className="complete-bar">Campaign complete</div>
+        <div
+          className="complete-bar"
+          data-tauri-drag-region={setupMode ? true : undefined}
+        >
+          Campaign complete
+        </div>
       ) : (
         <>
           {/* data-tauri-drag-region lives on the header row, not the
