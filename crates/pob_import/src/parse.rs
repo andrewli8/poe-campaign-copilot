@@ -22,7 +22,7 @@ pub fn parse_build(
     quests: &QuestMap,
     areas: &AreaMap,
 ) -> Result<LevelingBuildPlan, PobError> {
-    let by_name = gems_by_name(gems);
+    let by_name = gems_by_name(gems, quests);
     let mut state = ParseState::default();
 
     let mut reader = Reader::from_str(xml);

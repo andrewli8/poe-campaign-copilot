@@ -35,7 +35,9 @@ pub struct GemAvailability {
 /// An offer applies to the class when its class list is empty (unrestricted,
 /// e.g. Siosa in act 3 and Lilly Roth from act 6) or contains `class_name`.
 /// Earlier acts win; within an act a quest reward beats a vendor offer, then
-/// the lexicographically smaller quest id wins for determinism.
+/// the lexicographically smaller quest id wins. That last tie-break is for
+/// determinism only — quest ids embed unpadded numbers ("a1q10" < "a1q2"),
+/// so it does not reflect quest order within an act.
 pub fn availability_for_class(
     quests: &QuestMap,
     class_name: &str,
@@ -185,6 +187,23 @@ mod tests {
             .expect("frostblink available");
         assert_eq!(fb.act, 1);
         assert_eq!(fb.source, AvailabilitySource::QuestReward);
+    }
+
+    /// Guards the act-entry bump in pob_import: a missing entry silently
+    /// falls back to "no bump", so every act that quest reward data can
+    /// reference must have a derived entry level after a data resync.
+    #[test]
+    fn every_act_with_gem_offers_has_an_entry_level() {
+        let (areas, quests) = vendored();
+        let entry = act_entry_levels(&areas);
+        let avail = availability_for_class(&quests, "Witch");
+        for availability in avail.values() {
+            assert!(
+                entry.contains_key(&availability.act),
+                "no entry level derived for act {}",
+                availability.act
+            );
+        }
     }
 
     #[test]
