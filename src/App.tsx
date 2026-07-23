@@ -2,7 +2,8 @@ import { FilmstripBar } from "./FilmstripBar";
 import { useOverlay } from "./useOverlay";
 
 export default function App() {
-  const { model, zoom, setupMode, compact, overlayOpacity } = useOverlay();
+  const { model, zoom, setupMode, compact, overlayOpacity, runTimer, showRunTimer, nowMs } =
+    useOverlay();
   if (!model) return null;
   // Opacity is applied here via CSS on the overlay's root wrapper (rather
   // than a native window-opacity API, which Tauri v2 does not expose
@@ -12,7 +13,15 @@ export default function App() {
   // faded into unfindability.
   return (
     <div style={{ opacity: overlayOpacity }}>
-      <FilmstripBar model={model} zoom={zoom} setupMode={setupMode} compact={compact} />
+      <FilmstripBar
+        model={model}
+        zoom={zoom}
+        setupMode={setupMode}
+        compact={compact}
+        runTimer={runTimer}
+        showRunTimer={showRunTimer}
+        nowMs={nowMs}
+      />
     </div>
   );
 }

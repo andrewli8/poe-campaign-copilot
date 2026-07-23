@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { FilmstripBar, type FilmstripBarProps } from "./FilmstripBar";
+import { IDLE_RUN_TIMER } from "./runTimer";
 import type { UiModel } from "./types";
 
 const PIXEL =
@@ -41,6 +42,9 @@ function renderBar(overrides: Partial<FilmstripBarProps> & { model: UiModel }) {
       zoom={false}
       setupMode={false}
       compact={false}
+      runTimer={IDLE_RUN_TIMER}
+      showRunTimer={true}
+      nowMs={1_000_000}
       {...overrides}
     />,
   );
@@ -138,7 +142,15 @@ describe("FilmstripBar", () => {
     );
 
     rerender(
-      <FilmstripBar model={model()} zoom={false} setupMode={false} compact={false} />,
+      <FilmstripBar
+        model={model()}
+        zoom={false}
+        setupMode={false}
+        compact={false}
+        runTimer={IDLE_RUN_TIMER}
+        showRunTimer={true}
+        nowMs={1_000_000}
+      />,
     );
     expect(container.firstChild).not.toHaveAttribute("data-tauri-drag-region");
   });
@@ -157,6 +169,9 @@ describe("FilmstripBar", () => {
         zoom={false}
         setupMode={false}
         compact={false}
+        runTimer={IDLE_RUN_TIMER}
+        showRunTimer={true}
+        nowMs={1_000_000}
       />,
     );
     expect(container.firstChild).not.toHaveAttribute("data-tauri-drag-region");
@@ -176,6 +191,9 @@ describe("FilmstripBar", () => {
         zoom={false}
         setupMode={false}
         compact={false}
+        runTimer={IDLE_RUN_TIMER}
+        showRunTimer={true}
+        nowMs={1_000_000}
       />,
     );
     expect(container.firstChild).not.toHaveAttribute("data-tauri-drag-region");
@@ -254,6 +272,51 @@ describe("FilmstripBar", () => {
       expect(container.querySelector(".image-row")).toBeInTheDocument();
       expect(container.querySelector(".header-row")).toBeInTheDocument();
       expect(container.querySelector(".notes-list")).toBeInTheDocument();
+    });
+  });
+
+  describe("run timer chip", () => {
+    it("shows elapsed time while running", () => {
+      renderBar({
+        model: model(),
+        runTimer: { accumulated_ms: 60_000, running_since_ms: 990_000 },
+        nowMs: 1_000_000,
+      });
+      // 60s accumulated + 10s live stretch
+      expect(screen.getByText("0:01:10")).toBeInTheDocument();
+    });
+
+    it("shows 0:00:00 when never started", () => {
+      renderBar({ model: model() });
+      expect(screen.getByText("0:00:00")).toBeInTheDocument();
+    });
+
+    it("is hidden when disabled in settings", () => {
+      renderBar({ model: model(), showRunTimer: false });
+      expect(screen.queryByText("0:00:00")).not.toBeInTheDocument();
+    });
+
+    it("is hidden on the waiting screen", () => {
+      renderBar({ model: model({}, { waiting_for_log: true }) });
+      expect(screen.queryByText("0:00:00")).not.toBeInTheDocument();
+    });
+
+    it("marks a paused timer", () => {
+      renderBar({
+        model: model(),
+        runTimer: { accumulated_ms: 90_000, running_since_ms: null },
+      });
+      const chip = screen.getByText("0:01:30");
+      expect(chip.closest(".run-timer")).toHaveClass("paused");
+    });
+
+    it("appears in compact mode too", () => {
+      renderBar({
+        model: model(),
+        compact: true,
+        runTimer: { accumulated_ms: 5_000, running_since_ms: null },
+      });
+      expect(screen.getByText("0:00:05")).toBeInTheDocument();
     });
   });
 });

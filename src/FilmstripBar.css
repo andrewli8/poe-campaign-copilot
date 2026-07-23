@@ -217,3 +217,20 @@ body,
   color: #7aa2e0;
   font-size: 12px;
 }
+
+.run-timer {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: #8a94a8;
+}
+
+.run-timer.paused {
+  opacity: 0.6;
+}
+
+.run-timer-pause-icon {
+  font-size: 10px;
+}
