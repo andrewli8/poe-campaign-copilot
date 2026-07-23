@@ -4,6 +4,7 @@
 pub mod compile;
 pub mod data_root;
 pub mod game_data;
+pub mod gem_availability;
 pub mod layouts;
 pub mod route_dsl;
 pub mod vendor;
