@@ -1,6 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod config;
+mod journal;
 mod pipeline;
 
 use std::sync::Mutex;
@@ -169,6 +170,17 @@ fn apply_settings(app: tauri::AppHandle, cfg: AppConfig) -> Result<(), String> {
         *state.pipeline.lock().unwrap() = new_pipeline;
     }
 
+    // (d2) The new pipeline starts with fresh route/session state, so the
+    // session journal from the old configuration must go with it — leaving
+    // it behind would resurrect the discarded progress (possibly from a
+    // different log file, route variant, or build) on the next launch.
+    // Non-fatal on failure: the Save itself still succeeded.
+    if let Some(journal_path) = journal::journal_path(&app)
+        && let Err(e) = journal::clear(&journal_path)
+    {
+        eprintln!("journal: {e}");
+    }
+
     // (e) Spawn the new tailer at the configured path. A failure here
     // (e.g. the configured path was removed between validation above and
     // now) propagates as an error rather than being swallowed: the caller
@@ -176,7 +188,7 @@ fn apply_settings(app: tauri::AppHandle, cfg: AppConfig) -> Result<(), String> {
     // Save that can't actually start tailing doesn't get persisted as if
     // it had succeeded.
     if let Some(path) = cfg.client_log_path.clone() {
-        spawn_tail(&app, path, true)?;
+        spawn_tail(&app, path, true, journal::journal_path(&app))?;
     }
 
     // (f) Persist only after the rebuild above fully succeeded.
@@ -405,12 +417,23 @@ fn toggle_hide_impl(app: &tauri::AppHandle) -> bool {
 /// callers that are replacing a live tailer must `take()` and `.stop()`
 /// the old handle themselves first. Shared by startup and `apply_settings`.
 ///
+/// `journal_to`, when `Some`, is the session-journal file every
+/// *significant* incoming line is appended to (see `journal::is_significant`)
+/// so route/session progress can be restored on the next launch. `None`
+/// disables journaling (used by the `POE_COPILOT_LOG` dev/demo override,
+/// whose fixture lines must not leak into the real session journal).
+///
 /// Returns `Err` if the poller could not be created (e.g. the file doesn't
 /// exist) instead of logging and swallowing the failure itself, so
 /// `apply_settings` can propagate it as a failed Save. Startup call sites
 /// can't propagate (there's no request to fail), so they log the error
 /// themselves and continue without a tailer.
-fn spawn_tail(app: &tauri::AppHandle, path: String, start_at_end: bool) -> Result<(), String> {
+fn spawn_tail(
+    app: &tauri::AppHandle,
+    path: String,
+    start_at_end: bool,
+    journal_to: Option<std::path::PathBuf>,
+) -> Result<(), String> {
     let poller = input_log::FilePoller::new(path.clone().into(), start_at_end)
         .map_err(|e| format!("cannot open log at {path}: {e}"))?;
     let (tx, rx) = std::sync::mpsc::channel();
@@ -438,6 +461,17 @@ fn spawn_tail(app: &tauri::AppHandle, path: String, start_at_end: bool) -> Resul
     let app_handle = app.clone();
     std::thread::spawn(move || {
         for line in rx {
+            // Journal BEFORE feeding the pipeline so a crash mid-update
+            // can't lose a line the pipeline already applied. An append
+            // failure is logged but never blocks live processing — the
+            // overlay keeps working for this session even if persistence
+            // is broken (e.g. a read-only config dir).
+            if let Some(journal_path) = &journal_to
+                && journal::is_significant(&line)
+                && let Err(e) = journal::append_line(journal_path, &line)
+            {
+                eprintln!("journal: {e}");
+            }
             let state: State<AppState> = app_handle.state();
             let model = state.pipeline.lock().unwrap().on_line(&line);
             if let Some(model) = model {
@@ -540,7 +574,22 @@ fn main() {
                         None
                     }
                 });
-            let pipeline = Pipeline::new(variant, build).expect("content data must load");
+            let mut pipeline = Pipeline::new(variant, build).expect("content data must load");
+
+            // Restore the previous session's route/session progress from
+            // the on-disk journal BEFORE the state is managed (and thus
+            // before the frontend's first `get_model` can observe it), so
+            // a relaunch resumes at the last-known act/zone/route step
+            // instead of dropping back to the "waiting for Client.txt"
+            // state. A missing/corrupt/oversized journal yields no lines
+            // and the pipeline simply starts fresh.
+            if let Some(journal_path) = journal::journal_path(app.handle()) {
+                let lines = journal::load_lines(&journal_path, journal::MAX_JOURNAL_BYTES);
+                if !lines.is_empty() {
+                    let fed = journal::replay_into(&mut pipeline, &lines);
+                    eprintln!("journal: restored session progress from {fed} journaled lines");
+                }
+            }
 
             app.manage(AppState {
                 pipeline: Mutex::new(pipeline),
@@ -629,11 +678,14 @@ fn main() {
                 // so POE_COPILOT_LOG_REPLAY=1 flips that default for
                 // local development/demo runs only.
                 let start_at_end = std::env::var("POE_COPILOT_LOG_REPLAY").as_deref() != Ok("1");
-                if let Err(e) = spawn_tail(app.handle(), log_path, start_at_end) {
+                // No journaling for the dev/demo override: fixture lines
+                // must not contaminate the real persisted session journal.
+                if let Err(e) = spawn_tail(app.handle(), log_path, start_at_end, None) {
                     eprintln!("tailer: {e}");
                 }
             } else if let Some(log_path) = cfg.client_log_path.clone() {
-                if let Err(e) = spawn_tail(app.handle(), log_path, true) {
+                let journal_to = journal::journal_path(app.handle());
+                if let Err(e) = spawn_tail(app.handle(), log_path, true, journal_to) {
                     eprintln!("tailer: {e}");
                 }
             } else {
