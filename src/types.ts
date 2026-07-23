@@ -31,6 +31,8 @@ export interface OverlayModel {
   build_reminders: string[];
   is_town: boolean;
   route_complete: boolean;
+  location_status: "on_track" | "catching_up" | "revisiting";
+  groups_behind: number;
 }
 
 export interface UiModel {
