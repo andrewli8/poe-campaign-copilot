@@ -64,6 +64,18 @@ resizable, in every state including the initial "Waiting" screen), Zoom
 also `Alt+Shift+C`), Hide overlay (tucks the bar away without quitting;
 toggle it back from the tray or with `Alt+Shift+H`), and Quit.
 
+### When you backtrack
+
+If you head into a zone you already skipped, or one earlier than your
+furthest point in the route, the overlay follows you there instead of
+insisting you go back to where it expected. It labels what's happening with
+a small chip: "Catching up" when you're working through a zone you passed
+over, or "Revisiting" when you've dropped back into one you already
+cleared. Underneath, a small line tells you how many zones behind your
+furthest point you are, so you always know how far there is to go before
+you're back on the route. None of this touches your actual progress; it
+just tells you where you stand while you're off in the weeds.
+
 One honest caveat: you are the first person to run this against the real
 game. It has been developed and tested on macOS with simulated sessions,
 and the Windows build compiles clean in CI, but real-game behavior

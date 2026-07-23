@@ -146,6 +146,31 @@ body,
   padding: 3px 6px;
 }
 
+.location-chip {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  border-radius: 3px;
+  padding: 1px 5px;
+  white-space: nowrap;
+}
+
+.location-chip.catching-up {
+  color: #10121a;
+  background: #d9a441;
+}
+
+.location-chip.revisiting {
+  color: #c7cede;
+  background: rgba(138, 148, 168, 0.25);
+}
+
+.breadcrumb-line {
+  font-size: 10px;
+  color: #8a94a8;
+  opacity: 0.85;
+}
+
 .image-row {
   display: flex;
   gap: 6px;

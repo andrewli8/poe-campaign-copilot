@@ -211,6 +211,62 @@ describe("FilmstripBar", () => {
     expect(container.querySelector("[data-tauri-drag-region]")).not.toBeInTheDocument();
   });
 
+  describe("location status chip", () => {
+    it("shows a Catching up chip when catching_up", () => {
+      renderBar({ model: model({ location_status: "catching_up" }) });
+      const chip = screen.getByText("Catching up");
+      expect(chip).toHaveClass("location-chip");
+      expect(chip).toHaveClass("catching-up");
+    });
+
+    it("shows a Revisiting chip when revisiting", () => {
+      renderBar({ model: model({ location_status: "revisiting" }) });
+      const chip = screen.getByText("Revisiting");
+      expect(chip).toHaveClass("location-chip");
+      expect(chip).toHaveClass("revisiting");
+    });
+
+    it("omits the chip when on_track", () => {
+      renderBar({ model: model({ location_status: "on_track" }) });
+      expect(screen.queryByText("Catching up")).not.toBeInTheDocument();
+      expect(screen.queryByText("Revisiting")).not.toBeInTheDocument();
+    });
+
+    it("shows the chip in compact mode too", () => {
+      renderBar({
+        model: model({ location_status: "catching_up" }),
+        compact: true,
+      });
+      const chip = screen.getByText("Catching up");
+      expect(chip).toHaveClass("location-chip");
+    });
+  });
+
+  describe("backtrack breadcrumb", () => {
+    it("shows a singular breadcrumb at groups_behind 1", () => {
+      renderBar({ model: model({ groups_behind: 1 }) });
+      expect(screen.getByText(/1 zone behind your furthest point/i)).toBeInTheDocument();
+    });
+
+    it("shows a plural breadcrumb at groups_behind 3", () => {
+      renderBar({ model: model({ groups_behind: 3 }) });
+      expect(screen.getByText(/3 zones behind your furthest point/i)).toBeInTheDocument();
+    });
+
+    it("omits the breadcrumb at groups_behind 0", () => {
+      const { container } = renderBar({ model: model({ groups_behind: 0 }) });
+      expect(container.querySelector(".breadcrumb-line")).not.toBeInTheDocument();
+    });
+
+    it("omits the breadcrumb in compact mode even when groups_behind is set", () => {
+      const { container } = renderBar({
+        model: model({ groups_behind: 3 }),
+        compact: true,
+      });
+      expect(container.querySelector(".breadcrumb-line")).not.toBeInTheDocument();
+    });
+  });
+
   describe("compact mode", () => {
     it("renders zone name, primary action, and next-zone arrow only", () => {
       renderBar({ model: model(), compact: true });

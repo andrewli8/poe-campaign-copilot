@@ -59,6 +59,18 @@ export function FilmstripBar({
 
   const { overlay, images } = model;
 
+  const locationChip =
+    overlay.location_status !== "on_track" ? (
+      <span
+        className={[
+          "location-chip",
+          overlay.location_status === "catching_up" ? "catching-up" : "revisiting",
+        ].join(" ")}
+      >
+        {overlay.location_status === "catching_up" ? "Catching up" : "Revisiting"}
+      </span>
+    ) : null;
+
   return (
     // Tauri v2 only starts a window drag when the mousedown TARGET element
     // itself carries data-tauri-drag-region — a click that lands on a child
@@ -86,6 +98,7 @@ export function FilmstripBar({
       ) : compact ? (
         <div className="compact-row">
           <span className="zone-name">{overlay.zone_name}</span>
+          {locationChip}
           <span className="compact-primary">{overlay.primary}</span>
           {overlay.next_zone && (
             <span className="compact-next">&rarr; {overlay.next_zone}</span>
@@ -105,12 +118,20 @@ export function FilmstripBar({
               <span className="pending-badge">&#9675; {overlay.pending_count} pending</span>
             )}
             {overlay.is_town && <span className="town-chip">TOWN</span>}
+            {locationChip}
             {timerChip}
           </div>
 
           {overlay.off_route_zone && (
             <div className="off-route-banner">
               In {overlay.off_route_zone} &mdash; off route
+            </div>
+          )}
+
+          {overlay.groups_behind > 0 && (
+            <div className="breadcrumb-line">
+              {overlay.groups_behind} zone{overlay.groups_behind !== 1 ? "s" : ""} behind your
+              furthest point
             </div>
           )}
 
