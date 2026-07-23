@@ -64,7 +64,14 @@ pub fn toggle(state: RunTimerState, now_ms: u64) -> RunTimerState {
     }
 }
 
-/// Total elapsed run time at `now_ms`.
+/// Total elapsed run time at `now_ms`. Not called from the Tauri backend:
+/// the frontend ticks the displayed time locally from the
+/// `accumulated_ms`/`running_since_ms` snapshot broadcast on the
+/// "run-timer" event, using its own mirror (`elapsedMs` in
+/// src/runTimer.ts). Kept here — pure, tested, and exported alongside the
+/// rest of the state machine — for parity with that mirror and any future
+/// backend consumer (e.g. a tray tooltip).
+#[allow(dead_code)]
 pub fn elapsed_ms(state: &RunTimerState, now_ms: u64) -> u64 {
     let live = state
         .running_since_ms
