@@ -589,6 +589,16 @@ fn main() {
                     let fed = journal::replay_into(&mut pipeline, &lines);
                     eprintln!("journal: restored session progress from {fed} journaled lines");
                 }
+                // Compact an over-target journal down to the newest suffix
+                // of what was just replayed, so the append-only file can't
+                // ratchet toward (and eventually past) the read cap across
+                // long-lived configs. Runs before the tailer spawns, so no
+                // concurrent appends can race the rewrite.
+                match journal::compact(&journal_path, &lines, journal::COMPACT_TARGET_BYTES) {
+                    Ok(true) => eprintln!("journal: compacted oversized session journal"),
+                    Ok(false) => {}
+                    Err(e) => eprintln!("journal: {e}"),
+                }
             }
 
             app.manage(AppState {
