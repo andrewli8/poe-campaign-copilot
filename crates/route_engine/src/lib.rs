@@ -154,6 +154,22 @@ impl RouteEngine {
         self.frontier >= self.steps.len()
     }
 
+    /// Reset the route to its start — a fresh campaign run has begun. Every
+    /// step returns to `Pending`, `frontier`/`focus` return to 0, and all
+    /// off-route / revisit / detour bookkeeping is cleared. Leaves `steps`
+    /// and `areas` (the compiled route itself) intact.
+    pub fn restart(&mut self) {
+        for s in &mut self.statuses {
+            *s = StepStatus::Pending;
+        }
+        self.frontier = 0;
+        self.focus = 0;
+        self.focus_status = LocationStatus::OnTrack;
+        self.off_route = None;
+        self.visited_contexts.clear();
+        self.detoured_contexts.clear();
+    }
+
     /// Index one-past the end of the contiguous run of steps sharing the
     /// `area_context` of `self.steps[start]` (a "group").
     fn group_end(&self, start: usize) -> usize {
@@ -778,6 +794,84 @@ mod tests {
         assert_eq!(e.next_transition_area(), Some("1_1_town"));
         e.on_area_entered("1_1_town", true);
         assert_eq!(e.next_transition_area(), Some("1_1_2"));
+    }
+
+    #[test]
+    fn a_completed_route_never_resets_from_zone_entries() {
+        // Safety invariant (issue #8 fear): once the route is complete, NO
+        // sequence of area entries — new OR same instance of any zone,
+        // including the very first area, plus unknown zones — un-completes
+        // it. Only an explicit `restart()` (the manual "Reset progress"
+        // button) may. Guards against ever reintroducing an auto-restart
+        // heuristic that could wipe progress from normal play.
+        let mut e = engine();
+        let contexts: Vec<String> = {
+            let mut cs = Vec::new();
+            for s in e.steps() {
+                if cs.last() != Some(&s.area_context) {
+                    cs.push(s.area_context.clone());
+                }
+            }
+            cs
+        };
+        for c in &contexts {
+            e.on_area_entered(c, true);
+        }
+        assert!(e.is_complete());
+
+        let first = e.steps()[0].area_context.clone();
+        for _ in 0..5 {
+            e.on_area_entered(&first, true);
+            e.on_area_entered(&first, false);
+            e.on_area_entered("some_unknown_zone_id", true);
+            for c in &contexts {
+                e.on_area_entered(c, true);
+                e.on_area_entered(c, false);
+            }
+            assert!(
+                e.is_complete(),
+                "a completed route must stay complete under any zone entries",
+            );
+        }
+
+        // Only the explicit reset returns it to the start.
+        e.restart();
+        assert!(!e.is_complete());
+        assert_eq!(e.cursor(), 0);
+    }
+
+    #[test]
+    fn restart_returns_a_completed_route_to_the_start() {
+        // `restart()` is the mechanism behind the manual "Reset progress"
+        // button. Drive to completion, restart, and confirm the engine is
+        // back at a fresh Act 1 start with all steps Pending.
+        let mut e = engine();
+        let contexts: Vec<String> = {
+            let mut cs = Vec::new();
+            for s in e.steps() {
+                if cs.last() != Some(&s.area_context) {
+                    cs.push(s.area_context.clone());
+                }
+            }
+            cs
+        };
+        for c in &contexts {
+            e.on_area_entered(c, true);
+        }
+        assert!(e.is_complete());
+
+        e.restart();
+
+        assert!(!e.is_complete());
+        assert_eq!(e.cursor(), 0);
+        let first = e.steps()[0].area_context.clone();
+        assert_eq!(e.active_area(), Some(first.as_str()));
+        assert_eq!(e.focus_area(), Some(first.as_str()));
+        assert!(e.off_route().is_none());
+        assert!(
+            e.statuses().iter().all(|&s| s == StepStatus::Pending),
+            "all steps return to Pending after restart"
+        );
     }
 
     #[test]

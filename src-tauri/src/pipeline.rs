@@ -78,6 +78,21 @@ impl Pipeline {
         })
     }
 
+    /// Drop all live session state back to a fresh start — the manual
+    /// "Reset progress" action. The compiled route returns to Act 1
+    /// (`engine.restart`), in-progress task reminders and the tracked
+    /// player level are cleared (fresh `TaskEngine` / `SessionTracker`),
+    /// and the overlay returns to waiting for the new character's first
+    /// zone (`seen_area_event = false`). Everything config-derived — the
+    /// route steps, imported `build`, `layouts`, and the content-addressed
+    /// `encoded` image cache — is kept.
+    pub fn reset(&mut self) {
+        self.engine.restart();
+        self.tasks = TaskEngine::new(self.areas.clone());
+        self.tracker = SessionTracker::new(self.areas.clone());
+        self.seen_area_event = false;
+    }
+
     pub fn on_line(&mut self, line: &str) -> Option<UiModel> {
         let raw = event_parser::parse_line(line);
         let mut area_changed = false;

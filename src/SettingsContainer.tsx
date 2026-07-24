@@ -42,14 +42,23 @@ export function SettingsContainer() {
     };
   }, []);
 
-  async function handlePick() {
+  // Runs the native file dialog and returns the chosen path. SettingsPage
+  // autosaves it (committing the full config), which flows back through
+  // handleSave and updates `config` — so this no longer sets config itself.
+  async function handlePick(): Promise<string | null> {
     try {
-      const path = await invoke<string | null>("pick_log_file");
-      if (path) {
-        setConfig((prev) => (prev ? { ...prev, client_log_path: path } : prev));
-      }
+      return (await invoke<string | null>("pick_log_file")) ?? null;
     } catch (e) {
       console.error("pick_log_file failed:", e);
+      return null;
+    }
+  }
+
+  async function handleReset() {
+    try {
+      await invoke("reset_progress");
+    } catch (e) {
+      console.error("reset_progress failed:", e);
     }
   }
 
@@ -126,6 +135,7 @@ export function SettingsContainer() {
       preview={preview}
       previewError={previewError}
       onSave={handleSave}
+      onReset={handleReset}
       saving={saving}
       savedAt={savedAt}
       onOpacityPreview={handleOpacityPreview}

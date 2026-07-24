@@ -461,6 +461,36 @@ mod tests {
     }
 
     #[test]
+    fn restart_clears_campaign_complete() {
+        // Issue #8: after a completed route (e.g. a high-level character),
+        // the manual "Reset progress" action (RouteEngine::restart) must
+        // clear "Campaign complete" in the composed overlay.
+        let (mut engine, tasks, layouts, areas) = fixture();
+        let contexts: Vec<String> = {
+            let mut cs = Vec::new();
+            for s in engine.steps() {
+                if cs.last() != Some(&s.area_context) {
+                    cs.push(s.area_context.clone());
+                }
+            }
+            cs
+        };
+        for c in &contexts {
+            engine.on_area_entered(c, true);
+        }
+        assert!(engine.is_complete());
+
+        let first = engine.steps()[0].area_context.clone();
+        engine.restart();
+
+        let m = compose(&engine, &tasks, &layouts, &areas, None);
+        assert!(!m.route_complete, "reset clears route completion");
+        assert_ne!(m.zone_name, "Campaign complete");
+        assert_eq!(m.act, 1, "restarted at act 1");
+        assert_eq!(m.area_id, first);
+    }
+
+    #[test]
     fn build_reminders_are_town_gated_and_level_windowed() {
         let (mut engine, tasks, layouts, areas) = fixture();
         let plan = pob_import::LevelingBuildPlan {
