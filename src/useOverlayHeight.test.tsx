@@ -89,6 +89,27 @@ describe("useOverlayHeight", () => {
     expect(send).toHaveBeenCalledTimes(1);
   });
 
+  it("sends fractional measurements as whole pixels, rounded up", () => {
+    const send = vi.fn();
+    render(<Harness send={send} />);
+    fireResize(226.375);
+    vi.advanceTimersByTime(80);
+    expect(send).toHaveBeenCalledWith(227);
+  });
+
+  it("collapses sub-pixel jitter that maps to the same whole pixel", () => {
+    // Fractional re-measurements of the same content (200.2, 200.4) must
+    // not each produce a native window resize — they are the same 201px.
+    const send = vi.fn();
+    render(<Harness send={send} />);
+    fireResize(200.2);
+    vi.advanceTimersByTime(80);
+    fireResize(200.4);
+    vi.advanceTimersByTime(80);
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(send).toHaveBeenCalledWith(201);
+  });
+
   it("attaches when the observed node mounts on a later render", () => {
     const send = vi.fn();
     const { rerender } = render(<LateHarness show={false} send={send} />);

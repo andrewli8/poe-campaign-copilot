@@ -3,6 +3,13 @@ body,
 #root {
   background: transparent;
   margin: 0;
+  /* The overlay window is sized TO its content (useOverlayHeight), so the
+     document itself must never scroll: a window-level scrollbar both looks
+     broken on a transparent overlay and — because classic scrollbars consume
+     layout width on Windows — reflows the content, re-fires the
+     ResizeObserver, and feeds a window-resize loop. Scrolling belongs to
+     .filmstrip (max-height + overflow-y) only. */
+  overflow: hidden;
 }
 
 * {
