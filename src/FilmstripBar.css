@@ -295,16 +295,6 @@ body,
   color: var(--parch-dim);
 }
 
-/* Outdated note: struck through + coral, whatever its category. */
-.note-card.stale {
-  --nc-accent: var(--coral);
-  opacity: 0.75;
-}
-.note-card.stale .nc-text {
-  text-decoration: line-through;
-  color: var(--coral);
-}
-
 /* ---- Next-zone bar: the single most navigational element ---- */
 .next-bar {
   display: flex;

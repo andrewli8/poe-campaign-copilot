@@ -33,11 +33,19 @@ fn all_layout_entries_are_valid() {
             e.area_id
         );
         // Content is audited zone-by-zone (see the audit metadata in each
-        // layout JSON). Any status is allowed, but a `corrected` note or
-        // description MUST supply the replacement text the composer shows in
-        // place of the original — a corrected item with no correction would
-        // silently blank the guidance.
+        // layout JSON). A `corrected` note/description MUST supply the
+        // replacement text the composer shows in place of the original. And
+        // notes/descriptions may NOT be `outdated`: outdated guidance is
+        // replaced (corrected), never shown struck-through or left to be
+        // dropped — the overlay shows no strike-through. (Images may still be
+        // `outdated`; they dim rather than mislead.)
         for item in e.descriptions.iter().chain(e.notes.iter()) {
+            assert_ne!(
+                item.audit.status,
+                AuditStatus::Outdated,
+                "{}: an outdated note/description must be corrected (replaced), not left outdated",
+                e.area_id
+            );
             if item.audit.status == AuditStatus::Corrected {
                 assert!(
                     item.audit
@@ -72,23 +80,21 @@ fn all_layout_entries_are_valid() {
 }
 
 /// Issue #11: Navali was removed from the game in 3.17 (with the prophecy
-/// system). Any note/description that still references her must be audited —
-/// `corrected` (replaced with accurate guidance) or `outdated` (struck
-/// through) — never left as active `unaudited`/`verified` guidance telling
-/// players to free her.
+/// system). Any note/description that still references her must be
+/// `corrected` — replaced with accurate guidance — never left active
+/// (`unaudited`/`verified`) telling players to free her. (Notes are never
+/// `outdated`; that's forbidden above in favour of a real replacement.)
 #[test]
 fn no_active_note_references_the_removed_navali() {
     let entries = load_all_layouts().expect("layouts load");
     for e in &entries {
         for item in e.descriptions.iter().chain(e.notes.iter()) {
             if item.text.contains("Navali") {
-                assert!(
-                    matches!(
-                        item.audit.status,
-                        AuditStatus::Corrected | AuditStatus::Outdated
-                    ),
-                    "{}: note references the removed NPC Navali but is still active ({:?}); \
-                     mark it corrected or outdated",
+                assert_eq!(
+                    item.audit.status,
+                    AuditStatus::Corrected,
+                    "{}: note references the removed NPC Navali but is not corrected ({:?}); \
+                     replace it with accurate guidance",
                     e.area_id,
                     item.audit.status,
                 );

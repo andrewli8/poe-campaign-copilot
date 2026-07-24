@@ -15,7 +15,7 @@ function model(overrides: Partial<UiModel["overlay"]> = {}, extra: Partial<UiMod
       act: 1,
       off_route_zone: null,
       layout_images: [{ file: "a.png", stale: false }],
-      layout_notes: [{ text: "Follow the right wall.", stale: false, category: "layout" }],
+      layout_notes: [{ text: "Follow the right wall.", category: "layout" }],
       steps_in_zone: ["Get waypoint", "➞ The Mud Flats"],
       sub_hints: ["Go ↗"],
       primary: "Get waypoint",
@@ -93,20 +93,22 @@ describe("FilmstripBar", () => {
     expect(item).toHaveClass("build");
   });
 
-  it("marks stale images and notes", () => {
-    const m = model({ layout_notes: [{ text: "Old info.", stale: true, category: "layout" }] });
+  it("marks stale images with the outdated badge", () => {
+    // Notes are never stale (outdated notes are dropped upstream); only
+    // images can be stale, shown dimmed with an "outdated" badge.
+    const m = model();
     m.images = [{ file: "a.png", stale: true, data_url: PIXEL }];
     renderBar({ model: m });
     expect(screen.getByText(/outdated/i)).toBeInTheDocument();
-    expect(screen.getByText("Old info.").closest(".note-card")).toHaveClass("stale");
+    expect(screen.getByRole("img")).toHaveClass("stale");
   });
 
   it("renders notes as colour-coded category cards", () => {
     const { container } = renderBar({
       model: model({
         layout_notes: [
-          { text: "Cap fire resistance.", stale: false, category: "danger" },
-          { text: "Follow the wall.", stale: false, category: "layout" },
+          { text: "Cap fire resistance.", category: "danger" },
+          { text: "Follow the wall.", category: "layout" },
         ],
       }),
     });

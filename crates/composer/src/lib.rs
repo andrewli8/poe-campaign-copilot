@@ -15,7 +15,6 @@ pub mod render;
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct NoteView {
     pub text: String,
-    pub stale: bool,
     pub category: NoteCategory,
 }
 
@@ -79,33 +78,30 @@ pub fn layouts_by_area(entries: Vec<LayoutEntry>) -> BTreeMap<String, LayoutEntr
         .collect()
 }
 
-/// Map a layout entry's descriptions + notes to display-ready `NoteView`s,
-/// per the audit-status rules: `Corrected` uses the correction text (or the
-/// original if no correction is recorded) and is not stale; `Outdated` uses
-/// the original text and IS stale; `Unaudited`/`Verified` use the original
-/// text and are not stale.
+/// Map a layout entry's descriptions + notes to display-ready `NoteView`s.
+/// `Corrected` shows the replacement text; `Unaudited`/`Verified` show the
+/// original text. `Outdated` notes are DROPPED entirely — outdated guidance
+/// is never shown (no strike-through); it must be `Corrected` with a
+/// replacement instead. (Images handle `Outdated` separately by dimming.)
 fn note_views(entry: &LayoutEntry) -> Vec<NoteView> {
     entry
         .descriptions
         .iter()
         .chain(entry.notes.iter())
-        .map(|item| {
-            let (text, stale) = match item.audit.status {
-                AuditStatus::Corrected => (
-                    item.audit
-                        .correction
-                        .clone()
-                        .unwrap_or_else(|| item.text.clone()),
-                    false,
-                ),
-                AuditStatus::Outdated => (item.text.clone(), true),
-                AuditStatus::Unaudited | AuditStatus::Verified => (item.text.clone(), false),
+        .filter_map(|item| {
+            let text = match item.audit.status {
+                AuditStatus::Corrected => item
+                    .audit
+                    .correction
+                    .clone()
+                    .unwrap_or_else(|| item.text.clone()),
+                AuditStatus::Unaudited | AuditStatus::Verified => item.text.clone(),
+                AuditStatus::Outdated => return None,
             };
-            NoteView {
+            Some(NoteView {
                 text,
-                stale,
                 category: item.category,
-            }
+            })
         })
         .collect()
 }
@@ -304,10 +300,6 @@ mod tests {
         assert_eq!(m.off_route_zone, None);
         assert!(!m.layout_images.is_empty(), "The Coast has layout images");
         assert!(!m.layout_notes.is_empty());
-        assert!(
-            m.layout_notes.iter().all(|n| !n.stale),
-            "all content is unaudited, not stale"
-        );
         assert!(!m.steps_in_zone.is_empty());
         assert_eq!(m.primary, m.steps_in_zone[0]);
         assert!(m.next_zone.is_some());
@@ -493,6 +485,49 @@ mod tests {
         assert_ne!(m.zone_name, "Campaign complete");
         assert_eq!(m.act, 1, "restarted at act 1");
         assert_eq!(m.area_id, first);
+    }
+
+    #[test]
+    fn note_views_correct_replace_verbatim_and_outdated_are_dropped() {
+        use content::layouts::{Audit, AuditedText, LayoutSource, NoteCategory};
+
+        let note = |text: &str, status: AuditStatus, correction: Option<&str>| AuditedText {
+            text: text.into(),
+            category: NoteCategory::Layout,
+            audit: Audit {
+                status,
+                first_verified_patch: None,
+                last_verified_patch: None,
+                correction: correction.map(Into::into),
+            },
+        };
+        let entry = LayoutEntry {
+            area_id: "1_1_1".into(),
+            act: 1,
+            display_name: "Test".into(),
+            docx_headings: vec![],
+            descriptions: vec![],
+            notes: vec![
+                note("Plain note.", AuditStatus::Unaudited, None),
+                note("Old text.", AuditStatus::Corrected, Some("Fixed text.")),
+                note("Removed content.", AuditStatus::Outdated, None),
+            ],
+            images: vec![],
+            source: LayoutSource {
+                document: String::new(),
+                images_author: String::new(),
+                notes_author: String::new(),
+            },
+        };
+
+        let views = note_views(&entry);
+        let texts: Vec<&str> = views.iter().map(|v| v.text.as_str()).collect();
+        // Unaudited verbatim, corrected replaced, outdated DROPPED (never shown).
+        assert_eq!(texts, vec!["Plain note.", "Fixed text."]);
+        assert!(
+            !texts.iter().any(|t| t.contains("Removed content")),
+            "outdated note text must never reach the overlay"
+        );
     }
 
     #[test]

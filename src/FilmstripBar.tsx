@@ -185,14 +185,11 @@ export function FilmstripBar({
             </div>
           )}
 
-          {/* Layout / danger note cards — colour-coded by category. */}
+          {/* Layout / danger note cards — colour-coded by category.
+              Outdated notes are dropped upstream, so every note shown is
+              current (no strike-through). */}
           {overlay.layout_notes.map((note, i) => (
-            <div
-              key={i}
-              className={["note-card", note.category, note.stale && "stale"]
-                .filter(Boolean)
-                .join(" ")}
-            >
+            <div key={i} className={`note-card ${note.category}`}>
               <span className="nc-ic" aria-hidden="true">{NOTE_ICON[note.category]}</span>
               <div className="nc-body">
                 <div className="nc-kicker">{NOTE_LABEL[note.category]}</div>
