@@ -549,6 +549,53 @@ fn overlay_height_in_range(height: f64) -> bool {
     height.is_finite() && (MIN_OVERLAY_HEIGHT..=MAX_OVERLAY_HEIGHT).contains(&height)
 }
 
+/// Resize-storm detection window and threshold. Content-driven resizes are
+/// rare (zone changes, image loads, mode toggles) — a handful per MINUTE.
+/// More than `RESIZE_STORM_MAX_CALLS` inside `RESIZE_STORM_WINDOW_MS` means
+/// something is re-triggering the measure→resize cycle in a loop, the
+/// signature of the Windows scrollbar/reflow feedback fixed alongside this
+/// detector. The diagnostics line it emits lets a user's log file confirm
+/// or rule out a recurrence without a screen recording.
+const RESIZE_STORM_WINDOW_MS: u64 = 2_000;
+const RESIZE_STORM_MAX_CALLS: u32 = 5;
+
+/// Pure sliding-window counter behind the storm diagnostics: `on_call`
+/// returns true exactly once per window when the call count first exceeds
+/// the threshold, so a sustained loop leaves one log line per window (a
+/// legible "still storming" heartbeat) instead of one line per resize.
+struct ResizeStormDetector {
+    window_start_ms: u64,
+    calls: u32,
+    flagged: bool,
+}
+
+impl ResizeStormDetector {
+    const fn new() -> Self {
+        Self {
+            window_start_ms: 0,
+            calls: 0,
+            flagged: false,
+        }
+    }
+
+    fn on_call(&mut self, now_ms: u64) -> bool {
+        if now_ms.saturating_sub(self.window_start_ms) > RESIZE_STORM_WINDOW_MS {
+            self.window_start_ms = now_ms;
+            self.calls = 1;
+            self.flagged = false;
+            return false;
+        }
+        self.calls += 1;
+        if self.calls > RESIZE_STORM_MAX_CALLS && !self.flagged {
+            self.flagged = true;
+            return true;
+        }
+        false
+    }
+}
+
+static RESIZE_STORM: Mutex<ResizeStormDetector> = Mutex::new(ResizeStormDetector::new());
+
 /// Resize the overlay to a content-measured height. Width is read back
 /// from the current window and left unchanged, so only the bottom edge
 /// moves (top-pinned growth). Out-of-range heights are rejected; a missing
@@ -559,6 +606,13 @@ fn set_overlay_height(app: tauri::AppHandle, height: f64) -> Result<(), String> 
         let msg = format!("set_overlay_height: rejected out-of-range height {height}");
         diagnostics::diag(&msg);
         return Err(msg);
+    }
+    if RESIZE_STORM.lock().unwrap().on_call(run_timer::now_ms()) {
+        diagnostics::diag(&format!(
+            "set_overlay_height: resize storm — more than {RESIZE_STORM_MAX_CALLS} \
+             calls in {RESIZE_STORM_WINDOW_MS}ms (latest height {height}); \
+             possible measure/resize feedback loop"
+        ));
     }
     // Whole logical pixels only, rounded UP (mirrors clampOverlayHeight in
     // src/overlayHeight.ts): a fractional height rounds through the DPI
@@ -1187,4 +1241,54 @@ mod tests {
         assert_eq!(settings_open_action(false, &opening), SettingsOpen::Build);
     }
 
+    #[test]
+    fn resize_storm_stays_quiet_under_the_threshold() {
+        let mut d = ResizeStormDetector::new();
+        // RESIZE_STORM_MAX_CALLS calls inside one window: at the limit,
+        // not over it — no flag.
+        for i in 0..RESIZE_STORM_MAX_CALLS {
+            assert!(!d.on_call(1_000 + u64::from(i)));
+        }
+    }
+
+    #[test]
+    fn resize_storm_flags_once_per_window_when_over_the_threshold() {
+        let mut d = ResizeStormDetector::new();
+        for i in 0..RESIZE_STORM_MAX_CALLS {
+            assert!(!d.on_call(1_000 + u64::from(i)));
+        }
+        // One past the limit inside the same window: flag exactly once...
+        assert!(d.on_call(1_100));
+        // ...and further calls in the SAME window stay quiet (no log spam
+        // while a storm is running).
+        assert!(!d.on_call(1_200));
+        assert!(!d.on_call(1_300));
+    }
+
+    #[test]
+    fn resize_storm_window_resets_and_can_flag_again() {
+        let mut d = ResizeStormDetector::new();
+        for i in 0..=RESIZE_STORM_MAX_CALLS {
+            d.on_call(1_000 + u64::from(i));
+        }
+        // Past the window: counting starts fresh...
+        let later = 1_000 + RESIZE_STORM_WINDOW_MS + 1;
+        assert!(!d.on_call(later));
+        // ...and a NEW storm in the new window flags again, so a sustained
+        // loop leaves one diagnostics line per window, not one ever.
+        for i in 1..RESIZE_STORM_MAX_CALLS {
+            assert!(!d.on_call(later + u64::from(i)));
+        }
+        assert!(d.on_call(later + 100));
+    }
+
+    #[test]
+    fn resize_storm_ignores_slow_steady_resizes() {
+        // Real content changes (zone transitions, image loads) arrive
+        // seconds apart — each lands in its own window and never flags.
+        let mut d = ResizeStormDetector::new();
+        for i in 0..20u64 {
+            assert!(!d.on_call(i * (RESIZE_STORM_WINDOW_MS + 1)));
+        }
+    }
 }
