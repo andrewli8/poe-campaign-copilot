@@ -141,6 +141,40 @@ pub fn diag(msg: &str) {
     write(msg);
 }
 
+/// Reads the newest `max_bytes` of the log at `path` as complete lines
+/// (the first, possibly byte-torn line of an over-cap read is dropped —
+/// same trick as `journal::load_lines`). `None` when the file is missing,
+/// unreadable, or has no non-blank content — callers (the bug-report
+/// prefill) then fall back to behaving as if there were no log at all.
+/// Read-only and side-effect-free: reporting a bug must never itself
+/// write to the log it is bundling.
+pub fn tail(path: &std::path::Path, max_bytes: u64) -> Option<String> {
+    use std::io::{Read as _, Seek as _, SeekFrom};
+
+    let mut file = std::fs::File::open(path).ok()?;
+    let len = file.metadata().ok()?.len();
+    let over_cap = len > max_bytes;
+    if over_cap {
+        file.seek(SeekFrom::End(-(max_bytes as i64))).ok()?;
+    }
+    let mut buf = Vec::with_capacity(len.min(max_bytes) as usize);
+    file.read_to_end(&mut buf).ok()?;
+    let text = String::from_utf8_lossy(&buf);
+    let text = if over_cap {
+        match text.find('\n') {
+            Some(i) => &text[i + 1..],
+            None => "", // one giant torn line: nothing complete to keep
+        }
+    } else {
+        &text[..]
+    };
+    let trimmed = text.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+    Some(trimmed.to_string())
+}
+
 /// Installs a panic hook that leaves a trace in the diagnostics log before
 /// chaining to the default hook (which still prints to stderr, preserving
 /// today's `tauri dev` behavior). This is the highest-value part of this
@@ -205,5 +239,48 @@ mod tests {
         // never panics regardless of whether a path has been resolved.
         write("pre-init message");
         diag("pre-init message via diag");
+    }
+
+    fn temp_log(name: &str, content: &str) -> std::path::PathBuf {
+        let path = std::env::temp_dir().join(format!(
+            "poe-copilot-diag-tail-test-{}-{name}.log",
+            std::process::id()
+        ));
+        std::fs::write(&path, content).unwrap();
+        path
+    }
+
+    #[test]
+    fn tail_returns_a_small_file_whole() {
+        let path = temp_log("whole", "1 first\n2 second\n");
+        assert_eq!(tail(&path, 1_024).as_deref(), Some("1 first\n2 second"));
+        std::fs::remove_file(&path).unwrap();
+    }
+
+    #[test]
+    fn tail_of_an_over_cap_file_keeps_only_newest_complete_lines() {
+        let content: String = (0..100)
+            .map(|i| format!("{i:03} event happened\n"))
+            .collect();
+        let path = temp_log("overcap", &content);
+        let got = tail(&path, 100).expect("tail yields content");
+        // Newest line survives; the byte-torn first line was dropped, so
+        // every returned line is a complete original line.
+        assert!(got.ends_with("099 event happened"));
+        for line in got.lines() {
+            assert!(line.ends_with("event happened"), "torn line kept: {line:?}");
+        }
+        assert!(!got.contains("000 event happened"));
+        std::fs::remove_file(&path).unwrap();
+    }
+
+    #[test]
+    fn tail_is_none_for_missing_or_blank_files() {
+        let missing = std::env::temp_dir().join("poe-copilot-diag-tail-definitely-missing.log");
+        assert_eq!(tail(&missing, 1_024), None);
+
+        let blank = temp_log("blank", "  \n\n  \n");
+        assert_eq!(tail(&blank, 1_024), None);
+        std::fs::remove_file(&blank).unwrap();
     }
 }

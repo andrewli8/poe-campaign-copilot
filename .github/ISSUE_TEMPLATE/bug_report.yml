@@ -13,6 +13,6 @@ body:
     id: details
     attributes:
       label: Anything else? (optional)
-      description: Steps to reproduce, your app version, or your log. For the log, right-click the tray icon, choose Open logs, and drag the file in here.
+      description: Steps to reproduce, your app version, or your log. If you opened this from the app's "Report a bug", your recent log is pre-filled below — review it and remove anything you don't want public. For the full log, right-click the tray icon, choose Open logs, and drag the file in here.
     validations:
       required: false
