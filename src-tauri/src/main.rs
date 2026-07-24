@@ -8,6 +8,7 @@ mod pipeline;
 mod run_timer;
 
 use std::sync::Mutex;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use config::AppConfig;
 use content::compile::Variant;
@@ -39,6 +40,13 @@ struct AppState {
     /// Pausable campaign run timer; every transition is persisted to
     /// run_timer.json and broadcast on the "run-timer" event.
     run_timer: Mutex<run_timer::RunTimerState>,
+    /// True while a settings-window build has been scheduled but the window
+    /// does not yet exist. Guards against a second build being scheduled in
+    /// that gap — the Windows global shortcut fires `Pressed` repeatedly on
+    /// key-repeat, and a second `WebviewWindowBuilder::build()` running
+    /// re-entrantly inside the first build's nested WebView2 init loop hangs
+    /// the app ("not responding"). See `settings_open_action`.
+    settings_opening: AtomicBool,
 }
 
 #[derive(Debug, Serialize)]
@@ -321,14 +329,65 @@ fn dispatch_hotkey(app: &tauri::AppHandle, action: hotkeys::HotkeyAction) {
     }
 }
 
+/// What a settings-open request should do.
+#[derive(Debug, PartialEq, Eq)]
+enum SettingsOpen {
+    /// The window already exists — focus it.
+    FocusExisting,
+    /// No window and no build in flight — this request builds it (and has
+    /// claimed the `opening` guard).
+    Build,
+    /// No window yet, but a build is already in flight — ignore this
+    /// duplicate request.
+    AlreadyOpening,
+}
+
+/// Decide how to service a settings-open request. When the window is absent
+/// this claims `opening` (false -> true) and returns `Build` for exactly the
+/// first caller; concurrent/rapid callers get `AlreadyOpening` and must not
+/// schedule another build. This is what stops the Windows global shortcut,
+/// which fires `Pressed` repeatedly on key-repeat, from scheduling a second
+/// `WebviewWindowBuilder::build()` that would run re-entrantly inside the
+/// first build's nested WebView2 init loop and hang the app.
+fn settings_open_action(window_exists: bool, opening: &AtomicBool) -> SettingsOpen {
+    if window_exists {
+        return SettingsOpen::FocusExisting;
+    }
+    if opening
+        .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
+        .is_ok()
+    {
+        SettingsOpen::Build
+    } else {
+        SettingsOpen::AlreadyOpening
+    }
+}
+
 fn open_settings_window(app: &tauri::AppHandle) {
-    if let Some(win) = app.get_webview_window("settings") {
-        if let Err(e) = win.set_focus() {
-            diagnostics::diag(&format!(
-                "open_settings: failed to focus existing window: {e}"
-            ));
+    let existing = app.get_webview_window("settings");
+    let state: State<AppState> = app.state();
+    match settings_open_action(existing.is_some(), &state.settings_opening) {
+        SettingsOpen::FocusExisting => {
+            if let Some(win) = existing
+                && let Err(e) = win.set_focus()
+            {
+                diagnostics::diag(&format!(
+                    "open_settings: failed to focus existing window: {e}"
+                ));
+            }
+            return;
         }
-        return;
+        // A build is already scheduled/in flight (e.g. the settings hotkey
+        // auto-repeating while WebView2 initializes). Ignore this duplicate;
+        // scheduling a second build would re-enter the first build's nested
+        // init loop on Windows and hang the app. Logged so a still-hanging
+        // Windows build's diagnostics confirm whether duplicate opens are
+        // in fact arriving (the suspected key-repeat root cause).
+        SettingsOpen::AlreadyOpening => {
+            diagnostics::diag("open_settings: ignoring duplicate open (build already in flight)");
+            return;
+        }
+        SettingsOpen::Build => {}
     }
     // Build the window on the event loop rather than inline.
     //
@@ -360,11 +419,19 @@ fn open_settings_window(app: &tauri::AppHandle) {
                 "open_settings: failed to create settings window: {e}"
             ));
         }
+        // Release the guard now the single build attempt is done: on success
+        // the window exists so future opens focus it; on failure the slot is
+        // cleared so a later open can retry.
+        let state: State<AppState> = app_for_build.state();
+        state.settings_opening.store(false, Ordering::Release);
     });
     if let Err(e) = schedule {
         diagnostics::diag(&format!(
             "open_settings: failed to schedule window creation: {e}"
         ));
+        // The build closure that would have released the guard never runs, so
+        // release it here or every later open would be treated as a duplicate.
+        state.settings_opening.store(false, Ordering::Release);
     }
 }
 
@@ -857,6 +924,7 @@ fn main() {
                         .map(|p| run_timer::load(&p))
                         .unwrap_or_default(),
                 ),
+                settings_opening: AtomicBool::new(false),
             });
 
             // Global hotkeys from config. A failure here (combo grabbed by
@@ -1029,5 +1097,44 @@ mod tests {
     #[test]
     fn is_regular_file_false_for_a_missing_path() {
         assert!(!is_regular_file("/definitely/does/not/exist/Client.txt"));
+    }
+
+    #[test]
+    fn settings_open_focuses_when_the_window_already_exists() {
+        // An existing window always wins, and never touches the guard.
+        let opening = AtomicBool::new(false);
+        assert_eq!(
+            settings_open_action(true, &opening),
+            SettingsOpen::FocusExisting
+        );
+        assert!(!opening.load(Ordering::Acquire));
+
+        let opening_stuck = AtomicBool::new(true);
+        assert_eq!(
+            settings_open_action(true, &opening_stuck),
+            SettingsOpen::FocusExisting
+        );
+        assert!(opening_stuck.load(Ordering::Acquire));
+    }
+
+    #[test]
+    fn settings_open_builds_once_then_dedupes_until_released() {
+        // First request with no window and a free guard: build, and the
+        // guard is now claimed.
+        let opening = AtomicBool::new(false);
+        assert_eq!(settings_open_action(false, &opening), SettingsOpen::Build);
+        assert!(opening.load(Ordering::Acquire));
+
+        // A rapid second request (e.g. the global shortcut auto-repeating)
+        // while the build is still in flight is ignored — no second build.
+        assert_eq!(
+            settings_open_action(false, &opening),
+            SettingsOpen::AlreadyOpening
+        );
+
+        // Once the build finishes and releases the guard, a later open can
+        // build again (e.g. the user closed the window and reopened it).
+        opening.store(false, Ordering::Release);
+        assert_eq!(settings_open_action(false, &opening), SettingsOpen::Build);
     }
 }
