@@ -20,10 +20,10 @@
     {
       "text": "Note: Static layout, direction depends on which side you want to do first. The Grand Promenade is on the left, The Quay on the right. This guide will go left first.",
       "audit": {
-        "status": "unaudited",
+        "status": "corrected",
         "first_verified_patch": null,
         "last_verified_patch": null,
-        "correction": null
+        "correction": "Static layout: Grand Promenade is left, The Quay is right. The route goes right to The Quay (via Doedre's Cesspool); Grand Promenade is optional."
       }
     },
     {

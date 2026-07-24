@@ -10,10 +10,10 @@
     {
       "text": "Note: There is a trial here, and ther Wings of Vastiri quest, there is also a way to the Yugul god fight (2), but I would suggest doing this later. The exit is always on the right side.",
       "audit": {
-        "status": "unaudited",
+        "status": "corrected",
         "first_verified_patch": null,
         "last_verified_patch": null,
-        "correction": null
+        "correction": "Trial, the Wings of Vastiri quest, and a path to Yugul are here (do Yugul later). Head down to the High Gardens exit."
       }
     }
   ],

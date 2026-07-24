@@ -20,10 +20,10 @@
     {
       "text": "Note: Go top right to find the arena with Solaris and Lunaris, capped fire and cold resistance is recommended.",
       "audit": {
-        "status": "unaudited",
+        "status": "corrected",
         "first_verified_patch": null,
         "last_verified_patch": null,
-        "correction": null
+        "correction": "Go bottom-right to the Sky Shrine arena with Solaris & Lunaris; cap fire and cold resistance."
       }
     }
   ],

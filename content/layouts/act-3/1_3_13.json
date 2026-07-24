@@ -10,10 +10,10 @@
     {
       "text": "Note: First image is to Lunaris, second to The Sceptre of God.",
       "audit": {
-        "status": "unaudited",
+        "status": "corrected",
         "first_verified_patch": null,
         "last_verified_patch": null,
-        "correction": null
+        "correction": "First image is to Lunaris, second to The Imperial Gardens."
       }
     }
   ],
