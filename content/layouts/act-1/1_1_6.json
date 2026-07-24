@@ -10,10 +10,10 @@
     {
       "text": "Note: Run top right and free Navali.",
       "audit": {
-        "status": "unaudited",
+        "status": "corrected",
         "first_verified_patch": null,
-        "last_verified_patch": null,
-        "correction": null
+        "last_verified_patch": "3.17.0",
+        "correction": "No side objective here — continue to the exit (toward The Lower Prison). The old \"free Navali\" step was removed from the game in 3.17."
       }
     }
   ],
