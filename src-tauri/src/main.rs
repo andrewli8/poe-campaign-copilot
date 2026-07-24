@@ -560,6 +560,13 @@ fn set_overlay_height(app: tauri::AppHandle, height: f64) -> Result<(), String> 
         diagnostics::diag(&msg);
         return Err(msg);
     }
+    // Whole logical pixels only, rounded UP (mirrors clampOverlayHeight in
+    // src/overlayHeight.ts): a fractional height rounds through the DPI
+    // scale to a physical size that can land a fraction of a pixel SHORT
+    // of the content, overflowing the document. On Windows that grows a
+    // layout-consuming scrollbar whose reflow re-fires the frontend's
+    // ResizeObserver — a sustained window-resize loop over the game.
+    let height = height.ceil();
     let Some(win) = app.get_webview_window("main") else {
         return Ok(());
     };
@@ -1179,4 +1186,5 @@ mod tests {
         opening.store(false, Ordering::Release);
         assert_eq!(settings_open_action(false, &opening), SettingsOpen::Build);
     }
+
 }
