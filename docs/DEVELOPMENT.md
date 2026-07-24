@@ -1,19 +1,28 @@
 # Development
 
 PoE Campaign Copilot is a Rust workspace plus a Tauri 2 frontend. It is
-built on macOS and validated on Windows in CI.
+developed on macOS; the release pipeline builds the Windows installer and the
+Linux AppImage.
 
 ## Build from source
 
 Install these three tools once:
 
-1. **Rust** from [rustup.rs](https://rustup.rs). Accept the default MSVC
-   toolchain. If it asks for the Visual Studio C++ Build Tools, let it
-   install them.
+1. **Rust** from [rustup.rs](https://rustup.rs). On Windows, accept the
+   default MSVC toolchain; if it asks for the Visual Studio C++ Build Tools,
+   let it install them.
 2. **Node.js 20 or newer** from [nodejs.org](https://nodejs.org).
 3. **Git** from [git-scm.com](https://git-scm.com).
 
-Then, in a terminal (PowerShell is fine):
+On **Linux**, also install the system libraries Tauri needs (Debian/Ubuntu
+shown; use your distro's equivalents on Fedora/Arch):
+
+    sudo apt update
+    sudo apt install libwebkit2gtk-4.1-dev build-essential curl wget file \
+      libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev \
+      patchelf xdg-utils
+
+Then, in a terminal (PowerShell is fine on Windows):
 
     git clone https://github.com/andrewli8/poe-campaign-copilot.git
     cd poe-campaign-copilot
@@ -32,10 +41,11 @@ never written to the config file.
 ## Testing status
 
 The overlay has been developed and tested primarily on macOS with simulated
-sessions, and the Windows build compiles clean in CI. Real-game behavior on
-Windows — click-through over the game window, focus handling, and log-line
-formats we haven't seen — is the area most in need of testing. If something
-looks wrong, the terminal you launched from usually says why.
+sessions, and the Windows and Linux builds compile clean in CI. Real-game
+behavior — click-through over the game window, focus handling, global hotkeys
+under XWayland on Linux, and log-line formats we haven't seen — is the area
+most in need of testing. If something looks wrong, the terminal you launched
+from usually says why.
 
 ## Tests
 

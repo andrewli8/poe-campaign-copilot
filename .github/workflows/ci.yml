@@ -13,10 +13,27 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, windows-latest]
+        os: [macos-latest, windows-latest, ubuntu-22.04]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+      # The workspace's app crate (poe-copilot-app) is a Tauri app, so clippy
+      # and the workspace test build need webkitgtk + friends on Linux. macOS
+      # and Windows get their webview from the system (WebKit / WebView2).
+      - name: Install Linux build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
@@ -29,10 +46,24 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, windows-latest]
+        os: [macos-latest, windows-latest, ubuntu-22.04]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+      - name: Install Linux build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -41,4 +72,80 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: npm ci
       - run: npm run build
+      # On Linux this is the first place the `#[cfg(target_os = "linux")]`
+      # GDK_BACKEND block in main.rs actually gets compiled + clippy'd.
       - run: cargo check -p poe-copilot-app
+
+  # Builds the real AppImage and headlessly launches it, so packaging and
+  # Linux platform init (GTK / WebKitGTK / XWayland / tray / window / setup)
+  # are exercised on every push — the closest we get to "it runs on Linux"
+  # without a Linux device. Pure-logic correctness is covered by the `rust`
+  # job's cross-platform tests; this job is specifically about the Linux
+  # runtime surface.
+  linux-smoke:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Linux build + headless-runtime dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            xdg-utils \
+            xvfb \
+            dbus-x11
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: npm ci
+      # Build the AppImage exactly as the release does, but UNSIGNED: the
+      # `--config` override turns off createUpdaterArtifacts so this smoke build
+      # needs no signing secret (keeps the key off CI runners and lets fork PRs
+      # build too). If this step fails, packaging is broken — a required signal.
+      - name: Build AppImage (unsigned)
+        run: npm run tauri build -- --bundles appimage --config '{"bundle":{"createUpdaterArtifacts":false}}'
+      # Launch the shipped AppImage under a virtual X server + session bus and
+      # assert it survives startup (a crash/panic in Linux init would exit the
+      # process). Required: observed green — the app reaches setup() and logs
+      # "overlay will wait for Settings" after the tray/window/webview build, so
+      # a regression that crashes Linux startup should block the merge.
+      - name: Headless launch smoke test
+        run: |
+          set -uo pipefail
+          app="$(find target/release/bundle/appimage -name '*.AppImage' | head -n1)"
+          if [ -z "$app" ]; then
+            echo "::error::no AppImage produced to smoke-test"
+            exit 1
+          fi
+          echo "Smoke-testing: $app"
+          # APPIMAGE_EXTRACT_AND_RUN avoids needing FUSE on the runner. xvfb
+          # gives an X11 display (which GDK_BACKEND=x11 targets); dbus-run-session
+          # gives a session bus for the tray/appindicator.
+          export APPIMAGE_EXTRACT_AND_RUN=1
+          xvfb-run -a dbus-run-session -- "$app" > app.log 2>&1 &
+          pid=$!
+          # Enough time for window + webview + tray + setup() to run.
+          sleep 20
+          if ! kill -0 "$pid" 2>/dev/null; then
+            echo "::error::app exited during startup — likely a crash/panic on Linux init"
+            echo "----- captured output -----"
+            cat app.log || true
+            exit 1
+          fi
+          echo "App still alive after startup — Linux runtime init OK. Shutting down."
+          kill "$pid" 2>/dev/null || true
+          wait "$pid" 2>/dev/null || true
+          echo "----- captured output -----"
+          cat app.log || true

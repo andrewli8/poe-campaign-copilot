@@ -892,6 +892,21 @@ fn report_bug_impl(app: &tauri::AppHandle) {
 }
 
 fn main() {
+    // The overlay relies on X11-style windowing (transparency, always-on-top,
+    // skip-taskbar) and X11 global-shortcut grabs, none of which webkitgtk or
+    // `tauri-plugin-global-shortcut` support under a native Wayland session.
+    // Forcing the GTK backend to x11 routes us through XWayland (present on
+    // virtually every desktop), so the overlay behaves the same as on X11.
+    // Must run before any GTK init (i.e. before the builder), and while still
+    // single-threaded — `set_var` is `unsafe` under this crate's Rust 2024
+    // edition. We do NOT honor a pre-set GDK_BACKEND: a Wayland backend here
+    // silently breaks the overlay, so x11 is not negotiable.
+    #[cfg(target_os = "linux")]
+    // SAFETY: called at the very start of `main`, before any threads spawn.
+    unsafe {
+        std::env::set_var("GDK_BACKEND", "x11");
+    }
+
     diagnostics::install_panic_hook();
     tauri::Builder::default()
         // Position-only: persisting SIZE would let a relaunch pick up the
