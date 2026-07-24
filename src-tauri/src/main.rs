@@ -1,5 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod bug_report;
 mod config;
 mod diagnostics;
 mod hotkeys;
@@ -816,17 +817,21 @@ fn open_logs_impl(app: &tauri::AppHandle) {
     }
 }
 
-/// GitHub Issues page opened by the tray "Report a bug" item. Targets the
-/// bug-report issue form (`.github/ISSUE_TEMPLATE/bug_report.yml`) so the user
-/// lands on a structured form rather than a blank issue.
-const REPORT_BUG_URL: &str =
-    "https://github.com/andrewli8/poe-campaign-copilot/issues/new?template=bug_report.yml";
-
-/// Opens the bug-report page in the user's default browser (tray "Report a
-/// bug" item). Pairs with "Open logs" so a reporter can attach diagnostics.
+/// Opens the bug-report issue form in the user's default browser (tray
+/// "Report a bug" item), with the newest diagnostics-log lines prefilled
+/// into the form's free-text field (see `bug_report::bug_report_url`).
+/// The browser page is the only place that data goes — nothing is
+/// transmitted until the user reviews the form and submits it on GitHub.
+/// A missing/empty log degrades to the plain, unprefilled form. "Open
+/// logs" remains the path for attaching the FULL file when the tail
+/// isn't enough.
 fn report_bug_impl(app: &tauri::AppHandle) {
-    if let Err(e) = app.opener().open_url(REPORT_BUG_URL, None::<&str>) {
-        diagnostics::diag(&format!("report-bug: failed to open {REPORT_BUG_URL}: {e}"));
+    let version = app.package_info().version.to_string();
+    let log_tail = diagnostics::log_path(app)
+        .and_then(|path| diagnostics::tail(&path, bug_report::LOG_TAIL_BYTES));
+    let url = bug_report::bug_report_url(&version, log_tail.as_deref());
+    if let Err(e) = app.opener().open_url(&url, None::<&str>) {
+        diagnostics::diag(&format!("report-bug: failed to open bug report page: {e}"));
     }
 }
 
