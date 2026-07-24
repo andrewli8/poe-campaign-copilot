@@ -91,19 +91,36 @@ run. Net Windows outcome is identical.
 
 ## Testing / verification
 
-- `cargo test --workspace` unchanged and green (the one runtime line is
-  `cfg(target_os = "linux")`-gated; no crate logic touched).
-- `cargo clippy -D warnings` must accept the new `unsafe` block.
+The author has no Linux device, so automated coverage is deliberately maximized
+(`.github/workflows/ci.yml`):
+
+- **`rust` + `app` jobs gain `ubuntu-22.04`** — `cargo fmt`/`clippy`/`test
+  --workspace` and `cargo check -p poe-copilot-app` now run on Linux every push.
+  This is the first place the `cfg(target_os = "linux")` GDK_BACKEND block is
+  actually compiled and clippy'd (previously never, off-tag).
+- **`linux-smoke` job** — builds the real AppImage (unsigned, via
+  `--config '{"bundle":{"createUpdaterArtifacts":false}}'` so no signing secret
+  reaches CI) and headlessly launches it under `xvfb-run` + `dbus-run-session`,
+  asserting the process survives startup. This exercises Linux packaging + the
+  GTK/WebKitGTK/XWayland/tray/window/`setup()` init surface — the closest
+  automated proxy for "it runs on Linux". The launch step is
+  `continue-on-error` until observed green on a few runs, then promoted to a
+  required check.
+- Pure-logic correctness (route engine, composer, session, …) is OS-independent
+  and already covered by the cross-platform `rust` test job.
 - Release workflow is dry-runnable via `workflow_dispatch` (build jobs run,
   publish is tag-gated).
-- **Manual, on real Linux hardware:** overlay transparency/click-through over
-  the game, global hotkeys under XWayland, and AppImage launch + in-place
-  update. Cannot be verified from a headless dev box.
+
+- **Still requires a human on real Linux hardware (cannot be automated):**
+  the overlay visually drawing over the game, click-through, focus handling, and
+  global hotkeys actually grabbing over PoE under XWayland. Realistic path: a
+  community beta tester.
 
 ## Risks / out of scope
 
 - **Global shortcuts under XWayland**: work in the large majority of setups; a
   few compositors restrict X11 grabs. The `GDK_BACKEND=x11` force is the best
   available mitigation.
-- **Out of scope:** `.deb`/`.rpm`, per-push Linux CI matrix, log-path
-  auto-detection, macOS packaging.
+- **Out of scope:** `.deb`/`.rpm`, log-path auto-detection, macOS packaging.
+  (A per-push Linux CI matrix + AppImage build + xvfb smoke test were added —
+  see Testing — because the author has no Linux device to test on.)
