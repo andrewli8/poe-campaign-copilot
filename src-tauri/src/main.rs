@@ -287,17 +287,22 @@ fn open_settings(app: tauri::AppHandle) {
 }
 
 /// Manual "Reset progress": drop all live run state back to a fresh start
-/// (route to Act 1, cleared reminders/level, waiting for the first zone),
-/// keeping the configured route/build. Wipes the session journal so a later
-/// launch can't restore the old progress, and pushes the fresh model to the
-/// overlay so it updates immediately. The running tailer keeps its file
-/// position and feeds the new character's zones into the reset pipeline.
+/// (route to Act 1, cleared reminders/level, run timer to 0:00, waiting for
+/// the first zone), keeping the configured route/build. Wipes the session
+/// journal so a later launch can't restore the old progress, and pushes the
+/// fresh model to the overlay so it updates immediately. The running tailer
+/// keeps its file position and feeds the new character's zones into the
+/// reset pipeline.
 #[tauri::command]
 fn reset_progress(app: tauri::AppHandle) {
     {
         let state: State<AppState> = app.state();
         state.pipeline.lock().unwrap().reset();
     }
+    // A fresh character gets a fresh run timer: reset it to 0:00 alongside
+    // the route. Reuses the tray/hotkey reset path (resets state, clears
+    // run_timer.json, emits "run-timer"); it no-ops if never started.
+    reset_run_timer_impl(&app);
     // Non-fatal: a reset that couldn't clear the journal has still reset the
     // live pipeline; the stale journal would only matter on a later launch.
     if let Some(journal_path) = journal::journal_path(&app)
@@ -310,6 +315,15 @@ fn reset_progress(app: tauri::AppHandle) {
         state.pipeline.lock().unwrap().current_model()
     };
     let _ = app.emit("overlay-model", &model);
+}
+
+/// Reset ONLY the run timer to 0:00 — a separate control from "Reset
+/// progress" (which resets the whole run, timer included). Mirrors the tray
+/// "Reset run timer" item, exposed as a command so the settings UI can offer
+/// it too. No-ops if the timer was never started.
+#[tauri::command]
+fn reset_run_timer(app: tauri::AppHandle) {
+    reset_run_timer_impl(&app);
 }
 
 /// Live opacity preview from the settings slider: clamps and broadcasts
@@ -849,6 +863,7 @@ fn main() {
             apply_settings,
             open_settings,
             reset_progress,
+            reset_run_timer,
             set_overlay_opacity,
             set_overlay_height,
             get_run_timer

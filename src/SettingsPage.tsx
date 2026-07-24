@@ -23,8 +23,11 @@ export interface SettingsPageProps {
   // Persist the given config. Called automatically as fields are committed
   // (there is no Save button) — see the per-field commit points below.
   onSave: (cfg: AppConfig) => void;
-  // Reset all campaign progress (route, reminders, level) to a fresh start.
+  // Reset all campaign progress (route, reminders, level, timer) to a fresh
+  // start.
   onReset: () => void;
+  // Reset only the run timer to 0:00, independent of campaign progress.
+  onResetTimer: () => void;
   saving: boolean;
   savedAt: number | null;
   // Live opacity preview: fired on every slider move with the fractional
@@ -59,6 +62,7 @@ export function SettingsPage({
   previewError,
   onSave,
   onReset,
+  onResetTimer,
   saving,
   savedAt,
   onOpacityPreview,
@@ -232,6 +236,11 @@ export function SettingsPage({
           />
           Show run timer on overlay
         </label>
+        <div className="run-timer-actions">
+          <button type="button" className="btn btn-secondary" onClick={onResetTimer}>
+            Reset run timer
+          </button>
+        </div>
       </section>
 
       <section className="settings-row">
