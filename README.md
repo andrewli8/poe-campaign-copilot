@@ -20,12 +20,37 @@ input simulation, no network while you play.
 
 Prefer to build from source? See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
+## Install (Linux)
+
+Linux ships as an [AppImage](https://appimage.org): one self-contained file,
+no install step and no package manager.
+
+1. Download the latest `poe-campaign-copilot-*.AppImage` from the
+   [releases page](https://github.com/andrewli8/poe-campaign-copilot/releases).
+2. Make it executable and run it:
+
+       chmod +x poe-campaign-copilot-*.AppImage
+       ./poe-campaign-copilot-*.AppImage
+
+   (Or, in a file manager: Properties → Permissions → "Allow executing file
+   as program", then double-click.)
+3. Updates install in place through the same in-app updater as Windows (see
+   [Updating](#updating)).
+
+The overlay needs X11-style windowing (transparency, always-on-top, global
+hotkeys), which native Wayland doesn't grant — so the app routes itself
+through XWayland automatically. It works on both X11 and Wayland sessions with
+no extra steps (XWayland ships with essentially every desktop).
+
 ## First-time setup
 
 1. Right-click the tray icon → **Settings**.
 2. **Browse** to your `Client.txt` log:
    - Steam — `…\steamapps\common\Path of Exile\logs\Client.txt`
    - Standalone — `…\Grinding Gear Games\Path of Exile\logs\Client.txt`
+   - Linux (Steam/Proton) — `~/.local/share/Steam/steamapps/common/Path of Exile/logs/Client.txt`
+     (PoE writes its log into the game's install dir even under Proton, not
+     into `compatdata`; browse to your Steam library folder if it's elsewhere).
 3. *(Optional)* paste a Path of Building share code — see [Settings](#settings).
 4. Click **Save**.
 

@@ -9,8 +9,14 @@ on:
 permissions:
   contents: write
 
+# Two platform build jobs each produce a signed bundle and upload it (plus its
+# .sig) as an INTERNAL CI artifact. A final tag-gated `release` job merges both
+# into ONE updater manifest (latest.json carries per-platform keys, so both
+# platforms MUST land in a single file) and publishes the GitHub release. The
+# build jobs run on every trigger (dispatch included) for compile coverage; only
+# the tag-gated `release` job publishes user-facing assets.
 jobs:
-  windows-installer:
+  build-windows:
     runs-on: windows-latest
     env:
       # Ed25519 updater signing key (Tauri v2 `createUpdaterArtifacts`). Consumed by
@@ -30,72 +36,132 @@ jobs:
       - run: npm ci
       - run: npm run tauri build
       # NOTE: this is a cargo workspace, so bundle output lands at the REPO-ROOT
-      # `target/release/bundle/nsis/`, not `src-tauri/target/...`. All globs below
-      # match that existing convention.
-      - name: Generate latest.json update manifest
-        if: startsWith(github.ref, 'refs/tags/')
-        shell: pwsh
-        run: |
-          # Tag ref name, e.g. "v0.1.2" -> version "0.1.2".
-          $tag = "${{ github.ref_name }}"
-          $version = $tag -replace '^v', ''
-
-          # Locate the signed installer + its minisign signature. Same glob root as
-          # the checksum step above (repo-root target/, workspace build output).
-          $exePath = Get-ChildItem -Path target/release/bundle/nsis/*.exe | Select-Object -First 1
-          $sigPath = Get-ChildItem -Path target/release/bundle/nsis/*.exe.sig | Select-Object -First 1
-
-          if (-not $exePath) { throw "No .exe found under target/release/bundle/nsis/" }
-          if (-not $sigPath) { throw "No .exe.sig found under target/release/bundle/nsis/ - was createUpdaterArtifacts/signing env set?" }
-
-          # Signature file content (minisign base64 text block) becomes the JSON
-          # "signature" string verbatim.
-          $signature = Get-Content -Path $sigPath.FullName -Raw
-
-          # IMPORTANT: the file on disk keeps the human-readable name with spaces,
-          # e.g. "PoE Campaign Copilot_0.1.2_x64-setup.exe". GitHub Releases replaces
-          # spaces with dots when it serves/publishes the asset download URL, e.g.
-          # "PoE.Campaign.Copilot_0.1.2_x64-setup.exe" (confirmed against the actual
-          # v0.1.1 published asset). The updater fetches this URL directly, so it
-          # MUST use the dot form, not the on-disk space form.
-          $assetName = $exePath.Name -replace ' ', '.'
-          $url = "https://github.com/andrewli8/poe-campaign-copilot/releases/download/$tag/$assetName"
-
-          $pubDate = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
-
-          $manifest = [PSCustomObject]@{
-            version   = $version
-            pub_date  = $pubDate
-            platforms = [PSCustomObject]@{
-              "windows-x86_64" = [PSCustomObject]@{
-                signature = $signature
-                url       = $url
-              }
-            }
-          }
-
-          $manifest | ConvertTo-Json -Depth 4 | Set-Content -Path latest.json -Encoding utf8NoBOM
-          Write-Host "Generated latest.json:"
-          Get-Content latest.json
+      # `target/release/bundle/nsis/`, not `src-tauri/target/...`.
       - uses: actions/upload-artifact@v4
         with:
-          name: poe-campaign-copilot-windows-setup
-          # Keeps the installer and its .sig as CI artifacts so a
-          # `workflow_dispatch` (untagged) build can be downloaded and
-          # test-installed before tagging — these are internal CI artifacts,
-          # not user-facing release assets.
+          name: windows-installer
+          # Installer + its .sig, kept as an INTERNAL CI artifact: the `release`
+          # job reads the .sig to embed its signature inline in latest.json, and
+          # an untagged `workflow_dispatch` build can be downloaded and
+          # test-installed before tagging. Only the .exe is published later.
           path: |
             target/release/bundle/nsis/*.exe
             target/release/bundle/nsis/*.exe.sig
+
+  build-linux:
+    # Pinned to 22.04 (NOT ubuntu-latest): the AppImage inherits the build
+    # host's glibc floor, so building on a newer base would raise the minimum
+    # glibc and break older systems. 22.04 is the oldest base that still ships
+    # WebKitGTK 4.1. (Per Tauri's AppImage build guidance.)
+    runs-on: ubuntu-22.04
+    env:
+      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            xdg-utils
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: npm ci
+      # `--bundles appimage` overrides the config's `targets: ["nsis"]` on this
+      # runner only, so the Windows config stays untouched. AppImage is the only
+      # Linux bundle Tauri's updater supports.
+      - run: npm run tauri build -- --bundles appimage
+      # Workspace build output lands at the REPO-ROOT target/, same convention
+      # as the Windows job's nsis path.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-appimage
+          # AppImage + its .sig, kept as an INTERNAL CI artifact (same rationale
+          # as the Windows job). Only the .AppImage is published later.
+          path: |
+            target/release/bundle/appimage/*.AppImage
+            target/release/bundle/appimage/*.AppImage.sig
+
+  release:
+    needs: [build-windows, build-linux]
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist-artifacts
+      - name: Generate merged latest.json update manifest
+        run: |
+          set -euo pipefail
+
+          tag="${GITHUB_REF_NAME}"          # e.g. "v0.1.10"
+          version="${tag#v}"                # -> "0.1.10"
+          pub_date="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+          # Locate the signed artifacts. `-name '*.AppImage'` does not match the
+          # `.AppImage.sig` sidecar (it ends in .sig), and `-name '*-setup.exe'`
+          # does not match `.exe.sig`, so these stay unambiguous.
+          exe="$(find dist-artifacts -name '*-setup.exe'        | head -n1)"
+          win_sig="$(find dist-artifacts -name '*-setup.exe.sig' | head -n1)"
+          app="$(find dist-artifacts -name '*.AppImage'         | head -n1)"
+          lin_sig="$(find dist-artifacts -name '*.AppImage.sig'  | head -n1)"
+
+          for f in "$exe" "$win_sig" "$app" "$lin_sig"; do
+            if [ -z "$f" ] || [ ! -f "$f" ]; then
+              echo "::error::Missing required release artifact (exe/AppImage or its .sig) - was signing configured?" >&2
+              exit 1
+            fi
+          done
+
+          # GitHub Releases serves asset download URLs with spaces replaced by
+          # dots (e.g. "PoE Campaign Copilot_..." -> "PoE.Campaign.Copilot_..."),
+          # confirmed against published assets. The updater fetches these URLs
+          # directly, so the manifest MUST use the dot form.
+          base="https://github.com/andrewli8/poe-campaign-copilot/releases/download/${tag}"
+          win_url="${base}/$(basename "$exe" | tr ' ' '.')"
+          lin_url="${base}/$(basename "$app" | tr ' ' '.')"
+
+          # --rawfile reads each minisign signature block verbatim (it may span
+          # multiple lines) into the JSON string.
+          jq -n \
+            --arg version "$version" \
+            --arg pub_date "$pub_date" \
+            --rawfile win_sig "$win_sig" \
+            --arg win_url "$win_url" \
+            --rawfile lin_sig "$lin_sig" \
+            --arg lin_url "$lin_url" \
+            '{
+              version: $version,
+              pub_date: $pub_date,
+              platforms: {
+                "windows-x86_64": { signature: $win_sig, url: $win_url },
+                "linux-x86_64":   { signature: $lin_sig, url: $lin_url }
+              }
+            }' > latest.json
+
+          echo "Generated latest.json:"
+          cat latest.json
       - name: Publish GitHub release
-        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
-        # User-facing release assets are just the installer and the updater
-        # manifest. `latest.json` is required (the in-app updater's endpoint
-        # points at it) and embeds the installer's Ed25519 signature inline,
-        # so the standalone .exe.sig is not published; the .sha256.txt
-        # checksum was consumed by nothing and is no longer generated.
+        # User-facing release assets: the two installers/bundles plus the
+        # updater manifest. `latest.json` embeds each bundle's Ed25519 signature
+        # inline, so the standalone .sig sidecars are not published.
         with:
           files: |
-            target/release/bundle/nsis/*.exe
+            dist-artifacts/windows-installer/*.exe
+            dist-artifacts/linux-appimage/*.AppImage
             latest.json
