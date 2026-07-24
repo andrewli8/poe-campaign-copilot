@@ -29,6 +29,7 @@ function renderPage(overrides: Partial<SettingsPageProps> = {}) {
     previewError: null,
     onSave: () => {},
     onReset: () => {},
+    onResetTimer: () => {},
     saving: false,
     savedAt: null,
     ...overrides,
@@ -249,6 +250,16 @@ describe("SettingsPage", () => {
   it("renders a hotkey input for the run timer", () => {
     renderPage();
     expect(screen.getByLabelText(/start\/stop run timer/i)).toHaveValue("alt+shift+t");
+  });
+
+  it("resets only the run timer via its own button, without touching progress", () => {
+    const onResetTimer = vi.fn();
+    const onReset = vi.fn();
+    renderPage({ onResetTimer, onReset });
+    fireEvent.click(screen.getByRole("button", { name: /^reset run timer$/i }));
+    expect(onResetTimer).toHaveBeenCalledTimes(1);
+    // The campaign "Reset progress" flow is untouched by the timer reset.
+    expect(onReset).not.toHaveBeenCalled();
   });
 
   it("requires confirmation before resetting progress", () => {

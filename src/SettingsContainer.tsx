@@ -62,6 +62,14 @@ export function SettingsContainer() {
     }
   }
 
+  async function handleResetTimer() {
+    try {
+      await invoke("reset_run_timer");
+    } catch (e) {
+      console.error("reset_run_timer failed:", e);
+    }
+  }
+
   async function handleImportPreview(code: string) {
     setPreviewError(null);
     setPreview(null);
@@ -136,6 +144,7 @@ export function SettingsContainer() {
       previewError={previewError}
       onSave={handleSave}
       onReset={handleReset}
+      onResetTimer={handleResetTimer}
       saving={saving}
       savedAt={savedAt}
       onOpacityPreview={handleOpacityPreview}

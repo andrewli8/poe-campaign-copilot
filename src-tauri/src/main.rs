@@ -317,6 +317,15 @@ fn reset_progress(app: tauri::AppHandle) {
     let _ = app.emit("overlay-model", &model);
 }
 
+/// Reset ONLY the run timer to 0:00 — a separate control from "Reset
+/// progress" (which resets the whole run, timer included). Mirrors the tray
+/// "Reset run timer" item, exposed as a command so the settings UI can offer
+/// it too. No-ops if the timer was never started.
+#[tauri::command]
+fn reset_run_timer(app: tauri::AppHandle) {
+    reset_run_timer_impl(&app);
+}
+
 /// Live opacity preview from the settings slider: clamps and broadcasts
 /// the value (the overlay window listens for "overlay-opacity") WITHOUT
 /// persisting it — persistence happens on Save via `apply_settings`.
@@ -854,6 +863,7 @@ fn main() {
             apply_settings,
             open_settings,
             reset_progress,
+            reset_run_timer,
             set_overlay_opacity,
             set_overlay_height,
             get_run_timer
