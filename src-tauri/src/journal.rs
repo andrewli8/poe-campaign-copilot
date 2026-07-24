@@ -445,6 +445,34 @@ mod tests {
     }
 
     #[test]
+    fn reset_returns_pipeline_to_a_fresh_waiting_state() {
+        // The manual "Reset progress" action drops all live session state
+        // back to a fresh start, keeping config-derived data (route, build,
+        // layouts). After it, the overlay waits for the new character's
+        // first zone and the route is no longer complete.
+        let mut p = Pipeline::new(Variant::LeagueStart, None).unwrap();
+        let journal: Vec<String> = [GEN_STRAND, ENTER_STRAND, LEVEL_UP]
+            .iter()
+            .map(|s| s.to_string())
+            .collect();
+        replay_into(&mut p, &journal);
+        assert!(
+            !p.current_model().waiting_for_log,
+            "pipeline made progress before reset"
+        );
+
+        p.reset();
+
+        let m = p.current_model();
+        assert!(
+            m.waiting_for_log,
+            "reset returns to waiting for the first zone"
+        );
+        assert!(!m.overlay.route_complete, "reset clears route completion");
+        assert_eq!(m.overlay.act, 1, "route is back at act 1");
+    }
+
+    #[test]
     fn replay_into_survives_garbage_lines() {
         // A torn write or hand-edited journal must degrade per-line, never
         // panic or poison the rest of the replay.

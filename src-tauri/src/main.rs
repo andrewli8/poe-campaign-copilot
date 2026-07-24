@@ -286,6 +286,32 @@ fn open_settings(app: tauri::AppHandle) {
     open_settings_window(&app);
 }
 
+/// Manual "Reset progress": drop all live run state back to a fresh start
+/// (route to Act 1, cleared reminders/level, waiting for the first zone),
+/// keeping the configured route/build. Wipes the session journal so a later
+/// launch can't restore the old progress, and pushes the fresh model to the
+/// overlay so it updates immediately. The running tailer keeps its file
+/// position and feeds the new character's zones into the reset pipeline.
+#[tauri::command]
+fn reset_progress(app: tauri::AppHandle) {
+    {
+        let state: State<AppState> = app.state();
+        state.pipeline.lock().unwrap().reset();
+    }
+    // Non-fatal: a reset that couldn't clear the journal has still reset the
+    // live pipeline; the stale journal would only matter on a later launch.
+    if let Some(journal_path) = journal::journal_path(&app)
+        && let Err(e) = journal::clear(&journal_path)
+    {
+        diagnostics::diag(&format!("reset_progress: failed to clear journal: {e}"));
+    }
+    let model = {
+        let state: State<AppState> = app.state();
+        state.pipeline.lock().unwrap().current_model()
+    };
+    let _ = app.emit("overlay-model", &model);
+}
+
 /// Live opacity preview from the settings slider: clamps and broadcasts
 /// the value (the overlay window listens for "overlay-opacity") WITHOUT
 /// persisting it — persistence happens on Save via `apply_settings`.
@@ -822,6 +848,7 @@ fn main() {
             import_pob,
             apply_settings,
             open_settings,
+            reset_progress,
             set_overlay_opacity,
             set_overlay_height,
             get_run_timer
