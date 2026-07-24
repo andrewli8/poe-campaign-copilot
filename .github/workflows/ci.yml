@@ -118,10 +118,10 @@ jobs:
         run: npm run tauri build -- --bundles appimage --config '{"bundle":{"createUpdaterArtifacts":false}}'
       # Launch the shipped AppImage under a virtual X server + session bus and
       # assert it survives startup (a crash/panic in Linux init would exit the
-      # process). Marked continue-on-error until it's observed green on a few
-      # runs — promote it to a required check by removing that line once trusted.
+      # process). Required: observed green — the app reaches setup() and logs
+      # "overlay will wait for Settings" after the tray/window/webview build, so
+      # a regression that crashes Linux startup should block the merge.
       - name: Headless launch smoke test
-        continue-on-error: true
         run: |
           set -uo pipefail
           app="$(find target/release/bundle/appimage -name '*.AppImage' | head -n1)"

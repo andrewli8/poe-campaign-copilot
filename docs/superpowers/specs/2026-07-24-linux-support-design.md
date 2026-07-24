@@ -103,9 +103,10 @@ The author has no Linux device, so automated coverage is deliberately maximized
   reaches CI) and headlessly launches it under `xvfb-run` + `dbus-run-session`,
   asserting the process survives startup. This exercises Linux packaging + the
   GTK/WebKitGTK/XWayland/tray/window/`setup()` init surface — the closest
-  automated proxy for "it runs on Linux". The launch step is
-  `continue-on-error` until observed green on a few runs, then promoted to a
-  required check.
+  automated proxy for "it runs on Linux". Observed green on GitHub's Linux
+  runners (the app reaches `setup()` and logs "overlay will wait for Settings"
+  after building the tray/window/webview), so the launch step is a required
+  check.
 - Pure-logic correctness (route engine, composer, session, …) is OS-independent
   and already covered by the cross-platform `rust` test job.
 - Release workflow is dry-runnable via `workflow_dispatch` (build jobs run,
