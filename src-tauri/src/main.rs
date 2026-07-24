@@ -287,17 +287,22 @@ fn open_settings(app: tauri::AppHandle) {
 }
 
 /// Manual "Reset progress": drop all live run state back to a fresh start
-/// (route to Act 1, cleared reminders/level, waiting for the first zone),
-/// keeping the configured route/build. Wipes the session journal so a later
-/// launch can't restore the old progress, and pushes the fresh model to the
-/// overlay so it updates immediately. The running tailer keeps its file
-/// position and feeds the new character's zones into the reset pipeline.
+/// (route to Act 1, cleared reminders/level, run timer to 0:00, waiting for
+/// the first zone), keeping the configured route/build. Wipes the session
+/// journal so a later launch can't restore the old progress, and pushes the
+/// fresh model to the overlay so it updates immediately. The running tailer
+/// keeps its file position and feeds the new character's zones into the
+/// reset pipeline.
 #[tauri::command]
 fn reset_progress(app: tauri::AppHandle) {
     {
         let state: State<AppState> = app.state();
         state.pipeline.lock().unwrap().reset();
     }
+    // A fresh character gets a fresh run timer: reset it to 0:00 alongside
+    // the route. Reuses the tray/hotkey reset path (resets state, clears
+    // run_timer.json, emits "run-timer"); it no-ops if never started.
+    reset_run_timer_impl(&app);
     // Non-fatal: a reset that couldn't clear the journal has still reset the
     // live pipeline; the stale journal would only matter on a later launch.
     if let Some(journal_path) = journal::journal_path(&app)
