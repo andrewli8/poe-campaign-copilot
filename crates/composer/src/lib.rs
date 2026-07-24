@@ -461,6 +461,38 @@ mod tests {
     }
 
     #[test]
+    fn a_new_character_clears_campaign_complete() {
+        // Issue #8: after a completed route (e.g. a high-level character),
+        // a new character entering The Twilight Strand (a fresh instance of
+        // the route's first area) must clear "Campaign complete" in the
+        // composed overlay, not stay stuck.
+        let (mut engine, tasks, layouts, areas) = fixture();
+        let contexts: Vec<String> = {
+            let mut cs = Vec::new();
+            for s in engine.steps() {
+                if cs.last() != Some(&s.area_context) {
+                    cs.push(s.area_context.clone());
+                }
+            }
+            cs
+        };
+        for c in &contexts {
+            engine.on_area_entered(c, true);
+        }
+        assert!(engine.is_complete());
+
+        // New character starts: fresh instance of the first area.
+        let first = engine.steps()[0].area_context.clone();
+        engine.on_area_entered(&first, true);
+
+        let m = compose(&engine, &tasks, &layouts, &areas, None);
+        assert!(!m.route_complete, "a new character resets route completion");
+        assert_ne!(m.zone_name, "Campaign complete");
+        assert_eq!(m.act, 1, "restarted at act 1");
+        assert_eq!(m.area_id, first);
+    }
+
+    #[test]
     fn build_reminders_are_town_gated_and_level_windowed() {
         let (mut engine, tasks, layouts, areas) = fixture();
         let plan = pob_import::LevelingBuildPlan {
