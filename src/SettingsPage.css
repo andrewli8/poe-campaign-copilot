@@ -116,6 +116,32 @@ body,
   background: #e8c987;
 }
 
+.btn-danger {
+  background: rgba(224, 120, 90, 0.16);
+  border-color: rgba(224, 120, 90, 0.5);
+  color: #e0785a;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: rgba(224, 120, 90, 0.28);
+}
+
+.reset-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.reset-warning {
+  font-size: 12px;
+  color: #e0785a;
+}
+
+.reset-confirm-actions {
+  display: flex;
+  gap: 8px;
+}
+
 .preview-card {
   margin-top: 10px;
   padding: 10px 12px;
@@ -251,6 +277,20 @@ body,
   font-size: 12px;
   color: #6fbf73;
   font-weight: 600;
+}
+
+.autosave-status {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.autosave-status.saved {
+  color: #6fbf73;
+}
+
+.autosave-status.muted {
+  color: #8a8072;
+  font-weight: 400;
 }
 
 .checkbox-row {

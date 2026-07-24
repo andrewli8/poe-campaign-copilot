@@ -1,8 +1,9 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import type { ReactElement } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { DEFAULT_HOTKEYS } from "./hotkeys";
-import { SettingsPage } from "./SettingsPage";
-import type { AppConfig, PobSummary } from "./types";
+import { SettingsPage, type SettingsPageProps } from "./SettingsPage";
+import type { AppConfig } from "./types";
 
 function config(overrides: Partial<AppConfig> = {}): AppConfig {
   return {
@@ -16,22 +17,29 @@ function config(overrides: Partial<AppConfig> = {}): AppConfig {
   };
 }
 
-function noop() {}
+// Renders SettingsPage with sane defaults for every prop; tests override only
+// what they exercise. Returns the props (with any spies the test passed) for
+// convenient assertions.
+function renderPage(overrides: Partial<SettingsPageProps> = {}) {
+  const props: SettingsPageProps = {
+    config: config(),
+    onPick: () => Promise.resolve(null),
+    onImportPreview: () => {},
+    preview: null,
+    previewError: null,
+    onSave: () => {},
+    onReset: () => {},
+    saving: false,
+    savedAt: null,
+    ...overrides,
+  };
+  render(<SettingsPage {...props} /> as ReactElement);
+  return props;
+}
 
 describe("SettingsPage", () => {
   it("renders the current config values", () => {
-    render(
-      <SettingsPage
-        config={config()}
-        onPick={noop}
-        onImportPreview={noop}
-        preview={null}
-        previewError={null}
-        onSave={noop}
-        saving={false}
-        savedAt={null}
-      />,
-    );
+    renderPage();
     expect(
       screen.getByText("/Users/exile/Documents/My Games/Path of Exile/Client.txt"),
     ).toBeInTheDocument();
@@ -39,53 +47,33 @@ describe("SettingsPage", () => {
   });
 
   it("shows 'not set' when no log path is configured", () => {
-    render(
-      <SettingsPage
-        config={config({ client_log_path: null })}
-        onPick={noop}
-        onImportPreview={noop}
-        preview={null}
-        previewError={null}
-        onSave={noop}
-        saving={false}
-        savedAt={null}
-      />,
-    );
+    renderPage({ config: config({ client_log_path: null }) });
     expect(screen.getByText(/not set/i)).toBeInTheDocument();
   });
 
   it("calls onPick when Browse is clicked", () => {
-    const onPick = vi.fn();
-    render(
-      <SettingsPage
-        config={config()}
-        onPick={onPick}
-        onImportPreview={noop}
-        preview={null}
-        previewError={null}
-        onSave={noop}
-        saving={false}
-        savedAt={null}
-      />,
-    );
+    const onPick = vi.fn().mockResolvedValue(null);
+    renderPage({ onPick });
     fireEvent.click(screen.getByRole("button", { name: /browse/i }));
     expect(onPick).toHaveBeenCalledTimes(1);
   });
 
+  it("autosaves the picked log path", async () => {
+    const onSave = vi.fn();
+    const onPick = vi.fn().mockResolvedValue("/new/Client.txt");
+    renderPage({ onPick, onSave });
+    fireEvent.click(screen.getByRole("button", { name: /browse/i }));
+    // handlePick awaits onPick before committing.
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({ client_log_path: "/new/Client.txt" }),
+    );
+  });
+
   it("calls onImportPreview with the textarea contents when previewing", () => {
     const onImportPreview = vi.fn();
-    render(
-      <SettingsPage
-        config={config()}
-        onPick={noop}
-        onImportPreview={onImportPreview}
-        preview={null}
-        previewError={null}
-        onSave={noop}
-        saving={false}
-        savedAt={null}
-      />,
-    );
+    renderPage({ onImportPreview });
     fireEvent.change(screen.getByLabelText(/path of building/i), {
       target: { value: "https://pobb.in/abc123" },
     });
@@ -94,117 +82,66 @@ describe("SettingsPage", () => {
   });
 
   it("renders the preview card with class, ascendancy, milestone count, and a reliability badge", () => {
-    const preview: PobSummary = {
-      class_name: "Witch",
-      ascend_name: "Necromancer",
-      milestone_count: 5,
-      reliability: "structured",
-    };
-    render(
-      <SettingsPage
-        config={config()}
-        onPick={noop}
-        onImportPreview={noop}
-        preview={preview}
-        previewError={null}
-        onSave={noop}
-        saving={false}
-        savedAt={null}
-      />,
-    );
+    renderPage({
+      preview: {
+        class_name: "Witch",
+        ascend_name: "Necromancer",
+        milestone_count: 5,
+        reliability: "structured",
+      },
+    });
     expect(screen.getByText(/witch/i)).toBeInTheDocument();
     expect(screen.getByText(/necromancer/i)).toBeInTheDocument();
     expect(screen.getByText(/5/)).toBeInTheDocument();
-    const badge = screen.getByText(/structured/i);
-    expect(badge).toHaveClass("reliability-structured");
+    expect(screen.getByText(/structured/i)).toHaveClass("reliability-structured");
   });
 
   it("renders unsupported reliability with the muted badge class", () => {
-    const preview: PobSummary = {
-      class_name: "Marauder",
-      ascend_name: null,
-      milestone_count: 0,
-      reliability: "unsupported",
-    };
-    render(
-      <SettingsPage
-        config={config()}
-        onPick={noop}
-        onImportPreview={noop}
-        preview={preview}
-        previewError={null}
-        onSave={noop}
-        saving={false}
-        savedAt={null}
-      />,
-    );
-    const badge = screen.getByText(/unsupported/i);
-    expect(badge).toHaveClass("reliability-unsupported");
+    renderPage({
+      preview: {
+        class_name: "Marauder",
+        ascend_name: null,
+        milestone_count: 0,
+        reliability: "unsupported",
+      },
+    });
+    expect(screen.getByText(/unsupported/i)).toHaveClass("reliability-unsupported");
   });
 
   it("renders a preview error instead of a preview card", () => {
-    render(
-      <SettingsPage
-        config={config()}
-        onPick={noop}
-        onImportPreview={noop}
-        preview={null}
-        previewError="invalid share code"
-        onSave={noop}
-        saving={false}
-        savedAt={null}
-      />,
-    );
+    renderPage({ previewError: "invalid share code" });
     expect(screen.getByText(/invalid share code/i)).toBeInTheDocument();
   });
 
-  it("passes the original config through to onSave untouched when nothing is edited", () => {
-    // Regression guard for the "seeded from a placeholder config" bug: a
-    // populated, non-default config (variant "standard", a real pob_code)
-    // rendered once and Saved with no edits must round-trip exactly —
-    // proving the form's initial state comes from the `config` prop's
-    // actual values, not from defaults that happen to get overwritten
-    // later.
+  it("round-trips the config unchanged when a field is committed with no edit", () => {
+    // Blurring the PoB field with no change still autosaves — the full config
+    // must round-trip exactly (proving the form's state came from the actual
+    // `config` prop values, not overwritten defaults).
     const onSave = vi.fn();
     const populated = config({ variant: "standard", pob_code: "https://pobb.in/existing" });
-    render(
-      <SettingsPage
-        config={populated}
-        onPick={noop}
-        onImportPreview={noop}
-        preview={null}
-        previewError={null}
-        onSave={onSave}
-        saving={false}
-        savedAt={null}
-      />,
-    );
-    fireEvent.click(screen.getByRole("button", { name: /^save$/i }));
+    renderPage({ config: populated, onSave });
+    fireEvent.blur(screen.getByLabelText(/path of building/i));
     expect(onSave).toHaveBeenCalledWith(populated);
   });
 
-  it("passes the edited variant and PoB text to onSave", () => {
+  it("autosaves the edited variant immediately", () => {
     const onSave = vi.fn();
-    render(
-      <SettingsPage
-        config={config()}
-        onPick={noop}
-        onImportPreview={noop}
-        preview={null}
-        previewError={null}
-        onSave={onSave}
-        saving={false}
-        savedAt={null}
-      />,
+    renderPage({ onSave });
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "standard" } });
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({ variant: "standard" }),
     );
-    fireEvent.change(screen.getByRole("combobox"), {
-      target: { value: "standard" },
-    });
+  });
+
+  it("autosaves the edited PoB text on blur, with the current variant", () => {
+    const onSave = vi.fn();
+    renderPage({ onSave });
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "standard" } });
     fireEvent.change(screen.getByLabelText(/path of building/i), {
       target: { value: "https://pobb.in/abc123" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /^save$/i }));
-    expect(onSave).toHaveBeenCalledWith({
+    fireEvent.blur(screen.getByLabelText(/path of building/i));
+    expect(onSave).toHaveBeenLastCalledWith({
       client_log_path: "/Users/exile/Documents/My Games/Path of Exile/Client.txt",
       variant: "standard",
       pob_code: "https://pobb.in/abc123",
@@ -214,96 +151,41 @@ describe("SettingsPage", () => {
     });
   });
 
-  it("disables the Save button and shows a saving label while saving", () => {
-    render(
-      <SettingsPage
-        config={config()}
-        onPick={noop}
-        onImportPreview={noop}
-        preview={null}
-        previewError={null}
-        onSave={noop}
-        saving={true}
-        savedAt={null}
-      />,
-    );
-    expect(screen.getByRole("button", { name: /saving/i })).toBeDisabled();
+  it("shows a saving status while a save is in flight", () => {
+    renderPage({ saving: true });
+    expect(screen.getByText(/saving/i)).toBeInTheDocument();
   });
 
   it("renders the opacity slider seeded from config and shows the percentage", () => {
-    render(
-      <SettingsPage
-        config={config({ overlay_opacity: 0.6 })}
-        onPick={noop}
-        onImportPreview={noop}
-        preview={null}
-        previewError={null}
-        onSave={noop}
-        saving={false}
-        savedAt={null}
-      />,
-    );
+    renderPage({ config: config({ overlay_opacity: 0.6 }) });
     expect(screen.getByLabelText(/overlay opacity/i)).toHaveValue("60");
     expect(screen.getByText("60%")).toBeInTheDocument();
   });
 
-  it("previews opacity live and includes the edited value in onSave", () => {
+  it("previews opacity live on drag and autosaves it on release", () => {
     const onSave = vi.fn();
     const onOpacityPreview = vi.fn();
-    render(
-      <SettingsPage
-        config={config()}
-        onPick={noop}
-        onImportPreview={noop}
-        preview={null}
-        previewError={null}
-        onSave={onSave}
-        saving={false}
-        savedAt={null}
-        onOpacityPreview={onOpacityPreview}
-      />,
-    );
-    fireEvent.change(screen.getByLabelText(/overlay opacity/i), {
-      target: { value: "45" },
-    });
+    renderPage({ onSave, onOpacityPreview });
+    const slider = screen.getByLabelText(/overlay opacity/i);
+    fireEvent.change(slider, { target: { value: "45" } });
     expect(onOpacityPreview).toHaveBeenCalledWith(0.45);
-    fireEvent.click(screen.getByRole("button", { name: /^save$/i }));
+    // Live preview must NOT persist mid-drag.
+    expect(onSave).not.toHaveBeenCalled();
+    fireEvent.pointerUp(slider);
     expect(onSave).toHaveBeenCalledWith(
       expect.objectContaining({ overlay_opacity: 0.45 }),
     );
   });
 
   it("cannot represent an opacity below the 20% floor", () => {
-    render(
-      <SettingsPage
-        config={config()}
-        onPick={noop}
-        onImportPreview={noop}
-        preview={null}
-        previewError={null}
-        onSave={noop}
-        saving={false}
-        savedAt={null}
-      />,
-    );
+    renderPage();
     expect(screen.getByLabelText(/overlay opacity/i)).toHaveAttribute("min", "20");
   });
 
   it("renders one hotkey input per action, seeded from config", () => {
-    render(
-      <SettingsPage
-        config={config({
-          hotkeys: { ...DEFAULT_HOTKEYS, settings: "ctrl+shift+o" },
-        })}
-        onPick={noop}
-        onImportPreview={noop}
-        preview={null}
-        previewError={null}
-        onSave={noop}
-        saving={false}
-        savedAt={null}
-      />,
-    );
+    renderPage({
+      config: config({ hotkeys: { ...DEFAULT_HOTKEYS, settings: "ctrl+shift+o" } }),
+    });
     expect(screen.getByLabelText(/setup mode/i)).toHaveValue("alt+shift+s");
     expect(screen.getByLabelText(/hide\/show overlay/i)).toHaveValue("alt+shift+h");
     expect(screen.getByLabelText(/open settings/i)).toHaveValue("ctrl+shift+o");
@@ -311,24 +193,13 @@ describe("SettingsPage", () => {
     expect(screen.getByLabelText(/zoom/i)).toHaveValue("alt+shift+z");
   });
 
-  it("passes edited hotkeys to onSave in normalized form", () => {
+  it("autosaves edited hotkeys on blur, in normalized form", () => {
     const onSave = vi.fn();
-    render(
-      <SettingsPage
-        config={config()}
-        onPick={noop}
-        onImportPreview={noop}
-        preview={null}
-        previewError={null}
-        onSave={onSave}
-        saving={false}
-        savedAt={null}
-      />,
-    );
+    renderPage({ onSave });
     fireEvent.change(screen.getByLabelText(/open settings/i), {
       target: { value: "Ctrl+Shift+P" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /^save$/i }));
+    fireEvent.blur(screen.getByLabelText(/open settings/i));
     expect(onSave).toHaveBeenCalledWith(
       expect.objectContaining({
         hotkeys: { ...DEFAULT_HOTKEYS, settings: "ctrl+shift+p" },
@@ -336,119 +207,68 @@ describe("SettingsPage", () => {
     );
   });
 
-  it("shows a clear error and disables Save for an invalid hotkey", () => {
+  it("shows an error and does not autosave an invalid hotkey", () => {
     const onSave = vi.fn();
-    render(
-      <SettingsPage
-        config={config()}
-        onPick={noop}
-        onImportPreview={noop}
-        preview={null}
-        previewError={null}
-        onSave={onSave}
-        saving={false}
-        savedAt={null}
-      />,
-    );
-    fireEvent.change(screen.getByLabelText(/setup mode/i), {
-      target: { value: "not a combo" },
-    });
+    renderPage({ onSave });
+    const input = screen.getByLabelText(/setup mode/i);
+    fireEvent.change(input, { target: { value: "not a combo" } });
     expect(screen.getByText(/invalid hotkey/i)).toBeInTheDocument();
-    const save = screen.getByRole("button", { name: /^save$/i });
-    expect(save).toBeDisabled();
-    fireEvent.click(save);
+    fireEvent.blur(input);
     expect(onSave).not.toHaveBeenCalled();
   });
 
-  it("shows conflict errors on both actions and disables Save when two hotkeys collide", () => {
+  it("shows conflict errors and does not autosave when two hotkeys collide", () => {
     const onSave = vi.fn();
-    render(
-      <SettingsPage
-        config={config()}
-        onPick={noop}
-        onImportPreview={noop}
-        preview={null}
-        previewError={null}
-        onSave={onSave}
-        saving={false}
-        savedAt={null}
-      />,
-    );
-    fireEvent.change(screen.getByLabelText(/setup mode/i), {
-      target: { value: "alt+shift+h" },
-    });
+    renderPage({ onSave });
+    const input = screen.getByLabelText(/setup mode/i);
+    fireEvent.change(input, { target: { value: "alt+shift+h" } });
     expect(screen.getAllByText(/conflict/i).length).toBeGreaterThanOrEqual(2);
-    expect(screen.getByRole("button", { name: /^save$/i })).toBeDisabled();
-    fireEvent.click(screen.getByRole("button", { name: /^save$/i }));
+    fireEvent.blur(input);
     expect(onSave).not.toHaveBeenCalled();
   });
 
   it("shows a saved confirmation once savedAt is set", () => {
-    render(
-      <SettingsPage
-        config={config()}
-        onPick={noop}
-        onImportPreview={noop}
-        preview={null}
-        previewError={null}
-        onSave={noop}
-        saving={false}
-        savedAt={Date.now()}
-      />,
-    );
-    expect(screen.getByText(/saved/i)).toBeInTheDocument();
+    renderPage({ savedAt: 1234 });
+    expect(screen.getByText(/saved ✓/i)).toBeInTheDocument();
   });
 
   it("renders the run timer checkbox checked from config", () => {
-    render(
-      <SettingsPage
-        config={config()}
-        onPick={noop}
-        onImportPreview={noop}
-        preview={null}
-        previewError={null}
-        onSave={noop}
-        saving={false}
-        savedAt={null}
-      />,
-    );
+    renderPage();
     expect(screen.getByLabelText(/show run timer/i)).toBeChecked();
   });
 
-  it("round-trips an unchecked run timer through Save", () => {
+  it("autosaves the run timer checkbox on toggle", () => {
     const onSave = vi.fn();
-    render(
-      <SettingsPage
-        config={config()}
-        onPick={noop}
-        onImportPreview={noop}
-        preview={null}
-        previewError={null}
-        onSave={onSave}
-        saving={false}
-        savedAt={null}
-      />,
-    );
+    renderPage({ onSave });
     fireEvent.click(screen.getByLabelText(/show run timer/i));
-    fireEvent.click(screen.getByRole("button", { name: /^save$/i }));
     expect(onSave).toHaveBeenCalledWith(
       expect.objectContaining({ show_run_timer: false }),
     );
   });
 
   it("renders a hotkey input for the run timer", () => {
-    render(
-      <SettingsPage
-        config={config()}
-        onPick={noop}
-        onImportPreview={noop}
-        preview={null}
-        previewError={null}
-        onSave={noop}
-        saving={false}
-        savedAt={null}
-      />,
-    );
+    renderPage();
     expect(screen.getByLabelText(/start\/stop run timer/i)).toHaveValue("alt+shift+t");
+  });
+
+  it("requires confirmation before resetting progress", () => {
+    const onReset = vi.fn();
+    renderPage({ onReset });
+    // Clicking the reset button reveals a confirm; it does NOT reset yet.
+    fireEvent.click(screen.getByRole("button", { name: /reset progress/i }));
+    expect(onReset).not.toHaveBeenCalled();
+    // Confirming fires the reset.
+    fireEvent.click(screen.getByRole("button", { name: /yes, reset/i }));
+    expect(onReset).toHaveBeenCalledTimes(1);
+  });
+
+  it("cancels a reset without firing onReset", () => {
+    const onReset = vi.fn();
+    renderPage({ onReset });
+    fireEvent.click(screen.getByRole("button", { name: /reset progress/i }));
+    fireEvent.click(screen.getByRole("button", { name: /cancel/i }));
+    expect(onReset).not.toHaveBeenCalled();
+    // The confirm is dismissed; the reset button is back.
+    expect(screen.getByRole("button", { name: /reset progress/i })).toBeInTheDocument();
   });
 });

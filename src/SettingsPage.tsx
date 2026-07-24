@@ -13,16 +13,23 @@ const OPACITY_SLIDER_STEP_PCT = 5;
 
 export interface SettingsPageProps {
   config: AppConfig;
-  onPick: () => void;
+  // Opens the file picker and resolves to the chosen path (or null if the
+  // user cancelled). SettingsPage autosaves the picked path itself, so the
+  // container only has to run the dialog.
+  onPick: () => Promise<string | null> | void;
   onImportPreview: (code: string) => void;
   preview: PobSummary | null;
   previewError: string | null;
+  // Persist the given config. Called automatically as fields are committed
+  // (there is no Save button) — see the per-field commit points below.
   onSave: (cfg: AppConfig) => void;
+  // Reset all campaign progress (route, reminders, level) to a fresh start.
+  onReset: () => void;
   saving: boolean;
   savedAt: number | null;
   // Live opacity preview: fired on every slider move with the fractional
   // opacity (0.2–1.0) so the container can push it to the overlay window
-  // immediately, without waiting for Save. Optional so presentational
+  // immediately, before the value is committed. Optional so presentational
   // usages/tests that don't care about live preview stay minimal.
   onOpacityPreview?: (opacity: number) => void;
   // Optional slot rendered above the title, inside the styled settings
@@ -37,13 +44,13 @@ const VARIANTS: { value: RouteVariant; label: string }[] = [
   { value: "standard", label: "Standard (existing character)" },
 ];
 
-/// Presentational settings form. The log path is always displayed straight
-/// from `config` (picking a new one is delegated to `onPick`, which the
-/// container resolves by re-invoking `pick_log_file` and folding the result
-/// back into `config`); the route variant and PoB text are edited locally
-/// here and only reported upward — as a single `AppConfig` — when the user
-/// clicks Save, so a half-finished edit can never leak into `apply_settings`
-/// a keystroke at a time.
+/// Presentational settings form with autosave. Each field is edited in local
+/// state and committed to `onSave` on its own natural trigger — discrete
+/// controls (variant, run-timer, opacity release, log-path pick) on change,
+/// free-text fields (PoB code, hotkeys) on blur — so a half-typed value never
+/// reaches `apply_settings`. Invalid hotkeys are never committed. The full
+/// `AppConfig` is always sent (built from `config` for the log path plus the
+/// local field state), so the backend's no-op guard skips unchanged saves.
 export function SettingsPage({
   config,
   onPick,
@@ -51,6 +58,7 @@ export function SettingsPage({
   preview,
   previewError,
   onSave,
+  onReset,
   saving,
   savedAt,
   onOpacityPreview,
@@ -63,9 +71,36 @@ export function SettingsPage({
   );
   const [hotkeys, setHotkeys] = useState<HotkeyConfig>(config.hotkeys);
   const [showRunTimer, setShowRunTimer] = useState(config.show_run_timer);
+  const [confirmingReset, setConfirmingReset] = useState(false);
 
   const hotkeyErrors = validateHotkeyConfig(hotkeys);
   const hasHotkeyErrors = Object.keys(hotkeyErrors).length > 0;
+
+  // Build the full config from the current field state; `partial` overrides a
+  // just-changed field whose `setState` hasn't applied yet (setState is
+  // async, so the changing handler passes its new value explicitly).
+  function buildConfig(partial?: Partial<AppConfig>): AppConfig {
+    const trimmed = pobText.trim();
+    return {
+      client_log_path: config.client_log_path,
+      variant,
+      pob_code: trimmed === "" ? null : trimmed,
+      overlay_opacity: opacityPct / 100,
+      hotkeys: normalizeHotkeyConfig(hotkeys),
+      show_run_timer: showRunTimer,
+      ...partial,
+    };
+  }
+
+  // Autosave a committed change. Invalid hotkeys are never persisted (the
+  // combo would fail to register server-side); the inline error stays until
+  // the user fixes it.
+  function commit(partial?: Partial<AppConfig>) {
+    if (hasHotkeyErrors) {
+      return;
+    }
+    onSave(buildConfig(partial));
+  }
 
   function handleOpacityChange(pct: number) {
     setOpacityPct(pct);
@@ -76,19 +111,11 @@ export function SettingsPage({
     setHotkeys((prev) => ({ ...prev, [action]: value }));
   }
 
-  function handleSave() {
-    if (hasHotkeyErrors) {
-      return; // Save is disabled too; belt-and-braces against stale DOM events.
+  async function handlePick() {
+    const path = await onPick();
+    if (path) {
+      commit({ client_log_path: path });
     }
-    const trimmed = pobText.trim();
-    onSave({
-      client_log_path: config.client_log_path,
-      variant,
-      pob_code: trimmed === "" ? null : trimmed,
-      overlay_opacity: opacityPct / 100,
-      hotkeys: normalizeHotkeyConfig(hotkeys),
-      show_run_timer: showRunTimer,
-    });
   }
 
   return (
@@ -102,7 +129,7 @@ export function SettingsPage({
           <span className={["log-path", !config.client_log_path && "unset"].filter(Boolean).join(" ")}>
             {config.client_log_path ?? "Not set"}
           </span>
-          <button type="button" className="btn btn-secondary" onClick={onPick}>
+          <button type="button" className="btn btn-secondary" onClick={handlePick}>
             Browse&hellip;
           </button>
         </div>
@@ -116,7 +143,11 @@ export function SettingsPage({
           id="variant-select"
           className="settings-select"
           value={variant}
-          onChange={(e) => setVariant(e.target.value as RouteVariant)}
+          onChange={(e) => {
+            const v = e.target.value as RouteVariant;
+            setVariant(v);
+            commit({ variant: v });
+          }}
         >
           {VARIANTS.map((v) => (
             <option key={v.value} value={v.value}>
@@ -136,6 +167,7 @@ export function SettingsPage({
           placeholder="Paste a PoB share code or XML export for build reminders"
           value={pobText}
           onChange={(e) => setPobText(e.target.value)}
+          onBlur={() => commit()}
           rows={4}
         />
         <div className="preview-row">
@@ -178,6 +210,8 @@ export function SettingsPage({
             step={OPACITY_SLIDER_STEP_PCT}
             value={opacityPct}
             onChange={(e) => handleOpacityChange(Number(e.target.value))}
+            onPointerUp={() => commit()}
+            onKeyUp={() => commit()}
           />
           <span className="opacity-value">{opacityPct}%</span>
         </div>
@@ -190,7 +224,11 @@ export function SettingsPage({
             id="run-timer-checkbox"
             type="checkbox"
             checked={showRunTimer}
-            onChange={(e) => setShowRunTimer(e.target.checked)}
+            onChange={(e) => {
+              const checked = e.target.checked;
+              setShowRunTimer(checked);
+              commit({ show_run_timer: checked });
+            }}
           />
           Show run timer on overlay
         </label>
@@ -200,7 +238,7 @@ export function SettingsPage({
         <span className="settings-label">Hotkeys</span>
         <p className="hotkey-hint">
           Global shortcuts, e.g. &quot;Alt+Shift+S&quot; — at least one modifier
-          (Ctrl/Alt/Shift/Super) plus one key.
+          (Ctrl/Alt/Shift/Super) plus one key. Invalid combos are not saved.
         </p>
         {HOTKEY_ACTIONS.map(({ key, label }) => (
           <div className="hotkey-row" key={key}>
@@ -216,6 +254,7 @@ export function SettingsPage({
               value={hotkeys[key]}
               placeholder="e.g. Alt+Shift+S"
               onChange={(e) => handleHotkeyChange(key, e.target.value)}
+              onBlur={() => commit()}
             />
             {hotkeyErrors[key] && (
               <div className="hotkey-error">{hotkeyErrors[key]}</div>
@@ -224,16 +263,53 @@ export function SettingsPage({
         ))}
       </section>
 
+      <section className="settings-row">
+        <span className="settings-label">Reset progress</span>
+        {confirmingReset ? (
+          <div className="reset-confirm">
+            <span className="reset-warning">
+              Reset all campaign progress to a fresh start? This clears the
+              current route position and can&rsquo;t be undone.
+            </span>
+            <div className="reset-confirm-actions">
+              <button
+                type="button"
+                className="btn btn-danger"
+                onClick={() => {
+                  setConfirmingReset(false);
+                  onReset();
+                }}
+              >
+                Yes, reset
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setConfirmingReset(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => setConfirmingReset(true)}
+          >
+            Reset progress&hellip;
+          </button>
+        )}
+      </section>
+
       <section className="settings-actions">
-        <button
-          type="button"
-          className="btn btn-primary"
-          onClick={handleSave}
-          disabled={saving || hasHotkeyErrors}
-        >
-          {saving ? "Saving…" : "Save"}
-        </button>
-        {!saving && savedAt !== null && <span className="saved-confirmation">Saved &#10003;</span>}
+        {saving ? (
+          <span className="autosave-status">Saving&hellip;</span>
+        ) : savedAt !== null ? (
+          <span className="autosave-status saved">Saved &#10003;</span>
+        ) : (
+          <span className="autosave-status muted">Changes save automatically</span>
+        )}
       </section>
     </div>
   );
