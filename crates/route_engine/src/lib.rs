@@ -797,6 +797,50 @@ mod tests {
     }
 
     #[test]
+    fn a_completed_route_never_resets_from_zone_entries() {
+        // Safety invariant (issue #8 fear): once the route is complete, NO
+        // sequence of area entries — new OR same instance of any zone,
+        // including the very first area, plus unknown zones — un-completes
+        // it. Only an explicit `restart()` (the manual "Reset progress"
+        // button) may. Guards against ever reintroducing an auto-restart
+        // heuristic that could wipe progress from normal play.
+        let mut e = engine();
+        let contexts: Vec<String> = {
+            let mut cs = Vec::new();
+            for s in e.steps() {
+                if cs.last() != Some(&s.area_context) {
+                    cs.push(s.area_context.clone());
+                }
+            }
+            cs
+        };
+        for c in &contexts {
+            e.on_area_entered(c, true);
+        }
+        assert!(e.is_complete());
+
+        let first = e.steps()[0].area_context.clone();
+        for _ in 0..5 {
+            e.on_area_entered(&first, true);
+            e.on_area_entered(&first, false);
+            e.on_area_entered("some_unknown_zone_id", true);
+            for c in &contexts {
+                e.on_area_entered(c, true);
+                e.on_area_entered(c, false);
+            }
+            assert!(
+                e.is_complete(),
+                "a completed route must stay complete under any zone entries",
+            );
+        }
+
+        // Only the explicit reset returns it to the start.
+        e.restart();
+        assert!(!e.is_complete());
+        assert_eq!(e.cursor(), 0);
+    }
+
+    #[test]
     fn restart_returns_a_completed_route_to_the_start() {
         // `restart()` is the mechanism behind the manual "Reset progress"
         // button. Drive to completion, restart, and confirm the engine is
