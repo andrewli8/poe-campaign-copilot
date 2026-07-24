@@ -259,7 +259,9 @@ mod tests {
 
     #[test]
     fn tail_of_an_over_cap_file_keeps_only_newest_complete_lines() {
-        let content: String = (0..100).map(|i| format!("{i:03} event happened\n")).collect();
+        let content: String = (0..100)
+            .map(|i| format!("{i:03} event happened\n"))
+            .collect();
         let path = temp_log("overcap", &content);
         let got = tail(&path, 100).expect("tail yields content");
         // Newest line survives; the byte-torn first line was dropped, so

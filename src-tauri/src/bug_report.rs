@@ -120,7 +120,10 @@ mod tests {
     fn no_log_opens_the_plain_form() {
         assert_eq!(bug_report_url("0.1.10", None), REPORT_BUG_BASE_URL);
         assert_eq!(bug_report_url("0.1.10", Some("")), REPORT_BUG_BASE_URL);
-        assert_eq!(bug_report_url("0.1.10", Some("  \n \n")), REPORT_BUG_BASE_URL);
+        assert_eq!(
+            bug_report_url("0.1.10", Some("  \n \n")),
+            REPORT_BUG_BASE_URL
+        );
     }
 
     #[test]
