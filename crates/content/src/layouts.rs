@@ -32,9 +32,26 @@ pub struct Audit {
     pub correction: Option<String>,
 }
 
+/// How the overlay categorizes a note for display (colour + icon). Purely
+/// presentational; defaults to `Layout` when absent from the JSON.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum NoteCategory {
+    /// Where to go / how the zone is shaped (teal).
+    #[default]
+    Layout,
+    /// Something to do — kill / take / place / free (gold).
+    Objective,
+    /// A warning — resistances to cap, a dangerous boss (coral).
+    Danger,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AuditedText {
     pub text: String,
+    /// Display category; `Layout` when omitted (most notes).
+    #[serde(default)]
+    pub category: NoteCategory,
     pub audit: Audit,
 }
 

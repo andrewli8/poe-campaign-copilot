@@ -9,6 +9,7 @@
   "notes": [
     {
       "text": "Note: Follow the right hand side if you feel ready for Tukohama, capped fire resistance is suggested, alongside a good life pool. If you wish to take on Tukohama for the passive point and pantheon power later, follow the left hand side.",
+      "category": "danger",
       "audit": {
         "status": "unaudited",
         "first_verified_patch": null,

@@ -19,6 +19,7 @@
   "notes": [
     {
       "text": "Note: Just like the pyramid in act two, go diagonally to exits. Boss fight at the end, capped lightning resistance is recommended.",
+      "category": "danger",
       "audit": {
         "status": "unaudited",
         "first_verified_patch": null,

@@ -5,7 +5,21 @@ import {
   isRunning,
   type RunTimerState,
 } from "./runTimer";
-import type { UiModel } from "./types";
+import type { NoteCategory, UiModel } from "./types";
+
+// Per-category glyph + label for the note cards (see FilmstripBar.css for
+// the matching colours). Objective = "do this" (gold), Layout = where to go
+// (teal), Danger = a warning like capping resistances (coral).
+const NOTE_ICON: Record<NoteCategory, string> = {
+  objective: "⚑", // ⚑
+  layout: "◇", // ◇
+  danger: "△", // △
+};
+const NOTE_LABEL: Record<NoteCategory, string> = {
+  objective: "Objective",
+  layout: "Layout",
+  danger: "Danger",
+};
 
 export interface FilmstripBarProps {
   model: UiModel;
@@ -146,52 +160,69 @@ export function FilmstripBar({
             </div>
           )}
 
-          {overlay.layout_notes.length > 0 && (
-            <ul className="notes-list">
-              {overlay.layout_notes.map((note, i) => (
-                <li key={i} className={note.stale ? "stale" : undefined}>
-                  {note.text}
-                </li>
-              ))}
-            </ul>
-          )}
-
-          <div className="text-block">
-            <div className="primary">{overlay.primary}</div>
-            {overlay.steps_in_zone.length > 1 && (
-              <ul className="steps-list">
-                {overlay.steps_in_zone.slice(1).map((step, i) => (
-                  <li key={i}>{step}</li>
-                ))}
-              </ul>
-            )}
-            {overlay.sub_hints.length > 0 && (
-              <div className="sub-hints">
+          {/* Objective card — the current route step, styled as the
+              gold "do this" card. Zone sub-steps and directional hints sit
+              beneath it. */}
+          {overlay.primary && (
+            <div className="note-card objective">
+              <span className="nc-ic" aria-hidden="true">{NOTE_ICON.objective}</span>
+              <div className="nc-body">
+                <div className="nc-kicker">{NOTE_LABEL.objective}</div>
+                <div className="nc-text">{overlay.primary}</div>
+                {overlay.steps_in_zone.length > 1 && (
+                  <ul className="nc-sub">
+                    {overlay.steps_in_zone.slice(1).map((step, i) => (
+                      <li key={i}>{step}</li>
+                    ))}
+                  </ul>
+                )}
                 {overlay.sub_hints.map((hint, i) => (
-                  <div key={i} className="sub-hint">
+                  <div key={i} className="nc-hint">
                     {hint}
                   </div>
                 ))}
               </div>
-            )}
-            {overlay.next_zone && <div className="next-line">Next: {overlay.next_zone}</div>}
-            {overlay.town_reminders.length > 0 && (
-              <ul className="town-reminders">
-                {overlay.town_reminders.map((reminder, i) => (
-                  <li key={i}>{reminder}</li>
-                ))}
-              </ul>
-            )}
-            {overlay.build_reminders.length > 0 && (
-              <ul className="build-reminders">
-                {overlay.build_reminders.map((reminder, i) => (
-                  <li key={i} className="build">
-                    {reminder}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+            </div>
+          )}
+
+          {/* Layout / danger note cards — colour-coded by category.
+              Outdated notes are dropped upstream, so every note shown is
+              current (no strike-through). */}
+          {overlay.layout_notes.map((note, i) => (
+            <div key={i} className={`note-card ${note.category}`}>
+              <span className="nc-ic" aria-hidden="true">{NOTE_ICON[note.category]}</span>
+              <div className="nc-body">
+                <div className="nc-kicker">{NOTE_LABEL[note.category]}</div>
+                <div className="nc-text">{note.text}</div>
+              </div>
+            </div>
+          ))}
+
+          {/* Next zone — the single most navigational thing, a gold bar. */}
+          {overlay.next_zone && (
+            <div className="next-bar">
+              <span className="nb-label">Next</span>
+              <span className="nb-dest">{overlay.next_zone}</span>
+              <span className="nb-chev" aria-hidden="true">&rarr;</span>
+            </div>
+          )}
+
+          {overlay.town_reminders.length > 0 && (
+            <ul className="town-reminders">
+              {overlay.town_reminders.map((reminder, i) => (
+                <li key={i}>{reminder}</li>
+              ))}
+            </ul>
+          )}
+          {overlay.build_reminders.length > 0 && (
+            <ul className="build-reminders">
+              {overlay.build_reminders.map((reminder, i) => (
+                <li key={i} className="build">
+                  {reminder}
+                </li>
+              ))}
+            </ul>
+          )}
         </>
       )}
 

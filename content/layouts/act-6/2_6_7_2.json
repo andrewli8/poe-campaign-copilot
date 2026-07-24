@@ -19,6 +19,7 @@
   "notes": [
     {
       "text": "Note: Capped lightning resistance and a good life pool is strongly suggested to fight Brutus and Shavronne, having physical mitigation helps as well.",
+      "category": "danger",
       "audit": {
         "status": "unaudited",
         "first_verified_patch": null,

@@ -4,9 +4,14 @@
 // src-tauri/src/config.rs (AppConfig), and src-tauri/src/main.rs
 // (PobSummary).
 
+export type NoteCategory = "layout" | "objective" | "danger";
+
+// Outdated notes are dropped by the composer (never shown / no strike-through),
+// so a NoteView is always current — no `stale` flag. Images keep their own
+// `stale` for dimming (see UiImage).
 export interface NoteView {
   text: string;
-  stale: boolean;
+  category: NoteCategory;
 }
 
 export interface UiImage {

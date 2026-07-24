@@ -9,6 +9,7 @@
   "notes": [
     {
       "text": "Note: Follow the cart tracks to the building top right for the quest boss, capped lightning resistance is recommended. Portal to town and waypoint back to The Quarry.",
+      "category": "danger",
       "audit": {
         "status": "unaudited",
         "first_verified_patch": null,

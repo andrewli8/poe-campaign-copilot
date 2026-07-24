@@ -9,6 +9,7 @@
   "notes": [
     {
       "text": "Note: Follow the carpets, quest boss Dawn at the end, capped fire resistance is recommended.",
+      "category": "danger",
       "audit": {
         "status": "unaudited",
         "first_verified_patch": null,

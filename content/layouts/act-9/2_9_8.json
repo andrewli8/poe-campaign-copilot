@@ -29,6 +29,7 @@
     },
     {
       "text": "Note: Physical mitigation is recommended, alongside a good life pool and movement speed/skills.",
+      "category": "danger",
       "audit": {
         "status": "unaudited",
         "first_verified_patch": null,

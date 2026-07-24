@@ -15,7 +15,7 @@ function model(overrides: Partial<UiModel["overlay"]> = {}, extra: Partial<UiMod
       act: 1,
       off_route_zone: null,
       layout_images: [{ file: "a.png", stale: false }],
-      layout_notes: [{ text: "Follow the right wall.", stale: false }],
+      layout_notes: [{ text: "Follow the right wall.", category: "layout" }],
       steps_in_zone: ["Get waypoint", "➞ The Mud Flats"],
       sub_hints: ["Go ↗"],
       primary: "Get waypoint",
@@ -58,7 +58,8 @@ describe("FilmstripBar", () => {
     expect(screen.getByText("The Coast")).toBeInTheDocument();
     expect(screen.getByText(/act 1/i)).toBeInTheDocument();
     expect(screen.getByText("Get waypoint")).toBeInTheDocument();
-    expect(screen.getByText(/next: the mud flats/i)).toBeInTheDocument();
+    expect(screen.getByText(/^next$/i)).toBeInTheDocument();
+    expect(screen.getByText("The Mud Flats")).toBeInTheDocument();
     expect(screen.getByText(/2 pending/i)).toBeInTheDocument();
     expect(screen.getByRole("img")).toHaveAttribute("src", PIXEL);
   });
@@ -92,12 +93,32 @@ describe("FilmstripBar", () => {
     expect(item).toHaveClass("build");
   });
 
-  it("marks stale images and notes", () => {
-    const m = model({ layout_notes: [{ text: "Old info.", stale: true }] });
+  it("marks stale images with the outdated badge", () => {
+    // Notes are never stale (outdated notes are dropped upstream); only
+    // images can be stale, shown dimmed with an "outdated" badge.
+    const m = model();
     m.images = [{ file: "a.png", stale: true, data_url: PIXEL }];
     renderBar({ model: m });
     expect(screen.getByText(/outdated/i)).toBeInTheDocument();
-    expect(screen.getByText("Old info.")).toHaveClass("stale");
+    expect(screen.getByRole("img")).toHaveClass("stale");
+  });
+
+  it("renders notes as colour-coded category cards", () => {
+    const { container } = renderBar({
+      model: model({
+        layout_notes: [
+          { text: "Cap fire resistance.", category: "danger" },
+          { text: "Follow the wall.", category: "layout" },
+        ],
+      }),
+    });
+    // The route step is shown as the gold "objective" card...
+    expect(screen.getByText("Get waypoint").closest(".note-card")).toHaveClass("objective");
+    // ...and each layout note gets its category class.
+    expect(screen.getByText("Cap fire resistance.").closest(".note-card")).toHaveClass("danger");
+    expect(screen.getByText("Follow the wall.").closest(".note-card")).toHaveClass("layout");
+    // The next zone gets its own bar.
+    expect(container.querySelector(".next-bar .nb-dest")?.textContent).toBe("The Mud Flats");
   });
 
   it("renders campaign complete state", () => {
@@ -289,7 +310,7 @@ describe("FilmstripBar", () => {
         compact: true,
       });
       expect(container.querySelector(".image-row")).not.toBeInTheDocument();
-      expect(container.querySelector(".notes-list")).not.toBeInTheDocument();
+      expect(container.querySelector(".note-card")).not.toBeInTheDocument();
       expect(container.querySelector(".header-row")).not.toBeInTheDocument();
       expect(container.querySelector(".off-route-banner")).not.toBeInTheDocument();
       expect(container.querySelector(".pending-badge")).not.toBeInTheDocument();
@@ -341,7 +362,7 @@ describe("FilmstripBar", () => {
       const { container } = renderBar({ model: model(), compact: false });
       expect(container.querySelector(".image-row")).toBeInTheDocument();
       expect(container.querySelector(".header-row")).toBeInTheDocument();
-      expect(container.querySelector(".notes-list")).toBeInTheDocument();
+      expect(container.querySelector(".note-card")).toBeInTheDocument();
     });
   });
 

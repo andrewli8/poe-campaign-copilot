@@ -19,6 +19,7 @@
   "notes": [
     {
       "text": "Note: Explore the zone and find the fireflies, Gruthkul is in this zone, physical mitigation recommended.",
+      "category": "danger",
       "audit": {
         "status": "unaudited",
         "first_verified_patch": null,

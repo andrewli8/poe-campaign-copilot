@@ -9,6 +9,7 @@
   "notes": [
     {
       "text": "Note: Follow the left hand shoreline to the boss arena. Capped cold and lightning resistance is strongly recommended. Physical mitigation is very useful too.",
+      "category": "danger",
       "audit": {
         "status": "unaudited",
         "first_verified_patch": null,
