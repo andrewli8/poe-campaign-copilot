@@ -19,6 +19,7 @@
   "notes": [
     {
       "text": "Note: Go top right to find the arena with Solaris and Lunaris, capped fire and cold resistance is recommended.",
+      "category": "danger",
       "audit": {
         "status": "corrected",
         "first_verified_patch": null,

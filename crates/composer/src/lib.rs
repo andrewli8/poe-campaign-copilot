@@ -5,7 +5,7 @@
 use std::collections::BTreeMap;
 
 use content::game_data::AreaMap;
-use content::layouts::{AuditStatus, LayoutEntry};
+use content::layouts::{AuditStatus, LayoutEntry, NoteCategory};
 use route_engine::{LocationStatus, RouteEngine};
 use serde::Serialize;
 use task_engine::TaskEngine;
@@ -16,6 +16,7 @@ pub mod render;
 pub struct NoteView {
     pub text: String,
     pub stale: bool,
+    pub category: NoteCategory,
 }
 
 /// A layout diagram image. `file` resolves against the content pack's flat
@@ -100,7 +101,11 @@ fn note_views(entry: &LayoutEntry) -> Vec<NoteView> {
                 AuditStatus::Outdated => (item.text.clone(), true),
                 AuditStatus::Unaudited | AuditStatus::Verified => (item.text.clone(), false),
             };
-            NoteView { text, stale }
+            NoteView {
+                text,
+                stale,
+                category: item.category,
+            }
         })
         .collect()
 }

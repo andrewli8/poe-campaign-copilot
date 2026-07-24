@@ -19,6 +19,7 @@
   "notes": [
     {
       "text": "Note: Follow the road to the left. Physical mitigation and bleed removal are recommended.",
+      "category": "danger",
       "audit": {
         "status": "unaudited",
         "first_verified_patch": null,

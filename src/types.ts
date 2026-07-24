@@ -4,9 +4,12 @@
 // src-tauri/src/config.rs (AppConfig), and src-tauri/src/main.rs
 // (PobSummary).
 
+export type NoteCategory = "layout" | "objective" | "danger";
+
 export interface NoteView {
   text: string;
   stale: boolean;
+  category: NoteCategory;
 }
 
 export interface UiImage {
