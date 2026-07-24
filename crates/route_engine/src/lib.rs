@@ -404,27 +404,6 @@ impl RouteEngine {
             newly_skipped: vec![],
         };
 
-        // Tier 0 (new run): a NEW instance of the route's very first area
-        // means a fresh character has begun the campaign. The opening zone
-        // (The Twilight Strand) is entered exactly once per character and can
-        // never be re-generated within a run, so a new instance of it is an
-        // unambiguous "new run" signal. Restart, then fall through so the
-        // fresh route records this entry as its active area (Tier 1 InPlace).
-        //
-        // The `frontier > 0 || is_complete()` guard keeps a brand-new run's
-        // own first-area entry on the normal path (nothing to reset). Without
-        // this, a route that reached the frontier end — e.g. a high-level
-        // character that logged into the endgame town, completing it — would
-        // stay "campaign complete" forever, since a completed frontier treats
-        // every later first-area entry as a behind detour, never a restart.
-        // See issue #8.
-        if new_instance
-            && self.steps.first().map(|s| s.area_context.as_str()) == Some(area_id)
-            && (self.is_complete() || self.frontier > 0)
-        {
-            self.restart();
-        }
-
         // Tier 1 (idempotent): already standing in this group. Handled
         // ahead of completion/forward/behind checks since it's valid at
         // any frontier position, complete or not, on track or mid-detour.
@@ -795,15 +774,12 @@ mod tests {
 
         // After completion, a genuine (behind) route area resolves to a
         // detour rather than being flatly ignored -- progress is complete
-        // but the player can still be shown where they are. Use a mid-route
-        // context, not the first area: a new instance of the FIRST area is a
-        // new-character restart signal (see the restart tests), so it would
-        // not stay complete here.
-        let mid_ctx = contexts[contexts.len() / 2].clone();
-        let a = e.on_area_entered(&mid_ctx, true);
+        // but the player can still be shown where they are.
+        let first_ctx = e.steps()[0].area_context.clone();
+        let a = e.on_area_entered(&first_ctx, true);
         assert!(matches!(a.kind, AdvanceKind::Detour { .. }));
         assert!(e.is_complete(), "frontier stays complete after a detour");
-        assert_eq!(e.focus_area(), Some(mid_ctx.as_str()));
+        assert_eq!(e.focus_area(), Some(first_ctx.as_str()));
 
         // Only genuinely non-route areas are Ignored after completion.
         assert_eq!(
@@ -820,8 +796,12 @@ mod tests {
         assert_eq!(e.next_transition_area(), Some("1_1_2"));
     }
 
-    /// Drives the engine to completion by feeding every group in order.
-    fn drive_to_completion(e: &mut RouteEngine) {
+    #[test]
+    fn restart_returns_a_completed_route_to_the_start() {
+        // `restart()` is the mechanism behind the manual "Reset progress"
+        // button. Drive to completion, restart, and confirm the engine is
+        // back at a fresh Act 1 start with all steps Pending.
+        let mut e = engine();
         let contexts: Vec<String> = {
             let mut cs = Vec::new();
             for s in e.steps() {
@@ -834,69 +814,20 @@ mod tests {
         for c in &contexts {
             e.on_area_entered(c, true);
         }
-    }
-
-    #[test]
-    fn new_instance_of_first_area_restarts_a_completed_route() {
-        // Issue #8: a high-level character drives the route to completion
-        // (e.g. logging into the endgame town). Creating a NEW character
-        // enters The Twilight Strand — a fresh instance of the route's first
-        // area, entered exactly once per character — which must restart the
-        // route instead of leaving it stuck on "campaign complete".
-        let mut e = engine();
-        drive_to_completion(&mut e);
         assert!(e.is_complete());
 
-        let first = e.steps()[0].area_context.clone();
-        let adv = e.on_area_entered(&first, true);
+        e.restart();
 
-        assert_eq!(adv.kind, AdvanceKind::InPlace);
-        assert!(!e.is_complete(), "a new character must restart the route");
+        assert!(!e.is_complete());
         assert_eq!(e.cursor(), 0);
+        let first = e.steps()[0].area_context.clone();
         assert_eq!(e.active_area(), Some(first.as_str()));
         assert_eq!(e.focus_area(), Some(first.as_str()));
+        assert!(e.off_route().is_none());
         assert!(
             e.statuses().iter().all(|&s| s == StepStatus::Pending),
             "all steps return to Pending after restart"
         );
-    }
-
-    #[test]
-    fn new_instance_of_first_area_restarts_an_in_progress_route() {
-        // Abandoning a mid-campaign character and starting a new one (a
-        // fresh Twilight Strand instance) also restarts, not just a
-        // completed route.
-        let mut e = engine();
-        let contexts: Vec<String> = {
-            let mut cs = Vec::new();
-            for s in e.steps() {
-                if cs.last() != Some(&s.area_context) {
-                    cs.push(s.area_context.clone());
-                }
-            }
-            cs
-        };
-        for c in contexts.iter().take(4) {
-            e.on_area_entered(c, true);
-        }
-        assert!(e.cursor() > 0, "route should have advanced");
-
-        let first = e.steps()[0].area_context.clone();
-        e.on_area_entered(&first, true);
-        assert_eq!(e.cursor(), 0);
-        assert!(e.statuses().iter().all(|&s| s == StepStatus::Pending));
-    }
-
-    #[test]
-    fn fresh_route_does_not_restart_on_its_own_first_area_entry() {
-        // The first area of a brand-new run must be handled normally
-        // (in-place), not treated as a restart signal.
-        let mut e = engine();
-        let first = e.steps()[0].area_context.clone();
-        let adv = e.on_area_entered(&first, true);
-        assert_eq!(adv.kind, AdvanceKind::InPlace);
-        assert_eq!(e.cursor(), 0);
-        assert!(!e.is_complete());
     }
 
     #[test]
