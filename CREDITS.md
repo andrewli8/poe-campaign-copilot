@@ -18,6 +18,7 @@ registered trademark of Grinding Gear Games.
 - **Zone layout notes** — adapted from the same community
   ["Cheat sheets based on Engineering Eternity"](https://docs.google.com/document/d/1sExA-AnTbroJ-HN2neZiij5G4X9u2ENlC7m_zf1tqP8/edit)
   compilation (author's notes based on Engineering Eternity's videos);
-  committed as structured JSON under `content/layouts/act-*/`. All notes
-  currently carry `audit.status: "unaudited"` — they date from an older patch
-  and are being audited zone-by-zone.
+  committed as structured JSON under `content/layouts/act-*/`. The notes
+  date from an older patch and are being audited zone-by-zone: most still
+  carry `audit.status: "unaudited"`, while reviewed ones are marked
+  `verified`, `outdated`, or `corrected` (with replacement text).

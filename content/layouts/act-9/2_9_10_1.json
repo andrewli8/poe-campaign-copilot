@@ -10,10 +10,10 @@
     {
       "text": "Note: Try to reach the top left part of the zone in The Belly of The Beast, this leads to The Rotting core which is fairly static, and where you will want to go top left again, then you have The Black Heart where there are three boss zones with a linear path to them. Kill ‘em all, then fight the Depraved Trinity act boss after entering at the center.(boss and lead up video)",
       "audit": {
-        "status": "unaudited",
+        "status": "corrected",
         "first_verified_patch": null,
         "last_verified_patch": null,
-        "correction": null
+        "correction": "Head top-left through Belly of the Beast to Rotting Core, then top-left again to The Black Core. It branches to 3 boss arenas (Doedre, Maligaro, Shavronne) — kill all, then fight the Depraved Trinity in The Black Heart at the center."
       }
     }
   ],

@@ -20,10 +20,10 @@
     {
       "text": "Note: Go to the town at the waypoint, take the portal and find the Flooded Depths.",
       "audit": {
-        "status": "unaudited",
+        "status": "corrected",
         "first_verified_patch": null,
         "last_verified_patch": null,
-        "correction": null
+        "correction": "Linear zone — follow it to the exit to The Climb."
       }
     }
   ],

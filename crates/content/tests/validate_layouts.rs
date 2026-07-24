@@ -32,29 +32,24 @@ fn all_layout_entries_are_valid() {
             "{}: entry has no text at all",
             e.area_id
         );
-        for d in &e.descriptions {
-            assert_eq!(
-                d.audit.status,
-                AuditStatus::Unaudited,
-                "{}: initial description content must be unaudited",
-                e.area_id
-            );
-        }
-        for n in &e.notes {
-            assert_eq!(
-                n.audit.status,
-                AuditStatus::Unaudited,
-                "{}: initial note content must be unaudited",
-                e.area_id
-            );
+        // Content is audited zone-by-zone (see the audit metadata in each
+        // layout JSON). Any status is allowed, but a `corrected` note or
+        // description MUST supply the replacement text the composer shows in
+        // place of the original — a corrected item with no correction would
+        // silently blank the guidance.
+        for item in e.descriptions.iter().chain(e.notes.iter()) {
+            if item.audit.status == AuditStatus::Corrected {
+                assert!(
+                    item.audit
+                        .correction
+                        .as_deref()
+                        .is_some_and(|c| !c.trim().is_empty()),
+                    "{}: a corrected note/description must supply a non-empty correction",
+                    e.area_id
+                );
+            }
         }
         for img in &e.images {
-            assert_eq!(
-                img.audit.status,
-                AuditStatus::Unaudited,
-                "{}: initial image content must be unaudited",
-                e.area_id
-            );
             let p = layouts_dir().join("assets").join(&img.file);
             assert!(p.is_file(), "{}: missing image {}", e.area_id, img.file);
             assert!(
@@ -74,4 +69,30 @@ fn all_layout_entries_are_valid() {
 
     let with_images = entries.iter().filter(|e| !e.images.is_empty()).count();
     assert!(with_images >= 80, "only {with_images} entries have images");
+}
+
+/// Issue #11: Navali was removed from the game in 3.17 (with the prophecy
+/// system). Any note/description that still references her must be audited —
+/// `corrected` (replaced with accurate guidance) or `outdated` (struck
+/// through) — never left as active `unaudited`/`verified` guidance telling
+/// players to free her.
+#[test]
+fn no_active_note_references_the_removed_navali() {
+    let entries = load_all_layouts().expect("layouts load");
+    for e in &entries {
+        for item in e.descriptions.iter().chain(e.notes.iter()) {
+            if item.text.contains("Navali") {
+                assert!(
+                    matches!(
+                        item.audit.status,
+                        AuditStatus::Corrected | AuditStatus::Outdated
+                    ),
+                    "{}: note references the removed NPC Navali but is still active ({:?}); \
+                     mark it corrected or outdated",
+                    e.area_id,
+                    item.audit.status,
+                );
+            }
+        }
+    }
 }

@@ -10,10 +10,10 @@
     {
       "text": "Note: Left hand wall-follow, skip the first opening, take the second and cross the bridge (red part), left hand wall-follow to the waypoint.Then go to the Ossuary (1), after that the Torched Courts (2). Optional are the Reliquary (3, quest for rare belt) and the Control Blocks (4), quest with boss for a passive point. Finish by going through The Canals (5). Do your cruel labyrinth before going to the Canals as killing Kitava will lower your resistances.",
       "audit": {
-        "status": "unaudited",
+        "status": "corrected",
         "first_verified_patch": null,
         "last_verified_patch": null,
-        "correction": null
+        "correction": "Wall-follow to the waypoint, then run the Ossuary and Torched Courts. Optional: Reliquary (rare belt quest) and Control Blocks (boss for a passive point). Finish via the Canals. Do the Merciless Labyrinth before the Canals, since killing Kitava lowers your resistances."
       }
     }
   ],
